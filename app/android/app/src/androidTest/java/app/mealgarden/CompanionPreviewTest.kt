@@ -113,7 +113,7 @@ class CompanionPreviewTest {
                 1 -> gallery()
                 2 -> shell()
                 3 -> todayAndHealth()
-                4 -> kitchen()
+                4 -> if (arguments.getString("focus") == "assumptions") kitchenAssumptions() else kitchen()
                 5 -> recipesAndCooking()
                 6 -> captureAndLog()
                 7 -> more()
@@ -170,6 +170,8 @@ class CompanionPreviewTest {
 
     private fun kitchen() {
         resetTo(3); shot("kitchen")
+        click("Key"); shot("kitchen-key"); click("Key")
+        compose.onNodeWithContentDescription("Add food").performClick(); shot("kitchen-add-food"); click("Cancel")
         val zoneNames = listOf("Fridge", "Veg drawers", "Freezer", "Pantry", "Counter", "Unplaced")
         zoneNames.forEach { zone ->
             compose.onNodeWithTag("graph-kitchen").performScrollToNode(hasText("Fridge") and hasClickAction())
@@ -192,18 +194,24 @@ class CompanionPreviewTest {
                     else if (hasTextNode(food.s("name"))) click(food.s("name"))
                     if (compose.onAllNodesWithTag("kitchen-item-panel").fetchSemanticsNodes().isNotEmpty()) {
                         compose.onNodeWithTag("kitchen-item-panel").performScrollTo(); shot("kitchen-${zone.lowercase().replace(' ', '-')}-item")
+                        if (hasTextNode("Set amount")) { click("Set amount"); compose.onNodeWithTag("kitchen-item-panel").performScrollTo(); shot("kitchen-${zone.lowercase().replace(' ', '-')}-exact"); click("Cancel") }
                         val bought = food.s("purchased_on").take(10)
-                        if (bought.isNotBlank() && hasTextNode("bought $bought")) { click("bought $bought"); shot("kitchen-${zone.lowercase().replace(' ', '-')}-receipt"); back() }
+                        val receipt = compose.onAllNodesWithTag("kitchen-receipt:${food.s("id")}")
+                        if (bought.isNotBlank() && receipt.fetchSemanticsNodes().isNotEmpty()) { receipt[0].performScrollTo().performClick(); shot("kitchen-${zone.lowercase().replace(' ', '-')}-receipt"); click("Close") }
                         if (hasDescription("Close panel")) compose.onAllNodesWithContentDescription("Close panel")[0].performScrollTo().performClick()
                     }
                 }
             }
         }
+        kitchenAssumptions()
+    }
+
+    private fun kitchenAssumptions() {
         resetTo(3)
         if (hasTextNode("Check kitchen")) click("Check kitchen") else compose.runOnUiThread { vm.openFridgeCheck = true }
         shot("kitchen-assumptions")
         val first = vm.graphAssumptions().firstOrNull()
-        if (first != null && hasTextNode(first.s("statement"))) { click(first.s("statement")); shot("kitchen-assumption-detail") }
+        if (first != null && hasTextNode(first.s("statement"))) { click(first.s("statement")); compose.onNodeWithTag("assumption-detail").performScrollTo(); shot("kitchen-assumption-detail") }
         // Looks right and correction actions intentionally remain untouched.
         resetTo(3)
     }

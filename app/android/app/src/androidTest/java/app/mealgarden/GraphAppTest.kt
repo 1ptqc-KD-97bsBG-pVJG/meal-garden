@@ -30,13 +30,14 @@ class GraphAppTest {
     }""")
     private fun setup(screen: String = "kitchen") {
         compose.runOnUiThread {
-            assertTrue("Never run lane 08 writes against a paired laptop", Vault(compose.activity.application).token.isEmpty())
+            assertTrue("Never test writes against a paired laptop", Vault(compose.activity.application).token.isEmpty())
             compose.activity.getSharedPreferences("garden", android.content.Context.MODE_PRIVATE).edit().clear().commit()
             vm = GardenModel(compose.activity.application)
             fixture.keys().forEach { vm.snapshot.put(it, fixture.get(it)) }
+            File(compose.activity.filesDir, "snapshot.json").writeText(vm.snapshot.toString())
             vm.openFridgeCheck = screen == "kitchen"
             vm.openPreferences = screen == "preferences"
-            compose.activity.setContent { MaterialTheme(colorScheme = lightColorScheme(primary = Forest, surface = Cream, background = Cream)) { GardenApp(vm) } }
+            compose.activity.setContent { GardenTheme { GardenApp(vm) } }
         }
         compose.waitForIdle()
     }
@@ -49,50 +50,72 @@ class GraphAppTest {
     }
     private fun shot(name: String) {
         compose.waitForIdle(); Thread.sleep(400)
-        val file = File(compose.activity.filesDir, "lane08-screenshots/$name.png"); file.parentFile!!.mkdirs()
+        val file = File(compose.activity.filesDir, "redesign-screenshots/phase4-$name.png"); file.parentFile!!.mkdirs()
         file.outputStream().use { androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()!!.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }
     private fun scrollTo(text: String) {
         compose.onNodeWithTag("graph-kitchen").performScrollToNode(hasText(text))
     }
+    private fun panel(text: String) = compose.onNode(hasText(text) and hasAnyAncestor(hasTestTag("kitchen-item-panel")))
+    private fun openFood(name: String) {
+        scrollTo(name)
+        compose.onNode(hasText(name) and hasClickAction()).performClick()
+        compose.onNodeWithTag("kitchen-item-panel").performScrollTo()
+    }
     @Test fun kitchenAssumptionsAmountsMarksAndReceipts() {
         setup()
         compose.onNodeWithText("Here's what I assumed").assertIsDisplayed()
         shot("kitchen-assumptions")
-        compose.onNodeWithText("Show all").performClick()
         compose.onNodeWithText("Half the spinach went into soup.").performClick()
-        compose.onNodeWithText("Undo assumption").performClick()
+        compose.onNodeWithText("Mark corrected").performScrollTo().performClick()
         compose.runOnIdle { assertEquals("corrected", vm.outbox.first().o("payload").s("status")) }
-        compose.onNodeWithText("Looks right").performClick()
-        compose.runOnIdle { assertTrue(vm.graphAssumptions().isEmpty()) }
-        scrollTo("Whole wheat pasta")
-        compose.onNodeWithContentDescription("One package less").performScrollTo().performClick()
+        compose.onNodeWithText("Looks right").performScrollTo().performClick()
+        compose.runOnIdle {
+            assertTrue(vm.graphAssumptions().isEmpty())
+            assertEquals("confirmed", vm.outbox.last().o("payload").s("status"))
+        }
+        shot("fixture-kitchen-check-zone")
+        compose.onNodeWithText("Pantry", ignoreCase = false).performScrollTo().performClick()
+        openFood("Whole wheat pasta")
+        compose.onNodeWithContentDescription("Less packages").performScrollTo().performClick()
         compose.runOnIdle {
             val write = vm.outbox.last()
             assertEquals("/api/pantry/count", write.s("route"))
+            assertEquals("pasta-lot", write.o("payload").s("itemId"))
             assertEquals(453.59237, write.o("payload").getDouble("amount"), .0001)
+            assertEquals("known", write.o("payload").s("confidence"))
         }
-        compose.onNodeWithTag("graph-kitchen").performScrollToIndex(3)
         shot("kitchen-amount-control")
-        compose.onNodeWithText("bought 2026-10-01").performScrollTo().performClick()
+        panel("bought 2026-10-01").performScrollTo().performClick()
         compose.onNodeWithText("Test store").assertIsDisplayed()
+        shot("kitchen-receipt")
         compose.onNodeWithText("Close").performClick()
-        scrollTo("Spinach")
+        compose.onNodeWithText("Fridge", ignoreCase = false).performScrollTo().performClick()
+        openFood("Spinach")
         compose.onNodeWithTag("pantry-count:spinach-lot").performScrollTo().performClick()
-        compose.onNodeWithText("g").performTextInput("150")
-        compose.onNodeWithText("Save").performClick()
-        scrollTo("Half")
-        compose.onNodeWithText("Half").performClick()
+        compose.onNodeWithText("g").performScrollTo().performTextInput("150")
+        compose.waitForIdle()
+        compose.onNodeWithText("g").assertIsDisplayed()
+        shot("fixture-kitchen-exact-entry")
+        panel("Save").performScrollTo().performClick()
+        compose.runOnIdle {
+            assertEquals(150.0, vm.outbox.last().o("payload").getDouble("amount"), 0.0)
+            assertEquals("known", vm.outbox.last().o("payload").s("confidence"))
+        }
+        panel("Half").performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(150.0, vm.outbox.last().o("payload").getDouble("amount"), 0.0)
             assertEquals("assumed", vm.outbox.last().o("payload").s("confidence"))
         }
         shot("kitchen-four-level-amount")
-        val firstFine = compose.onAllNodesWithText("Fine")[0]
-        firstFine.performScrollTo().performClick()
-        compose.runOnIdle { assertEquals("/api/pantry/condition", vm.outbox.last().s("route")) }
+        panel("Fine").performScrollTo().performClick()
+        compose.runOnIdle {
+            assertEquals("/api/pantry/condition", vm.outbox.last().s("route"))
+            assertEquals("fine", vm.outbox.last().o("payload").s("condition"))
+        }
         val restored = GardenModel(compose.activity.application)
         assertEquals(vm.outbox.size, restored.outbox.size)
+        assertEquals(150.0, restored.graphPantry().first { it.s("id") == "spinach-lot" }.getDouble("balance"), 0.0)
     }
     @Test fun cookingCreatesDurableLinkedBatchAndRating() {
         setup("preferences")
@@ -218,25 +241,30 @@ class GraphAppTest {
             vm.snapshot.put("assumptions", JSONArray())
             vm.snapshot.put("pantry", JSONArray().put(j("id" to "batch-lot", "product_id" to "homemade-soup", "name" to "Soup leftovers", "kind" to "homemade", "base_unit" to "g", "location" to "fridge", "balance" to 400, "basis" to "assumed", "typicalDays" to 4, "ageDays" to 1)))
             vm.snapshot.put("batches", JSONArray().put(j("id" to "batch", "pantry_item_id" to "batch-lot", "title" to "Soup leftovers", "yield_g" to 800, "portions_made" to 4)))
-            compose.activity.setContent { MaterialTheme { FridgeCheckScreen(vm) } }
+            compose.activity.setContent { GardenTheme { KitchenContent(vm) } }
         }
-        compose.onNodeWithText("2 portions left").assertExists()
-        compose.onNodeWithText("Move to freezer").performScrollTo().performClick()
+        compose.onNode(hasContentDescription("Soup leftovers", substring = true) and hasClickAction()).performClick()
+        panel("2 portions left").performScrollTo().assertExists()
+        panel("Move to freezer").performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals("/api/pantry/transfer", vm.outbox.last().s("route"))
             assertTrue(vm.outbox.last().o("payload").isNull("amount"))
+            assertEquals("freezer", vm.outbox.last().o("payload").s("toLocation"))
         }
-        compose.onNodeWithText("Ate it").performScrollTo().performClick()
-        compose.onNodeWithText("Change").performScrollTo().performClick()
-        compose.onNodeWithText("Still have").performScrollTo().performClick()
+        panel("Used up").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(0.0, vm.outbox.last().o("payload").getDouble("amount"), 0.0) }
+        panel("Fine").performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals("/api/pantry/count", vm.outbox[vm.outbox.lastIndex - 1].s("route"))
             assertTrue(vm.outbox[vm.outbox.lastIndex - 1].o("payload").isNull("amount"))
             assertEquals("/api/pantry/condition", vm.outbox.last().s("route"))
             assertEquals("batch-lot", vm.outbox.last().o("payload").s("itemId"))
+            assertEquals("fine", vm.outbox.last().o("payload").s("condition"))
         }
-        compose.onNodeWithText("Set amount").assertExists()
+        panel("Set amount").assertExists()
+        panel("How much left?").assertExists()
         compose.onNodeWithText("0 g left").assertDoesNotExist()
+        shot("kitchen-leftover-correction")
     }
 
 }

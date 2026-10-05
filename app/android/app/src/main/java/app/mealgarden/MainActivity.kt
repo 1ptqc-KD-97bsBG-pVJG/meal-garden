@@ -42,6 +42,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
     val selected = vm.selectedRecipe?.let { vm.recipe(it) }
     val key = when {
         gallery -> "components"
+        vm.openActivity -> "activity"
         vm.openPreferences -> "preferences"
         vm.openSettings -> "connection"
         vm.openHistory -> "history"
@@ -54,6 +55,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
     }
     val title = when {
         gallery -> "Components"
+        vm.openActivity -> "Activity"
         vm.openPreferences -> "Preferences"
         vm.openSettings -> "Connection"
         vm.openHistory -> "Conversations"
@@ -69,6 +71,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
     fun back() {
         when {
             gallery -> gallery = false
+            vm.openActivity -> vm.openActivity = false
             vm.openPreferences -> vm.openPreferences = false
             vm.openSettings -> vm.openSettings = false
             vm.openHistory -> vm.openHistory = false
@@ -80,7 +83,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
             vm.tab == 2 -> vm.tab = 4
         }
     }
-    val nested = gallery || vm.openPreferences || vm.openSettings || vm.openHistory || vm.openFridgeCheck || vm.openHealth || vm.openFoodLog || selected != null || page.isNotBlank() || vm.tab == 2
+    val nested = gallery || vm.openActivity || vm.openPreferences || vm.openSettings || vm.openHistory || vm.openFridgeCheck || vm.openHealth || vm.openFoodLog || selected != null || page.isNotBlank() || vm.tab == 2
     BackHandler(enabled = nested && noteStage.isEmpty()) { back() }
     LaunchedEffect(key) { vm.track("screen", "key" to key) }
     fun note() { vm.captureNoteScreen(view, key, title, selected?.optInt("revision")); noteStage = "menu" }
@@ -101,7 +104,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
             if (!gallery) GardenBottomBar(
                 selected = when (vm.tab) { 0 -> 0; 3 -> 1; 1 -> 3; else -> 4 },
                 onSelect = { index ->
-                    vm.openPreferences = false; vm.openSettings = false; vm.openHistory = false
+                    vm.openActivity = false; vm.openPreferences = false; vm.openSettings = false; vm.openHistory = false
                     vm.openFridgeCheck = false; vm.openHealth = false; vm.openFoodLog = false
                     vm.selectedRecipe = null; page = ""
                     vm.tab = when (index) { 0 -> 0; 1 -> 3; 3 -> 1; else -> 4 }
@@ -110,12 +113,13 @@ fun GardenApp(vm: GardenModel = viewModel()) {
             )
         },
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
             Column(Modifier.fillMaxSize()) {
                 TimerDock(vm)
                 screens.SaveableStateProvider(key) {
                     when {
                         gallery -> ComponentGallery(insetTop = false) { gallery = false }
+                        vm.openActivity -> ShellDetail(vm, "activity") { vm.openActivity = false }
                         vm.openPreferences -> PreferencesScreen(vm)
                         vm.openSettings -> ConnectionScreen(vm)
                         vm.openHistory -> HistoryScreen(vm)
