@@ -3,6 +3,8 @@
 
 package app.mealgarden
 
+import androidx.compose.ui.platform.testTag
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -60,7 +62,7 @@ fun GardenBottomBar(selected: Int, onSelect: (Int) -> Unit, onCapture: () -> Uni
             labels.forEachIndexed { index, label ->
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     if (index == 2) {
-                        Column(Modifier.offset(y = (-9).dp).size(58.dp)
+                        Column(Modifier.testTag("nav:$label").offset(y = (-9).dp).size(58.dp)
                             .shadow(5.dp, CircleShape).clip(CircleShape).background(Forest)
                             .clickable(role = Role.Button, onClick = onCapture)
                             .semantics { contentDescription = label },
@@ -71,7 +73,7 @@ fun GardenBottomBar(selected: Int, onSelect: (Int) -> Unit, onCapture: () -> Uni
                         }
                     } else {
                         val active = index == selected
-                        Column(Modifier.fillMaxWidth().height(60.dp).clip(GardenShape.Button)
+                        Column(Modifier.testTag("nav:$label").fillMaxWidth().height(60.dp).clip(GardenShape.Button)
                             .clickable(role = Role.Tab) { onSelect(index) }
                             .semantics { this.selected = active },
                             horizontalAlignment = Alignment.CenterHorizontally,

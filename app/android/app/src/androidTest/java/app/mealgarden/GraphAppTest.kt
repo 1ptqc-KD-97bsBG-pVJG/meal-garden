@@ -66,7 +66,7 @@ class GraphAppTest {
         compose.onNodeWithText("Looks right").performClick()
         compose.runOnIdle { assertTrue(vm.graphAssumptions().isEmpty()) }
         scrollTo("Whole wheat pasta")
-        compose.onNodeWithContentDescription("One package less").performClick()
+        compose.onNodeWithContentDescription("One package less").performScrollTo().performClick()
         compose.runOnIdle {
             val write = vm.outbox.last()
             assertEquals("/api/pantry/count", write.s("route"))
@@ -74,7 +74,7 @@ class GraphAppTest {
         }
         compose.onNodeWithTag("graph-kitchen").performScrollToIndex(3)
         shot("kitchen-amount-control")
-        compose.onNodeWithText("bought 2026-10-01").performClick()
+        compose.onNodeWithText("bought 2026-10-01").performScrollTo().performClick()
         compose.onNodeWithText("Test store").assertIsDisplayed()
         compose.onNodeWithText("Close").performClick()
         scrollTo("Spinach")

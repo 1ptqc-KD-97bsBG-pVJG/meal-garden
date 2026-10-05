@@ -29,7 +29,7 @@ class RecipeCookModeTest {
     private fun click(text: String) {
         if (compose.onAllNodesWithText(text).fetchSemanticsNodes().isEmpty()) compose.onNodeWithTag("recipe-scroll").performScrollToNode(hasText(text))
         val node = compose.onNodeWithText(text)
-        if (!node.isDisplayed()) node.performScrollTo()
+        if (!node.isDisplayed() || compose.onAllNodes(hasText(text) and hasAnyAncestor(hasScrollAction())).fetchSemanticsNodes().isNotEmpty()) node.performScrollTo()
         node.performClick()
     }
     private fun shot(name: String) {

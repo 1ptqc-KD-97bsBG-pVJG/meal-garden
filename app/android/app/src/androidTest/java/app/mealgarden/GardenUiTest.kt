@@ -27,13 +27,15 @@ class GardenUiTest {
   compose.onNodeWithText("STEP 2 OF 5").assertIsDisplayed()
  }
  @Test fun tabsAndQuestionComposerWorkOffline() {
-  compose.onNodeWithText("Chat",useUnmergedTree=true).performClick()
+  compose.onNodeWithTag("nav:More").performClick()
+  compose.onNodeWithText("Ask").performClick()
   compose.onNodeWithText("What sounds good?").assertIsDisplayed()
   compose.onNodeWithText("I have 20 minutes. What's for dinner?").performClick()
   compose.onAllNodesWithText("I have 20 minutes. What's for dinner?").onLast().assertIsDisplayed()
-  compose.onNodeWithText("Pantry",useUnmergedTree=true).performClick()
+  compose.onNodeWithTag("nav:Kitchen").performClick()
   compose.onAllNodesWithText("Kitchen").onFirst().assertIsDisplayed()
-  compose.onNodeWithText("Market",useUnmergedTree=true).performClick()
+  compose.onNodeWithTag("nav:More").performClick()
+  compose.onNodeWithText("Receipts").performClick()
   compose.onNodeWithText("Purchases").performClick()
   compose.onNodeWithText("Import receipt photo").assertIsDisplayed()
  }

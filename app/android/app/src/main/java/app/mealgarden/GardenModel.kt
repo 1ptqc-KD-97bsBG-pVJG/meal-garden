@@ -151,6 +151,7 @@ class GardenModel(app: Application) : AndroidViewModel(app) {
     var openFridgeCheck by mutableStateOf(false)
     var openFoodLog by mutableStateOf(false)
     var openHealth by mutableStateOf(false)
+    var openActivity by mutableStateOf(false)
     var cameraRequests by mutableIntStateOf(0)
     var noteRequests by mutableIntStateOf(0)
     var openLunchGuide by mutableStateOf(false)
@@ -184,7 +185,7 @@ class GardenModel(app: Application) : AndroidViewModel(app) {
     private var composeRecipeId = ""
     private var modelDisplayHistory = JSONArray()
 
-    private fun currentScreen() = listOf("Today", "Recipes", "Chat", "Pantry", "Market").getOrElse(tab) { "Meal Garden" }
+    private fun currentScreen() = listOf("Today", "Recipes", "Ask", "Kitchen", "More").getOrElse(tab) { "Meal Garden" }
     private fun shoppingDraft(text: String) =
         Regex("\\b(shopping list|aisle)\\b", RegexOption.IGNORE_CASE).containsMatchIn(text) ||
             (shoppingEnabled && shoppingListName.isNotBlank() && text.contains(shoppingListName, ignoreCase = true)) ||
@@ -391,7 +392,7 @@ class GardenModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun vmTabName() = listOf("Today", "Recipes", "Chat", "Pantry", "Market").getOrElse(tab) { "Unknown" }
+    private fun vmTabName() = listOf("Today", "Recipes", "Ask", "Kitchen", "More").getOrElse(tab) { "Unknown" }
 
     private fun noteScreenshotFile(id: String) = File(getApplication<Application>().filesDir, "note-screenshots/$id.jpg")
 
