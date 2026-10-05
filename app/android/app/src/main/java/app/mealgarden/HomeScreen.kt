@@ -1,231 +1,124 @@
-@file:OptIn(
-    androidx.compose.material3.ExperimentalMaterial3Api::class,
-    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
-)
-
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 package app.mealgarden
 
-import android.app.*
-import android.content.*
-import androidx.activity.compose.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.shape.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.*
-import androidx.compose.ui.platform.*
-import androidx.compose.ui.text.font.*
-import androidx.compose.ui.text.style.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import kotlin.math.*
 
 @Composable
 fun TodayScreen(vm: GardenModel) {
-    var showStripKey by rememberSaveable { mutableStateOf(false) }
-    if (showStripKey) TodayStripKey { showStripKey = false }
-    val snap = vm.snapshot
-    val ready = snap.a("recipes").objects().filter { it.s("readiness") == "ready" }
-    val plan = snap.o("activePlan")
-    val today = LocalDate.now(householdZone).toString()
-    val todayMeals = plan.a("meals").objects().filter { it.s("date") == today }
-    val past =
-        plan.a("meals").objects().isNotEmpty() &&
-            plan.a("meals").objects().all { it.s("date") < today }
-    val preservationCount = snap.a("observations").objects().groupBy { it.s("item").lowercase() }
-        .values.count { reports ->
-            reports.maxByOrNull { it.s("createdAt") }?.let {
-                it.s("preservationNeed") == "consider_use_or_freeze" && it.s("condition") != "discard"
-            } == true
-        }
-    val hero = ready.find { recipe -> todayMeals.any { it.s("recipe_id") == recipe.s("id") } } ?: ready.firstOrNull()
-    LazyColumn(
-        Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(24.dp, 10.dp, 24.dp, 28.dp),
-        verticalArrangement = Arrangement.spacedBy(22.dp),
-    ) {
+    var key by rememberSaveable { mutableStateOf(false) }
+    var basketFood by rememberSaveable { mutableStateOf("") }
+    if (key) TodayStripKey { key = false }
+    if (basketFood.isNotBlank()) AlertDialog(onDismissRequest = { basketFood = "" },
+        title = { Text("From today's log", style = GardenType.Section) }, text = { Text(basketFood) },
+        confirmButton = { TextButton(onClick = { basketFood = ""; vm.openFoodLog = true }) { Text("Open log") } },
+        dismissButton = { TextButton(onClick = { basketFood = "" }) { Text("Close") } })
+    foodDayStartHour = vm.snapshot.o("settings").optInt("dayStartHour", 4)
+    val today = foodToday()
+    val entries = vm.foodLog()
+    val dayEntries = entries.filter { localDay(it.s("capturedAt")) == today }
+    val day = dayHealth(dayEntries)
+    val ready = vm.snapshot.a("recipes").objects().filter { it.s("readiness") == "ready" && it.a("ingredients").length() > 0 && it.a("steps").length() > 0 }
+    val intent = vm.snapshot.o("activePlan").a("meals").objects().filter { it.s("date") == today.toString() }
+    val suggestion = ready.firstOrNull { recipe -> intent.any { it.s("recipe_id") == recipe.s("id") } } ?: ready.firstOrNull()
+    val showTimeline = moduleEnabled(vm,"timeline")
+    val showNutrition = moduleEnabled(vm,"nutrition")
+    val showBasket = moduleEnabled(vm,"basket")
+    val showWeek = moduleEnabled(vm,"week")
+    val showShopping = moduleEnabled(vm,"shoppingTimeline",false)
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(14.dp, 8.dp, 14.dp, 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(LocalDate.parse(today).format(DateTimeFormatter.ofPattern("EEEE, MMM d")), fontFamily = FontFamily.Serif, fontSize = 28.sp, color = Ink, modifier = Modifier.weight(1f))
-                TextButton(onClick = { showStripKey = true }) { Text("Key", color = Forest) }
-            }
-        }
-        item { FoodLogStrip(vm) }
-        if (!vm.paired)
-            item {
-                Note(
-                    "Your recipes are ready to explore. Connect your laptop to chat, save notes, and run shopping tasks.",
-                    Icons.Outlined.Devices,
-                )
-            }
-        val reset = snap.optJSONObject("kitchenReset")
-        if (reset != null) item {
-            val counts = reset.o("counts")
-            val soon = reset.a("items").objects().count { it.s("state") == "use_soon" }
-            val leftovers = reset.a("leftovers").length()
-            Row(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Mist).clickable { vm.openFridgeCheck = true }.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                Icon(Icons.Outlined.Kitchen, null, tint = Forest)
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Kitchen reset", fontFamily = FontFamily.Serif, fontSize = 20.sp, color = Ink)
-                    Text(listOfNotNull(
-                        "${counts.optInt("toCheck")} to check",
-                        soon.takeIf { it > 0 }?.let { "$it use soon" },
-                        leftovers.takeIf { it > 0 }?.let { "$it leftover${if (it == 1) "" else "s"}" },
-                    ).joinToString(" · "), fontSize = 13.sp, color = Muted)
+                    Eyebrow(today.format(DateTimeFormatter.ofPattern("MMMM d")))
+                    Text(today.format(DateTimeFormatter.ofPattern("EEEE")), style = GardenType.Title)
                 }
-                Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = Forest)
-            }
-        } else if (preservationCount > 0) item {
-            CardBox(color = Mist) {
-                Eyebrow("USE OR FREEZE SOON")
-                Text("$preservationCount ingredients need a decision", fontFamily = FontFamily.Serif, fontSize = 22.sp)
-                TextButton(onClick = { vm.openFridgeCheck = true }) { Text("See kitchen reset") }
+                TextButton(onClick = { key = true }) { Text("Key") }
+                IconButton(onClick = { vm.openFoodLog = true }) { Icon(Icons.Outlined.History, "Food log", tint = Muted) }
             }
         }
+        if (showTimeline) item { FoodLogStrip(vm) }
         item {
-            Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Forest)) {
-                GardenBowl(Modifier.size(180.dp).align(Alignment.TopEnd).offset(30.dp, 20.dp))
-                Column(
-                    Modifier.padding(23.dp).fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Eyebrow(
-                        if (todayMeals.isEmpty()) "TODAY" else "PLANNED TODAY",
-                        Lime,
-                    )
-                    Text(
-                        if (todayMeals.isEmpty()) "Nothing planned"
-                        else todayMeals.joinToString("\n") { vm.recipe(it.s("recipe_id"))?.s("title") ?: it.s("recipe_id") },
-                        fontFamily = FontFamily.Serif,
-                        fontSize = 26.sp,
-                        lineHeight = 31.sp,
-                        color = Color.White,
-                        modifier = Modifier.width(225.dp),
-                    )
-                    Button(
-                        onClick = {
-                            val first = todayMeals.firstOrNull()?.s("recipe_id")
-                            if (first != null && vm.recipe(first) != null) vm.selectedRecipe = first
-                            else vm.ask(
-                                "Help me plan meals starting today. Read my preferences and latest observations. Ask only for the missing details that matter."
-                            )
-                        },
-                        colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor = Lime,
-                                contentColor = Forest,
-                            ),
-                        shape = RoundedCornerShape(14.dp),
-                    ) {
-                        Text(if (todayMeals.isEmpty()) "Plan dinner" else "Open recipe")
-                        Spacer(Modifier.width(8.dp))
-                        Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, Modifier.size(17.dp))
+            GardenCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Eyebrow("Tonight?"); Spacer(Modifier.weight(1f))
+                    suggestion?.optInt("total_minutes")?.takeIf { it > 0 }?.let { GardenChip("$it min", icon = Icons.Outlined.Timer) }
+                }
+                if (suggestion != null) {
+                    Row(Modifier.fillMaxWidth().clickable { vm.selectedRecipe = suggestion.s("id") }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        GardenBowl(Modifier.size(72.dp), suggestion.s("id").hashCode())
+                        Column(Modifier.weight(1f)) {
+                            Text(suggestion.s("title"), style = GardenType.Section)
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                suggestion.a("ingredients").objects().take(5).forEach { Icon(ingredientIcon(it), it.s("name"), Modifier.size(22.dp), tint = Color.Unspecified) }
+                            }
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GardenPrimaryButton("Open recipe", { vm.selectedRecipe = suggestion.s("id") }, Modifier.weight(1f))
+                        GardenQuietButton("Something else", { vm.ask("Suggest one other dinner from my ready recipes and pantry evidence. Ask about uncertain stock before deciding.") }, Modifier.weight(1f))
+                    }
+                } else GardenPrimaryButton("Choose dinner", { vm.ask("Help me choose dinner from my preferences and current food evidence.") }, Modifier.fillMaxWidth())
+            }
+        }
+        if (showNutrition) item { DayNumbers(vm, dayEntries) }
+        if (showBasket) item {
+            val foods = day.evidence.filterKeys { it != "other_protein" }.values.flatten().distinctBy { it.lowercase() }
+            GardenCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Today's basket", style = GardenType.Section, modifier = Modifier.weight(1f))
+                    GardenChip("${foods.size} identified", tint = Mist)
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    foods.forEach { name ->
+                        Column(Modifier.width(90.dp).clickable { basketFood = name }.padding(4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(ingredientIcon(j("name" to name), Icons.Outlined.Spa), null, Modifier.size(38.dp), tint = Color.Unspecified)
+                            Text(name, style = GardenType.Small, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
                     }
                 }
+                if (foods.isEmpty()) Text("No foods identified yet", style = GardenType.Small)
             }
         }
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                QuickTile(
-                    "Use what I have",
-                    "Less waste",
-                    Icons.Outlined.Eco,
-                    Modifier.weight(1f),
-                ) {
-                    vm.ask(
-                        "Help me use what I have. Read my recent pantry observations, confirm anything uncertain, and suggest a practical meal."
-                    )
-                }
-                QuickTile(
-                    "Lunch at work",
-                    "Salad-bar guide",
-                    Icons.Outlined.LunchDining,
-                    Modifier.weight(1f),
-                ) {
-                    vm.openLunchGuide = true
-                    vm.tab = 3
-                }
-            }
-        }
-        if (past && snap.optJSONObject("kitchenReset") == null) item {
-            CardBox(color = Mist) {
-                Eyebrow("PICK UP WHERE YOU ARE")
-                Text("A quick kitchen reset", fontFamily = FontFamily.Serif, fontSize = 25.sp)
-                Text("The old plan is a starting point. Check what remains from the September 14 shop, then choose the next meal and store list.", fontSize = 13.sp, color = Muted)
-                ActionButton("Check ingredients") { vm.openFridgeCheck = true }
-            }
-        }
-        item { SectionLabel("Something worth cooking", "All recipes") { vm.tab = 1 } }
-        hero?.let { r -> item { RecipeTile(r) { vm.selectedRecipe = r.s("id") } } }
-        item {
-            SectionLabel("Your plan", if (past) "Refresh plan" else "Talk it through") {
-                vm.ask(
-                    "Review my existing plan and help me update it for today. Don't assume old meals were cooked."
-                )
-            }
-            Spacer(Modifier.height(9.dp))
-            CardBox {
-                Eyebrow(if (past) "PREVIOUS PLAN" else "SAVED PLAN")
-                Text(
-                    plan.s("title", "A fresh start"),
-                    fontFamily = FontFamily.Serif,
-                    fontSize = 22.sp,
-                )
-                Text(
-                    if (past)
-                        "These dates have passed. Nothing here is assumed cooked or still in your fridge."
-                    else plan.s("note", "Start a conversation to plan a few meals."),
-                    fontSize = 13.sp,
-                    color = Muted,
-                    maxLines = 4,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                plan.a("meals").objects().forEach { m ->
-                    HorizontalDivider(color = Line)
-                    Row(
-                        Modifier.fillMaxWidth()
-                            .clickable { vm.selectedRecipe = m.s("recipe_id") }
-                            .padding(vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Text(
-                            m.s("date").takeLast(5),
-                            fontSize = 12.sp,
-                            color = Muted,
-                            modifier = Modifier.width(42.dp),
-                        )
-                        Text(
-                            vm.recipe(m.s("recipe_id"))?.s("title") ?: m.s("recipe_id"),
-                            fontSize = 13.sp,
-                            modifier = Modifier.weight(1f),
-                        )
-                        Icon(Icons.Outlined.ChevronRight, null, Modifier.size(17.dp))
+        if (showWeek) item {
+            GardenCard {
+                SectionLabel("This week")
+                val start = today.minusDays((today.dayOfWeek.value - 1).toLong())
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    repeat(7) { n ->
+                        val date = start.plusDays(n.toLong())
+                        val evidence = dayHealth(entries.filter { localDay(it.s("capturedAt")) == date }).evidence
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Text(date.format(DateTimeFormatter.ofPattern("EEEEE")), style = GardenType.Small, color = if (date == today) Forest else Muted)
+                            Column(Modifier.fillMaxWidth().height(84.dp).background(Paper2, GardenShape.Button).padding(5.dp), verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.Bottom), horizontalAlignment = Alignment.CenterHorizontally) {
+                                if (evidence.isEmpty()) Text("·", color = Faint)
+                                healthGroups.take(5).forEachIndexed { i, g -> if (g.id in evidence) Box(Modifier.size(9.dp).background(varietyColors[i], CircleShape)) }
+                            }
+                        }
                     }
                 }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    healthGroups.take(5).forEachIndexed { i, g -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) { Box(Modifier.size(7.dp).background(varietyColors[i], CircleShape)); Text(g.label, style = GardenType.Small) } }
+                }
             }
         }
-        item {
-            Text(
-                "MEAL GARDEN  ·  YOUR KITCHEN",
-                fontSize = 9.sp,
-                letterSpacing = 1.2.sp,
-                color = Muted,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-            )
+        if (showShopping) item {
+            GardenCard(onClick = { vm.tab = 4 }) { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { Icon(Icons.Outlined.ShoppingBasket,null,tint=Forest);Text(vm.shoppingListName,style=GardenType.Section);GardenChip("${vm.snapshot.o("shopping").a("items").length()} items") } }
         }
     }
 }
+private val varietyColors = listOf(Leaf, Clay, Amber, Forest, Ice)

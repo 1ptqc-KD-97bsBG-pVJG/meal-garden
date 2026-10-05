@@ -83,7 +83,7 @@ fun stepActivity(s: JSONObject): Pair<String, ImageVector> {
     }
 }
 @Composable
-fun ingredientIcon(a: JSONObject): ImageVector {
+fun ingredientIcon(a: JSONObject, fallback: ImageVector? = null): ImageVector {
     val name = a.s("name").lowercase()
     val matches = listOf(
         "prego tomato sauce with olive oil and garlic" to R.drawable.mg_food_tomato_sauce,
@@ -245,8 +245,8 @@ fun ingredientIcon(a: JSONObject): ImageVector {
         "miso" to R.drawable.mg_food_miso,
         "oat" to R.drawable.mg_food_oats
     )
-    val drawing = matches.firstOrNull { Regex("\\b${Regex.escape(it.first)}\\b").containsMatchIn(name) }?.second ?: R.drawable.mg_food_unknown
-    return ImageVector.vectorResource(drawing)
+    val drawing = matches.firstOrNull { Regex("\\b${Regex.escape(it.first)}\\b").containsMatchIn(name) }?.second
+    return drawing?.let { ImageVector.vectorResource(it) } ?: fallback ?: ImageVector.vectorResource(R.drawable.mg_food_unknown)
 }
 /** Prefer explicit references. Legacy text matching is display-only; it never asserts pantry use. */
 fun stepIngredients(r: JSONObject, s: JSONObject): List<Int> {

@@ -153,6 +153,7 @@ class CompanionPreviewTest {
 
     private fun todayAndHealth() {
         resetTo(0); shot("today")
+        click("Key"); shot("today-key"); click("Done")
         if (hasTextNode("This week")) lazyScroll("This week") else {
             val lists = compose.onAllNodes(hasScrollToIndexAction())
             if (lists.fetchSemanticsNodes().isNotEmpty()) lists[0].performScrollToNode(hasText("This week"))
@@ -162,6 +163,7 @@ class CompanionPreviewTest {
         if (hasDescription("Open health insights")) compose.onNodeWithContentDescription("Open health insights").performClick()
         else compose.runOnUiThread { vm.openHealth = true }
         shot("health")
+        click("Edit goals"); shot("health-goals"); click("Cancel")
         if (hasDescription("How insights work")) { compose.onNodeWithContentDescription("How insights work").performClick(); shot("health-method"); back() }
         else if (hasTextNode("How this works")) { click("How this works"); shot("health-method"); back() }
     }

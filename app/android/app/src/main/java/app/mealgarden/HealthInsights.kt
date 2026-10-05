@@ -106,19 +106,27 @@ fun healthNextStep(day: DayHealth, preferences: JSONObject): Pair<String, String
 @Composable
 fun HealthEntryCard(vm: GardenModel, entries: List<JSONObject>) {
     val day = dayHealth(entries)
-    CardBox(color = Mist, modifier = Modifier.clickable { vm.openHealth = true }) {
+    GardenCard(color = Mist, onClick = { vm.openHealth = true }) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.FavoriteBorder, null, tint = Forest)
-            Spacer(Modifier.width(10.dp))
-            Text("Health · day so far", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            Icon(Icons.Outlined.ChevronRight, "Open health insights", tint = Forest)
+            Icon(Icons.Outlined.FavoriteBorder, null, tint = Forest, modifier = Modifier.size(19.dp))
+            Spacer(Modifier.width(7.dp))
+            Text("Eating", style = GardenType.Section, modifier = Modifier.weight(1f))
+            Icon(Icons.Outlined.ChevronRight, "Open health insights", tint = Forest, modifier = Modifier.size(18.dp))
         }
-        Text(healthDayHeadline(day, vm.healthPreferences), fontFamily = FontFamily.Serif, fontSize = 23.sp)
+        Text(healthNextStep(day, vm.healthPreferences).first, style = GardenType.Body)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            listOf("protein_g" to "protein", "fiber_g" to "fiber").forEach { (key, label) ->
-                Text("${day.sum(key)?.text(" g") ?: "—"} $label", fontSize = 13.sp, color = Forest)
+            listOf("protein_g" to "Protein", "fiber_g" to "Fiber").forEach { (key, label) ->
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(label, style = GardenType.Small)
+                    Text(day.sum(key)?.text(" g") ?: "Unknown", style = GardenType.Body,
+                        fontWeight = FontWeight.SemiBold, color = Forest)
+                    val target = vm.healthPreferences.o("targets").optDouble(key, Double.NaN)
+                        .takeIf { it.isFinite() } ?: healthNutrients.first { it.key == key }.reference
+                    if (target != null) day.sum(key)?.let { RangeRail(it, target, false) }
+                }
             }
         }
+        if (day.unresolved > 0) GardenChip("${day.unresolved} awaiting details", tint = Paper2)
     }
 }
 
@@ -134,84 +142,73 @@ fun HealthScreen(vm: GardenModel) {
     val date = LocalDate.parse(selected)
     val day = dayHealth(log.filter { localDay(it.s("capturedAt")) == date })
     val preferences = vm.healthPreferences
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { vm.openHealth = false }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
-            Text("Health insights", fontFamily = FontFamily.Serif, fontSize = 25.sp, modifier = Modifier.weight(1f))
-            IconButton(onClick = { method = true }) { Icon(Icons.Outlined.Info, "How insights work") }
-            IconButton(onClick = { vm.noteRequests++ }) { Icon(Icons.Outlined.EditNote, "Leave an app note", tint = Muted) }
+    Column(Modifier.fillMaxSize().background(Paper)) {
+        GardenTopBar("Health insights", onBack = { vm.openHealth = false }) {
+            IconButton(onClick = { method = true }) { Icon(Icons.Outlined.Info, "How insights work", tint = Muted) }
         }
-        LazyColumn(contentPadding = PaddingValues(20.dp, 0.dp, 20.dp, 110.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        LazyColumn(contentPadding = PaddingValues(14.dp, 0.dp, 14.dp, 100.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    dates.forEach { d -> FilterChip(selected == d.toString(), { selected = d.toString() }, label = { Text(if (d == today) "Today" else d.format(DateTimeFormatter.ofPattern("MMM d"))) }) }
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    dates.forEach { d -> GardenChip(if (d == today) "Today" else d.format(DateTimeFormatter.ofPattern("MMM d")),
+                        selected = selected == d.toString(), onClick = { selected = d.toString() }) }
                 }
             }
             item {
-                CardBox(color = Forest) {
-                    Eyebrow(if (date == today) "DAY SO FAR" else "LOGGED DAY", Lime)
-                    Text(healthDayHeadline(day, preferences), fontFamily = FontFamily.Serif, fontSize = 28.sp, lineHeight = 32.sp, color = Color.White)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Pill("${day.consumed.size} food entries", Lime)
-                        if (day.unresolved > 0) Pill("${day.unresolved} awaiting details", Lime)
+                GardenCard {
+                    Text(healthDayHeadline(day, preferences), style = GardenType.Section)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        GardenChip("${day.consumed.size} food entries")
+                        GardenChip("Partial day")
+                        if (day.unresolved > 0) GardenChip("${day.unresolved} awaiting details", tint = AmberLight)
                         val rough = day.consumed.count { it.s("confidence") == "low" }
-                        if (rough > 0) Pill("$rough rough estimates", Lime)
-                        Pill("Partial day", Lime)
+                        if (rough > 0) GardenChip("$rough rough estimates", tint = AmberLight)
                     }
                 }
             }
             item {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Your priorities", fontSize = 18.sp, modifier = Modifier.weight(1f))
-                    TextButton(onClick = { goals = true }) { Text("Edit goals") }
-                }
-                if (vm.pendingHealthPreferences != null) Text(if (vm.paired) "Goals waiting to sync" else "Goals saved on this phone", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
-                if (!preferences.o("targets").has("calories")) Text("Calorie needs not set", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+                SectionLabel("Your priorities", "Edit goals") { goals = true }
+                if (vm.pendingHealthPreferences != null) Text(if (vm.paired) "Goals waiting to sync" else "Goals saved on this phone", style = GardenType.Small)
             }
             item { GoalFitCard(day, preferences) }
             item {
-                val next = healthNextStep(day, preferences)
-                CardBox(color = Mist) {
-                    Eyebrow(if (date == today) "NEXT FOOD CHOICE" else "PATTERN TO TRY")
-                    Text(next.first, fontFamily = FontFamily.Serif, fontSize = 24.sp)
-                    Text(next.second, fontSize = 14.sp, color = Ink)
+                GardenCard(color = Mist) {
+                    Text(if (date == today) "Next meal" else "Try next", style = GardenType.Section)
+                    Text(healthNextStep(day, preferences).first, style = GardenType.Body, color = Forest)
                 }
             }
             item { SectionLabel("Nutrients") }
             items(healthNutrients, key = { it.key }) { n -> NutrientCard(n, day, preferences) }
             item {
-                CardBox {
+                GardenCard {
                     SectionLabel("Food variety")
-                    Text("Identified in logged foods · presence, not servings", fontSize = 12.sp, color = Muted)
-                    healthGroups.forEach { group ->
-                        val names = day.evidence[group.id]
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(if (names != null) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked, null, tint = if (names != null) Forest else Muted, modifier = Modifier.size(19.dp))
-                            Spacer(Modifier.width(10.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(group.label, fontSize = 14.sp)
-                                Text(names?.joinToString(", ") ?: "Not identified", fontSize = 12.sp, color = Muted)
-                            }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        healthGroups.forEach { group ->
+                            val names = day.evidence[group.id]
+                            GardenChip(group.label, tint = if (names != null) Mist else Paper2,
+                                icon = if (names != null) Icons.Outlined.Check else Icons.Outlined.Remove)
                         }
                     }
                 }
             }
             item { SectionLabel("Ideas from your recipes") }
-            val recommendations = vm.snapshot.a("recipes").objects().filter { it.s("readiness") == "ready" }.sortedByDescending { r ->
+            val recommendations = vm.snapshot.a("recipes").objects().filter { it.s("readiness") == "ready" && it.a("ingredients").length() > 0 && it.a("steps").length() > 0 }.sortedByDescending { r ->
                 val evidence = recipeEvidence(r)
                 evidence.keys.count { !day.evidence.containsKey(it) } * 3 + if (evidence.containsKey("plant_protein")) 1 else 0
             }.take(3)
             items(recommendations, key = { "health-${it.s("id")}" }) { r ->
-                CardBox(modifier = Modifier.clickable { vm.openHealth = false; vm.openFoodLog = false; vm.selectedRecipe = r.s("id") }) {
-                    Text(r.s("title"), fontFamily = FontFamily.Serif, fontSize = 22.sp)
-                    val adds = healthGroups.filter { recipeEvidence(r).containsKey(it.id) && !day.evidence.containsKey(it.id) }.map { it.label }
-                    Text(if (adds.isEmpty()) "Includes familiar nourishing foods" else "Could add: ${adds.joinToString(" · ")}", fontSize = 13.sp, color = Forest)
-                    Text("View meal breakdown →", fontSize = 13.sp, color = Forest)
+                GardenCard(onClick = { vm.openHealth = false; vm.openFoodLog = false; vm.selectedRecipe = r.s("id") }) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        GardenBowl(Modifier.size(48.dp), r.s("id").hashCode())
+                        Text(r.s("title"), style = GardenType.Section, modifier = Modifier.weight(1f))
+                        Icon(Icons.Outlined.ChevronRight, null, tint = Muted, modifier = Modifier.size(18.dp))
+                    }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        healthGroups.filter { recipeEvidence(r).containsKey(it.id) && !day.evidence.containsKey(it.id) }
+                            .forEach { GardenChip(it.label, tint = Mist) }
+                    }
                 }
             }
-            item {
-                TextButton(onClick = { vm.openHealth = false; vm.openFoodLog = true }) { Text("Review or add food details") }
-            }
+            item { GardenQuietButton("Review or add food details", { vm.openHealth = false; vm.openFoodLog = true }, icon = Icons.Outlined.EditNote) }
         }
     }
     if (goals) HealthGoalsDialog(vm) { goals = false }
@@ -223,34 +220,25 @@ private fun GoalFitCard(day: DayHealth, preferences: JSONObject) {
     val priorities = preferences.a("priorities").strings()
     var selected by rememberSaveable { mutableStateOf("longevity") }
     val active = selected.takeIf { it in priorities } ?: priorities.firstOrNull() ?: "longevity"
-    CardBox {
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            priorities.forEachIndexed { index, goal -> FilterChip(active == goal, { selected = goal }, label = { Text("${index + 1} · ${goalLabels[goal] ?: goal}") }) }
+    GardenCard {
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            priorities.forEachIndexed { index, goal -> GardenChip("${index + 1} · ${goalLabels[goal] ?: goal}",
+                selected = active == goal, onClick = { selected = goal }) }
         }
-        val protein = day.sum("protein_g")?.text(" g") ?: "Unknown"
-        val fiber = day.sum("fiber_g")?.text(" g") ?: "Unknown"
-        val energy = day.sum("calories")?.text(" kcal") ?: "Unknown"
-        when (active) {
-            "weight_loss" -> {
-                Text(energy, fontFamily = FontFamily.Serif, fontSize = 26.sp)
-                Text("Energy in known food", fontSize = 12.sp, color = Muted)
-                Text(if (preferences.o("targets").has("calories")) "Compare this estimate with your chosen target below. Incomplete intake and unknown energy expenditure cannot establish a deficit." else "Weight-loss progress is unknown without your energy needs and fuller intake. Include satisfying portions and regular meals; fiber and protein sources can help with meal planning.", fontSize = 13.sp)
-            }
-            "muscle_gain" -> {
-                Text("$protein protein", fontFamily = FontFamily.Serif, fontSize = 25.sp)
-                Text("Known for ${day.values("protein_g").size} of ${day.consumed.size} food entries", fontSize = 12.sp, color = Muted)
-                Text(if (preferences.o("targets").has("protein_g")) "Your protein target is shown below. Include protein across meals and enough food to support training." else "A personal protein target needs body size, training and health context. Include a protein source across meals; food alone does not establish muscle gain.", fontSize = 13.sp)
-            }
-            "energy" -> {
-                Text(energy, fontFamily = FontFamily.Serif, fontSize = 26.sp)
-                Text("Energy in known food", fontSize = 12.sp, color = Muted)
-                Text("Regular meals with a protein source and a satisfying grain or starch can support your day. This log cannot establish whether intake is enough or explain tiredness.", fontSize = 13.sp)
-            }
-            else -> {
-                Text("$fiber fiber", fontFamily = FontFamily.Serif, fontSize = 26.sp)
-                Text("${day.evidence.keys.count { it != "other_protein" }} plant-food groups identified", fontSize = 12.sp, color = Muted)
-                Text("Variety, fiber sources and the balance of fats, sodium and sugars inform these insights. Micronutrients and your longer-term pattern are not fully assessed yet.", fontSize = 13.sp)
-            }
+        val key = if (active == "muscle_gain") "protein_g" else if (active == "longevity") "fiber_g" else "calories"
+        val n = healthNutrients.first { it.key == key }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(n.label, style = GardenType.Body, modifier = Modifier.weight(1f))
+            Text(day.sum(key)?.text(n.unit) ?: "Unknown", style = GardenType.Section, color = Forest)
+        }
+        val custom = preferences.o("targets").optDouble(key, Double.NaN).takeIf { it.isFinite() }
+        val target = custom ?: n.reference
+        if (target != null) day.sum(key)?.let { RangeRail(it, target, false) }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+            if (active == "longevity") GardenChip("${day.evidence.keys.count { it != "other_protein" }} plant-food groups")
+            if (key == "calories" && custom == null) GardenChip("Calorie needs not set")
+            if (key == "protein_g" && custom == null) GardenChip("Protein target not set")
+            if (active == "weight_loss") GardenChip("Deficit unknown", tint = AmberLight)
         }
     }
 }
@@ -265,8 +253,8 @@ private fun NutrientCard(n: HealthNutrient, day: DayHealth, preferences: JSONObj
     val complete = day.complete(n.key)
     CardBox(modifier = Modifier.clickable { expanded = !expanded }) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(n.label, fontSize = 16.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-            Text(value?.text(n.unit) ?: "Unknown", fontSize = 19.sp, color = Forest)
+            Text(n.label, fontSize = 14.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            Text(value?.text(n.unit) ?: "Unknown", fontSize = 17.sp, color = Forest)
         }
         if (target != null) {
             if (value != null) RangeRail(value, target, n.limit)
@@ -284,7 +272,7 @@ private fun NutrientCard(n: HealthNutrient, day: DayHealth, preferences: JSONObj
                 }
                 Text(status, fontSize = 12.sp, color = if (n.limit && value.low > target) Clay else Forest)
             }
-        } else Text(if (n.key == "calories") "No calorie target · no deficit assumed" else "No personal protein target", fontSize = 12.sp, color = Muted)
+        } else Text(if (n.key == "calories") "No calorie target" else "No protein target", fontSize = 12.sp, color = Muted)
         Text("Known for $coverage of ${day.consumed.size} food entries${if (day.unresolved > 0) " · ${day.unresolved} awaiting details" else ""}", fontSize = 11.sp, color = Muted)
         if (expanded) Text(n.why, fontSize = 13.sp)
     }
@@ -320,7 +308,7 @@ fun RecipeHealthCard(vm: GardenModel, recipe: JSONObject) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             healthGroups.filter { evidence.containsKey(it.id) }.forEach { Pill(it.label) }
         }
-        Text("Ingredient profile · amounts per serving not calculated", fontSize = 12.sp, color = Muted)
+        GardenChip("Ingredients only", tint = Paper2)
         if (expanded) {
             healthGroups.filter { evidence.containsKey(it.id) }.forEach { group ->
                 Text(group.label, fontSize = 14.sp, fontWeight = FontWeight.Medium)
@@ -375,7 +363,7 @@ private fun HealthGoalsDialog(vm: GardenModel, dismiss: () -> Unit) {
     var error by remember { mutableStateOf("") }
     AlertDialog(onDismissRequest = dismiss, title = { Text("Your health goals") }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Choose your goals. Tap an active priority to move it to the top.", fontSize = 13.sp)
+            Text("Priority order", style = GardenType.Small)
             order.forEachIndexed { index, key ->
                 OutlinedButton(onClick = { order = listOf(key) + order.filter { it != key } }, modifier = Modifier.fillMaxWidth()) { Text("${index + 1} · ${goalLabels[key]}") }
             }
@@ -386,7 +374,7 @@ private fun HealthGoalsDialog(vm: GardenModel, dismiss: () -> Unit) {
                 TextButton(onClick = { order = order.filter { it != key } }) { Text("Remove ${goalLabels[key]}") }
             }
             Text("Optional daily targets", fontWeight = FontWeight.Medium)
-            Text("Leave blank to use general references. Enter targets you have chosen or agreed with a professional; the app does not calculate a weight-loss deficit.", fontSize = 12.sp)
+            Text("Blank = general reference", style = GardenType.Small)
             healthNutrients.forEach { n -> OutlinedTextField(fields[n.key].orEmpty(), { fields[n.key] = it }, label = { Text("${n.label}${if (n.limit) " limit" else " target"} (${n.unit.trim()})") }, singleLine = true, modifier = Modifier.fillMaxWidth()) }
             if (error.isNotEmpty()) Text(error, color = Clay, fontSize = 13.sp)
         }
@@ -413,7 +401,7 @@ private fun HealthMethodDialog(dismiss: () -> Unit) {
             Text("Only interpreted meals, snacks and drinks contribute. Labels, receipts and other reference captures do not. Unknown values stay unknown; bars show the low-to-high estimate. The marker is the reference. Lighter color shows uncertainty.", fontSize = 13.sp)
             Text("FDA label references use a general 2,000-calorie diet, not your personal energy needs. WHO also emphasizes adequacy, diversity and moderation. Added sugar here is the FDA label concept; WHO free sugar also includes juice and honey.", fontSize = 13.sp)
             Text("Logs remain partial. Unlogged food, supplements, micronutrients, brand differences and health conditions are not fully assessed. There is no recommendation to skip meals or compensate with exercise.", fontSize = 13.sp)
-            Text("Food days start at your configured hour in Los Angeles time. Recipe profiles use named ingredients only; amounts and nutrient totals are not calculated.", fontSize = 13.sp)
+            Text("Food days start at the configured hour in your household time zone. Recipe profiles use named ingredients; nutrient totals are not calculated.", fontSize = 13.sp)
             TextButton(onClick = { uri.openUri("https://www.who.int/news-room/fact-sheets/detail/healthy-diet") }) { Text("WHO · Healthy diet") }
             TextButton(onClick = { uri.openUri("https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels") }) { Text("FDA · Daily values") }
             TextButton(onClick = { uri.openUri("https://www.fna.usda.gov/cnpp/healthy-eating-index") }) { Text("USDA · Dietary pattern scoring") }

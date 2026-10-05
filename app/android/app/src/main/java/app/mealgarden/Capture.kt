@@ -306,98 +306,60 @@ fun todayPlateMark(entry: JSONObject, snapshot: JSONObject): PlateMark? {
 @Composable
 fun DayNumbers(vm: GardenModel, entries: List<JSONObject>) {
     val day = dayHealth(entries)
-    CardBox(modifier = Modifier.clickable {
-        vm.track("today_eating_card_tap", "foodDay" to foodToday().toString())
-        vm.openHealth = true
-    }) {
+    GardenCard(onClick = { vm.track("today_eating_card_tap", "foodDay" to foodToday().toString()); vm.openHealth = true }) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Eating today", fontFamily = FontFamily.Serif, fontSize = 21.sp, color = Ink, modifier = Modifier.weight(1f))
-            Icon(Icons.Outlined.ChevronRight, "Open health day", tint = Forest)
+            Text("Eating today", style = GardenType.Section, modifier = Modifier.weight(1f))
+            Icon(Icons.Outlined.ChevronRight, "Open health day", tint = Forest, modifier = Modifier.size(18.dp))
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            listOf(Triple("calories", "kcal", ""), Triple("protein_g", "protein", " g"), Triple("fiber_g", "fiber", " g")).forEach { (key, label, unit) ->
-                Column(Modifier.weight(1f)) {
-                    Text(day.sum(key)?.text(unit) ?: "Unknown", fontFamily = FontFamily.Serif, fontSize = 17.sp, color = Ink)
-                    Text(label, fontSize = 11.sp, color = Muted)
+        listOf(Triple("calories", "Energy", " kcal"), Triple("protein_g", "Protein", " g"), Triple("fiber_g", "Fiber", " g")).forEach { (key, label, unit) ->
+            val amount = day.sum(key)
+            val target = vm.healthPreferences.o("targets").optDouble(key, Double.NaN).takeIf { it.isFinite() && it > 0 }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(label, style = GardenType.Small, color = Ink, modifier = Modifier.width(56.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    if (amount != null && target != null) {
+                        val denominator = maxOf(target, amount.high, 1.0)
+                        Box(Modifier.fillMaxWidth().height(12.dp).clip(CircleShape).background(Paper2)) {
+                            Box(Modifier.fillMaxWidth((amount.high / denominator).toFloat().coerceIn(0f,1f)).fillMaxHeight().background(Lime))
+                            Box(Modifier.fillMaxWidth((amount.low / denominator).toFloat().coerceIn(0f,1f)).fillMaxHeight().background(Leaf))
+                        }
+                    }
+                    Text(amount?.text(unit) ?: "Unknown", style = GardenType.Small)
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun PlateMarkIcon(mark: PlateMark, modifier: Modifier = Modifier) {
-    Canvas(modifier) {
-        val path = Path()
-        fun point(x: Float, y: Float) = Offset(size.width * x, size.height * y)
-        if (mark == PlateMark.MadeToday) {
-            path.moveTo(size.width * .28f, size.height * .63f)
-            path.cubicTo(size.width * -.02f, size.height * .56f, size.width * .06f, size.height * .22f, size.width * .31f, size.height * .28f)
-            path.cubicTo(size.width * .31f, size.height * .02f, size.width * .69f, size.height * .02f, size.width * .69f, size.height * .28f)
-            path.cubicTo(size.width * .94f, size.height * .22f, size.width * 1.02f, size.height * .56f, size.width * .72f, size.height * .63f)
-            path.lineTo(size.width * .72f, size.height * .9f)
-            path.lineTo(size.width * .28f, size.height * .9f)
-            path.close()
-            drawPath(path, Forest, style = Stroke(1.5.dp.toPx()))
-            drawLine(Forest, point(.28f, .74f), point(.72f, .74f), 1.5.dp.toPx())
-        } else {
-            drawRoundRect(Forest, point(.12f, .36f), androidx.compose.ui.geometry.Size(size.width * .76f, size.height * .52f), androidx.compose.ui.geometry.CornerRadius(2.dp.toPx()), style = Stroke(1.5.dp.toPx()))
-            drawLine(Forest, point(.07f, .3f), point(.93f, .3f), 2.dp.toPx())
-            drawLine(Forest, point(.4f, .2f), point(.6f, .2f), 1.5.dp.toPx())
-        }
+        if (day.unresolved > 0) GardenChip("${day.unresolved} awaiting details", icon = Icons.Outlined.HelpOutline)
     }
 }
 
 @Composable
 fun TodayStripKey(onDismiss: () -> Unit) {
-    AlertDialog(onDismissRequest = onDismiss, containerColor = Cream, title = { Text("Key") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                listOf(PlateMark.MadeToday to "Made today", PlateMark.Leftover to "Leftovers").forEach { (mark, label) ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        PlateMarkIcon(mark, Modifier.size(24.dp)); Text(label)
-                    }
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.Outlined.LocalDrink, null, Modifier.size(24.dp), tint = Forest); Text("Drink with meal")
-                }
-            }
-        }, confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } })
+    AlertDialog(onDismissRequest = onDismiss, containerColor = Paper,
+        title = { Text("Key", style = GardenType.Section) },
+        text = { PlateKey() },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } })
 }
 
 @Composable
 private fun FoodPlate(vm: GardenModel, plate: TodayPlate) {
     val entry = plate.entries.first()
-    val drink = plate.entries.all { stripCategory(it) == "drink" }
-    val diameter = if (drink) 48.dp else 64.dp
     val stacked = plate.entries.size > 1
-    val marks = plate.entries.map { todayPlateMark(it, vm.snapshot) }.distinct()
-    val mark = marks.singleOrNull()
+    val mark = plate.entries.map { todayPlateMark(it, vm.snapshot) }.distinct().singleOrNull()
     val title = stripInterpretation(entry).s("title").ifBlank { entry.s("kind", "Food") }
-    val description = listOfNotNull(title, if (stacked) "×${plate.entries.size}" else null,
-        if (plate.drinks.isNotEmpty()) "with drink" else null,
-        when (mark) { PlateMark.MadeToday -> "made today"; PlateMark.Leftover -> "leftovers"; null -> null }).joinToString(", ")
-    Box(Modifier.size(diameter + 12.dp, 80.dp).clickable {
+    var expand by remember { mutableStateOf(false) }
+    GardenPlate(title, seed = title.hashCode(), count = plate.entries.size, drink = plate.drinks.isNotEmpty(), mark = mark, onClick = {
         vm.track(if (stacked) "today_stack_tap" else "today_plate_tap", "captureId" to entry.s("id"), "count" to plate.entries.size)
-        vm.openFoodLog = true
-    }.semantics(mergeDescendants = true) { contentDescription = description; role = Role.Button }) {
-        if (stacked) Box(Modifier.align(Alignment.Center).offset(5.dp, (-5).dp).size(diameter).background(Cream, CircleShape).border(1.dp, Muted.copy(alpha = .5f), CircleShape))
-        val surface = Modifier.align(Alignment.Center).size(diameter).clip(CircleShape).background(Cream).border(3.dp, Color.White, CircleShape)
-        val photo = vm.capturePhotos(entry).firstOrNull()?.let { vm.capturePhotoFile(entry, it) }?.takeIf { it.exists() }
-        if (photo != null) LocalPhoto(photo, surface, 240)
-        else Box(surface, contentAlignment = Alignment.Center) { Icon(kindIcon(entry.s("kind")), null, Modifier.size(if (drink) 22.dp else 27.dp), tint = Forest) }
-        mark?.let {
-            Box(Modifier.align(Alignment.BottomStart).size(24.dp).background(Cream, CircleShape).border(1.dp, Line, CircleShape), contentAlignment = Alignment.Center) {
-                PlateMarkIcon(it, Modifier.size(17.dp))
-            }
+        if (stacked) expand = true else vm.openFoodLog = true
+    }, food = {
+        val photo = vm.capturePhotos(entry).firstOrNull()?.let { vm.capturePhotoFile(entry,it) }?.takeIf { it.exists() }
+        if (photo != null) LocalPhoto(photo, Modifier.size(54.dp).clip(CircleShape), 240)
+        else Icon(ingredientIcon(j("name" to title), kindIcon(stripCategory(entry))), null, Modifier.size(38.dp), tint = Color.Unspecified)
+    })
+    if (expand) AlertDialog(onDismissRequest = { expand = false }, title = { Text(title, style = GardenType.Section) }, text = {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            plate.entries.forEach { Text(localTime(it.s("capturedAt")), style = GardenType.Body) }
         }
-        if (plate.drinks.isNotEmpty()) Box(Modifier.align(Alignment.TopStart).size(24.dp).background(Cream, CircleShape).border(1.dp, Line, CircleShape), contentAlignment = Alignment.Center) {
-            Icon(Icons.Outlined.LocalDrink, null, Modifier.size(16.dp), tint = Forest)
-        }
-        if (stacked) Box(Modifier.align(Alignment.BottomEnd).background(Forest, RoundedCornerShape(8.dp)).padding(5.dp, 2.dp)) {
-            Text("×${plate.entries.size}", color = Cream, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-        }
-    }
+    }, confirmButton = { TextButton(onClick = { expand = false; vm.openFoodLog = true }) { Text("Open log") } }, dismissButton = { TextButton(onClick = { expand = false }) { Text("Close") } })
 }
 
 @Composable
@@ -405,25 +367,14 @@ fun FoodLogStrip(vm: GardenModel) {
     foodDayStartHour = vm.snapshot.o("settings").optInt("dayStartHour", 4)
     val today = foodToday()
     val entries = vm.foodLog().filter { localDay(it.s("capturedAt")) == today }
-    val plates = todayPlates(entries, today)
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            plates.forEach { FoodPlate(vm, it) }
-            if (needsMealPlate(entries, today)) Box(Modifier.size(72.dp, 80.dp).clickable {
-                vm.track("today_missing_meal_tap", "foodDay" to today.toString())
-                vm.cameraRequests++
-            }.semantics { contentDescription = "Log another meal"; role = Role.Button }, contentAlignment = Alignment.Center) {
-                Canvas(Modifier.size(64.dp)) {
-                    drawCircle(Muted.copy(alpha = .6f), radius = size.minDimension / 2 - 2.dp.toPx(),
-                        style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx()))))
-                }
-                Text("?", fontFamily = FontFamily.Serif, fontSize = 27.sp, color = Muted)
-            }
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        todayPlates(entries, today).forEach { FoodPlate(vm, it) }
+        if (needsMealPlate(entries,today)) {
+            Spacer(Modifier.width(3.dp))
+            GardenPlate("", modifier = Modifier.semantics { contentDescription = "Log another meal" }, empty = true, onClick = { vm.track("today_missing_meal_tap"); vm.beginTextCapture() })
         }
-        DayNumbers(vm, entries)
     }
 }
-
 @Composable
 fun FoodLogScreen(vm: GardenModel) {
     val photo = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(10)) { uris ->

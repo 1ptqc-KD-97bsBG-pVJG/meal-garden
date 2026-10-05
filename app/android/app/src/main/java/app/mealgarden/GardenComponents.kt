@@ -288,7 +288,7 @@ fun FourLevelAmount(value: Int, onChange: (Int) -> Unit, modifier: Modifier = Mo
 @Composable
 fun GardenPlate(label: String, modifier: Modifier = Modifier, seed: Int = 0, count: Int = 1,
     empty: Boolean = false, drink: Boolean = false, mark: PlateMark? = null,
-    onClick: (() -> Unit)? = null) {
+    food: @Composable (() -> Unit)? = null, onClick: (() -> Unit)? = null) {
     Column(modifier.width(70.dp)
         .then(if (onClick != null) Modifier.clip(GardenShape.Button)
             .clickable(role = Role.Button, onClick = onClick) else Modifier),
@@ -302,7 +302,15 @@ fun GardenPlate(label: String, modifier: Modifier = Modifier, seed: Int = 0, cou
             if (empty) Canvas(Modifier.fillMaxSize()) {
                 drawCircle(Faint, size.minDimension * .43f, center,
                     style = Stroke(1.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()))))
-            } else GardenBowl(Modifier.fillMaxSize(), seed)
+            } else if (food == null) GardenBowl(Modifier.fillMaxSize(), seed)
+            else {
+                Canvas(Modifier.fillMaxSize()) {
+                    drawCircle(CardSurface, size.minDimension * .43f)
+                    drawCircle(Line, size.minDimension * .43f, style = Stroke(1.dp.toPx()))
+                    drawCircle(Paper2, size.minDimension * .37f)
+                }
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { food() }
+            }
             if (empty) Text("?", style = GardenType.Title.copy(color = Faint),
                 modifier = Modifier.align(Alignment.Center))
             if (count > 1) Text("×$count", fontSize = 11.sp, fontWeight = FontWeight.Bold,
