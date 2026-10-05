@@ -31,240 +31,134 @@ import androidx.compose.ui.unit.*
 import kotlin.math.*
 import org.json.JSONObject
 
-val Cream = Color(0xFFF7F6EF)
-val Forest = Color(0xFF274C3A)
-val Ink = Color(0xFF243B2E)
-val Muted = Color(0xFF6D786B)
-val Lime = Color(0xFFD9E9A3)
-val Mist = Color(0xFFEAF0E2)
-val Clay = Color(0xFFB75D3E)
-val Line = Color(0xFFDDE1D4)
-
 @Composable
 fun TopBrand(vm: GardenModel) {
-    Row(
-        Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 4.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(Icons.Outlined.Spa, "", tint = Forest, modifier = Modifier.size(21.dp))
-        Spacer(Modifier.width(8.dp))
-        Text("meal garden", fontFamily = FontFamily.Serif, fontSize = 23.sp, color = Forest)
+    Row(Modifier.fillMaxWidth().padding(horizontal = GardenSpace.Page, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Outlined.Spa, null, tint = Forest, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(7.dp))
+        Text("meal garden", fontFamily = FontFamily.Serif, fontSize = 21.sp, color = Forest)
         Spacer(Modifier.weight(1f))
-        Row(
-            Modifier.clip(CircleShape)
-                .background(Mist)
-                .clickable { vm.openSettings = true }
-                .padding(horizontal = 10.dp, vertical = 7.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(Modifier.size(6.dp).background(if (vm.online) Forest else Clay, CircleShape))
-            Spacer(Modifier.width(6.dp))
-            Text(
-                if (vm.online) "Connected" else if (vm.paired) "Offline" else "Connect",
-                fontSize = 11.sp,
-                color = Forest,
-            )
-        }
+        GardenChip(if (vm.online) "Connected" else if (vm.paired) "Offline" else "Connect",
+            tint = if (vm.online) Mist else Paper2, onClick = { vm.openSettings = true })
         IconButton(onClick = { vm.openSettings = true }) {
-            Icon(Icons.Outlined.Tune, "Settings", tint = Forest)
+            Icon(Icons.Outlined.Tune, "Settings", tint = Forest, modifier = Modifier.size(21.dp))
         }
     }
 }
 
 @Composable
-fun Eyebrow(text: String, color: Color = Muted) {
-    Text(
-        text.uppercase(),
-        fontSize = 10.sp,
-        fontWeight = FontWeight.Bold,
-        letterSpacing = 1.8.sp,
-        color = color,
-    )
+fun Eyebrow(text: String, color: Color = Faint) {
+    Text(text.uppercase(), style = GardenType.Label, color = color)
 }
 
 @Composable
 fun Heading(title: String, subtitle: String = "", action: (@Composable () -> Unit)? = null) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                title,
-                fontFamily = FontFamily.Serif,
-                fontSize = 34.sp,
-                lineHeight = 38.sp,
-                color = Ink,
-            )
-            if (subtitle.isNotEmpty())
-                Text(
-                    subtitle,
-                    modifier = Modifier.padding(top = 7.dp),
-                    color = Muted,
-                    fontSize = 14.sp,
-                )
-        }
+        Text(title, style = GardenType.Title, modifier = Modifier.weight(1f))
         action?.invoke()
     }
 }
 
 @Composable
-fun CardBox(
-    modifier: Modifier = Modifier,
-    color: Color = Color.White,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(
-        modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(color)
-            .border(1.dp, Line.copy(alpha = .7f), RoundedCornerShape(24.dp))
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        content = content,
-    )
+fun CardBox(modifier: Modifier = Modifier, color: Color = CardSurface,
+    content: @Composable ColumnScope.() -> Unit) {
+    GardenCard(modifier = modifier, color = color, content = content)
 }
 
 @Composable
-fun ActionButton(
-    text: String,
-    icon: ImageVector = Icons.AutoMirrored.Outlined.ArrowForward,
-    onClick: () -> Unit,
-) {
-    Button(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
-    ) {
-        Text(text)
-        Spacer(Modifier.width(10.dp))
-        Icon(icon, null, Modifier.size(18.dp))
-    }
+fun ActionButton(text: String, icon: ImageVector = Icons.AutoMirrored.Outlined.ArrowForward,
+    onClick: () -> Unit) {
+    GardenPrimaryButton(text, onClick, icon = icon)
 }
 
 @Composable
 fun SectionLabel(title: String, action: String = "", onClick: () -> Unit = {}) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, fontSize = 19.sp, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Medium)
+        Text(title, style = GardenType.Section)
         Spacer(Modifier.weight(1f))
-        if (action.isNotEmpty()) TextButton(onClick = onClick) { Text(action, fontSize = 12.sp) }
+        if (action.isNotEmpty()) TextButton(onClick = onClick) {
+            Text(action, style = GardenType.Small, color = Forest)
+        }
     }
 }
 
 @Composable
 fun Note(text: String, icon: ImageVector = Icons.Outlined.Info) {
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Mist).padding(14.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
+    Row(Modifier.fillMaxWidth().clip(GardenShape.Button).background(Paper2).padding(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, null, tint = Forest, modifier = Modifier.size(18.dp))
-        Text(text, color = Forest, fontSize = 12.sp, lineHeight = 18.sp)
+        Text(text, color = Muted, fontSize = 13.sp, lineHeight = 18.sp)
     }
 }
 
 @Composable
-fun Pill(text: String, color: Color = Mist) {
-    Text(
-        text,
-        Modifier.clip(CircleShape).background(color).padding(horizontal = 10.dp, vertical = 6.dp),
-        fontSize = 11.sp,
-        color = Forest,
-    )
+fun Pill(text: String, color: Color = Paper2) {
+    GardenChip(text, tint = color)
 }
 
 @Composable
 fun GardenBowl(modifier: Modifier = Modifier, seed: Int = 0) {
     Canvas(modifier) {
-        val w = size.width
-        val h = size.height
-        val r = min(w, h) * .43f
-        val c = Offset(w * .5f, h * .5f)
-        drawCircle(Color(0xFF193E2C).copy(alpha = .10f), r * 1.12f, c + Offset(0f, 6f))
-        drawCircle(Color(0xFFF7F5E8), r, c)
-        drawCircle(Color(0xFFE2D8B7), r * .88f, c)
-        for (i in 0..25) {
-            val a = (i * 2.4 + seed).toFloat()
-            val rr = r * (.2f + .58f * ((i % 7) / 7f))
+        val r = size.minDimension * .43f
+        val c = center
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(r * .018f)
+        drawCircle(Color(0xFF796B4E).copy(alpha = .12f), r, c + Offset(0f, r * .09f))
+        drawCircle(CardSurface, r, c)
+        drawCircle(Line, r, c, style = stroke)
+        drawCircle(Paper2, r * .81f, c)
+        drawCircle(Line, r * .83f, c, style = stroke)
+        // Each ingredient has its own recognizable shape and stays inside the plate.
+        val turn = (seed % 4) * .35f
+        for (i in 0 until 24) {
+            val a = i * 2.399f + turn
+            val rr = r * (.12f + .50f * ((i % 8) / 8f))
             val pt = c + Offset(cos(a) * rr, sin(a) * rr)
-            val color =
-                listOf(
-                    Color(0xFF557749),
-                    Color(0xFF8AAB59),
-                    Color(0xFFBA6A40),
-                    Color(0xFFDFCA8F),
-                    Color(0xFFD9E8AA),
-                )[(i + seed.absoluteValue) % 5]
-            drawCircle(color, r * (.12f + (i % 3) * .035f), pt)
-            if (i % 3 == 0)
-                drawLine(
-                    Color.White.copy(alpha = .25f),
-                    pt - Offset(r * .04f, r * .04f),
-                    pt + Offset(r * .03f, r * .03f),
-                    2f,
-                )
+            drawOval(Color(0xFFE2D6AC), pt - Offset(r * .065f, r * .025f), Size(r * .13f, r * .05f))
         }
-        drawArc(
-            Color.White.copy(alpha = .7f),
-            195f,
-            75f,
-            false,
-            c - Offset(r, r),
-            Size(r * 2, r * 2),
-            style = androidx.compose.ui.graphics.drawscope.Stroke(r * .045f),
-        )
+        for (i in 0 until 5) {
+            val a = i * 1.2f + turn
+            val pt = c + Offset(cos(a) * r * .43f, sin(a) * r * .43f)
+            val veggie = if (i % 2 == 0) Leaf else Forest
+            drawCircle(veggie, r * .16f, pt)
+            drawCircle(veggie, r * .12f, pt + Offset(-r * .10f, r * .05f))
+            drawCircle(veggie, r * .12f, pt + Offset(r * .08f, r * .06f))
+            drawLine(Mist, pt, pt + Offset(r * .03f, r * .16f), r * .025f)
+        }
+        for (i in 0 until 4) {
+            val a = i * 1.7f + turn
+            val pt = c + Offset(cos(a) * r * .28f, sin(a) * r * .28f)
+            drawRoundRect(Color(0xFFDDB779), pt - Offset(r * .10f, r * .11f),
+                Size(r * .23f, r * .22f), androidx.compose.ui.geometry.CornerRadius(r * .04f))
+            drawLine(Color(0xFFA16A41), pt - Offset(r * .04f, r * .04f),
+                pt + Offset(r * .06f, r * .04f), r * .02f)
+        }
+        drawArc(Color.White.copy(alpha = .6f), 195f, 65f, false,
+            c - Offset(r * .92f, r * .92f), Size(r * 1.84f, r * 1.84f),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(r * .04f))
     }
 }
 
 @Composable
-fun QuickTile(
-    title: String,
-    sub: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    Column(
-        modifier
-            .clip(RoundedCornerShape(22.dp))
-            .background(Mist)
-            .clickable(onClick = onClick)
-            .padding(17.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp),
-    ) {
+fun QuickTile(title: String, sub: String, icon: ImageVector,
+    modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Column(modifier.clip(GardenShape.Card).background(CardSurface)
+        .border(1.dp, Line, GardenShape.Card).clickable(onClick = onClick).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Icon(icon, null, tint = Forest, modifier = Modifier.size(23.dp))
         Text(title, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-        Text(sub, fontSize = 11.sp, color = Muted)
     }
 }
 
 @Composable
 fun RecipeTile(r: JSONObject, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(22.dp))
-            .background(Color.White)
-            .border(1.dp, Line, RoundedCornerShape(22.dp))
-            .clickable(onClick = onClick)
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(13.dp),
-    ) {
-        GardenBowl(
-            Modifier.size(76.dp).clip(RoundedCornerShape(17.dp)).background(Mist),
-            r.s("id").hashCode().absoluteValue % 12,
-        )
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            Text(r.s("title"), fontFamily = FontFamily.Serif, fontSize = 20.sp, lineHeight = 23.sp)
-            Text(
-                if (r.s("readiness") == "ready")
-                    "${r.optInt("total_minutes")} min  ·  ${r.optInt("active_minutes")} min hands-on"
-                else "From the archive · needs recipe review",
-                color = Muted,
-                fontSize = 11.sp,
-            )
-            val evidence = recipeEvidence(r)
-            if (evidence.isNotEmpty()) Text(
-                healthGroups.filter { evidence.containsKey(it.id) }.take(3).joinToString(" · ") { it.label },
-                color = Forest, fontSize = 11.sp,
-            )
+    Row(Modifier.fillMaxWidth().clip(GardenShape.Card).background(CardSurface)
+        .border(1.dp, Line, GardenShape.Card).clickable(onClick = onClick).padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        GardenBowl(Modifier.size(65.dp), r.s("id").hashCode() % 12)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text(r.s("title"), style = GardenType.Section, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            if (r.s("readiness") == "ready") Text("${r.optInt("total_minutes")} min", style = GardenType.Small)
         }
         Icon(Icons.Outlined.ChevronRight, null, tint = Muted, modifier = Modifier.size(18.dp))
     }
@@ -299,15 +193,16 @@ fun RichText(raw: String) {
             }
         }
     androidx.compose.foundation.text.selection.SelectionContainer {
-        Text(text, fontSize = 15.sp, lineHeight = 25.sp, color = Ink)
+        Text(text, style = GardenType.Body)
     }
 }
 
 @Composable
 fun NativePanel(vm: GardenModel, p: JSONObject) {
     CardBox(color = Mist) {
-        Eyebrow("FROM YOUR ASSISTANT")
-        Text(p.s("title"), fontFamily = FontFamily.Serif, fontSize = 23.sp)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            SparkleMark(); Text(p.s("title"), style = GardenType.Section)
+        }
         RichText(p.s("body"))
         p.a("actions").objects().forEach { a ->
             OutlinedButton(

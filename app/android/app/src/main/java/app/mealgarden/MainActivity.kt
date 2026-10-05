@@ -38,30 +38,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MaterialTheme(
-                colorScheme =
-                    lightColorScheme(
-                        primary = Forest,
-                        secondary = Clay,
-                        background = Cream,
-                        surface = Cream,
-                        onSurface = Ink,
-                        onBackground = Ink,
-                        outline = Line,
-                    ),
-                typography =
-                    Typography(
-                        bodyLarge =
-                            androidx.compose.ui.text.TextStyle(
-                                fontSize = 16.sp,
-                                lineHeight = 24.sp,
-                            ),
-                        bodyMedium =
-                            androidx.compose.ui.text.TextStyle(fontSize = 14.sp, lineHeight = 21.sp),
-                    ),
-            ) {
-                GardenApp()
-            }
+            GardenTheme { GardenApp() }
         }
     }
 }
@@ -71,6 +48,8 @@ fun GardenApp(vm: GardenModel = viewModel()) {
     val snack = remember { SnackbarHostState() }
     val screenState = rememberSaveableStateHolder()
     var noteStage by rememberSaveable { mutableStateOf("") }
+    var gallery by rememberSaveable { mutableStateOf(false) }
+    if (gallery) { ComponentGallery { gallery = false }; return }
     LaunchedEffect(vm.error) {
         if (vm.error.isNotBlank()) {
             snack.showSnackbar(vm.error, duration = SnackbarDuration.Long)
@@ -171,7 +150,11 @@ fun GardenApp(vm: GardenModel = viewModel()) {
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
         Column(Modifier.fillMaxSize()) {
-            if (selected == null && !vm.openSettings && !vm.openHistory && !vm.openFoodLog && !focused) TopBrand(vm)
+            if (selected == null && !vm.openSettings && !vm.openHistory && !vm.openFoodLog && !focused) Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { TopBrand(vm) }
+                if (LocalContext.current.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0)
+                    IconButton(onClick = { gallery = true }) { Icon(Icons.Outlined.Widgets, "Component gallery") }
+            }
             TimerDock(vm)
             screenState.SaveableStateProvider(screenKey) {
                 when {

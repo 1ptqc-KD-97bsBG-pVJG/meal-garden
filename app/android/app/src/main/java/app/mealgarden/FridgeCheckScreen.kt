@@ -29,7 +29,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.platform.testTag
 
-private val Amber = Color(0xFFD9A441)
 
 /** Marks shown on every reset row, in order. */
 private val marks = listOf(
