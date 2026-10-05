@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "person_id": "owner",
+  "name": "You",
+  "priorities": [
+    "health",
+    "cost"
+  ],
+  "preferences": [],
+  "exclude": [],
+  "health_targets": "Not specified. Ask before setting numeric targets.",
+  "note": "Illustrative profile for trying the app; no personal history is included."
+}

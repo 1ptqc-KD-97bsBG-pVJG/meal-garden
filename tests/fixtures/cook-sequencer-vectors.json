@@ -1,0 +1,1987 @@
+[
+  {
+    "name": "Rice simmers while vegetables are chopped",
+    "steps": [
+      {
+        "title": "Start rice",
+        "text": "Start rice.",
+        "start_minute": 0,
+        "minutes": 25,
+        "passive_minutes": 24,
+        "equipment": "Duxtop · Power 2"
+      },
+      {
+        "title": "Chop vegetables",
+        "text": "Chop vegetables.",
+        "start_minute": 2,
+        "minutes": 5,
+        "equipment": "Counter · knife"
+      },
+      {
+        "title": "Serve rice and vegetables",
+        "text": "Serve rice and vegetables.",
+        "start_minute": 25,
+        "minutes": 1
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 1440000
+            }
+          ],
+          "next": 2,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 1440000
+            }
+          ],
+          "next": 2,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "advance",
+        "time": 300000,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 1440000
+            }
+          ],
+          "next": 2,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 1440000
+            }
+          ],
+          "next": 2,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 1440000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 1440000,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 2,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 2,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Ninja preheats while tofu is cubed; done early releases Ninja",
+    "steps": [
+      {
+        "title": "Preheat Ninja",
+        "text": "Preheat Ninja.",
+        "start_minute": 0,
+        "minutes": 5,
+        "passive_minutes": 4,
+        "equipment": "Ninja · AIR FRY 400°F"
+      },
+      {
+        "title": "Cube tofu",
+        "text": "Cube tofu.",
+        "start_minute": 1,
+        "minutes": 2,
+        "equipment": "Counter · knife"
+      },
+      {
+        "title": "Load tofu",
+        "text": "Load tofu.",
+        "start_minute": 5,
+        "minutes": 1,
+        "equipment": "Air fryer · basket"
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 240000
+            }
+          ],
+          "next": 2,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 240000
+            }
+          ],
+          "next": 2,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "advance",
+        "time": 120000,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 240000
+            }
+          ],
+          "next": 2,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 240000
+            }
+          ],
+          "next": 2,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 240000
+          }
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 2,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 2,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "No timing fields means written order; reminder alone does not infer passive work",
+    "steps": [
+      {
+        "title": "Mix oats",
+        "text": "Mix oats.",
+        "timer_minutes": 5
+      },
+      {
+        "title": "Add fruit",
+        "text": "Add fruit."
+      },
+      {
+        "title": "Pack jars",
+        "text": "Pack jars."
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "advance",
+        "time": 600000,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": 2,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": 2,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 2,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 2,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Duxtop serializes pots but permits independent prep past a blocked step",
+    "steps": [
+      {
+        "title": "Simmer first pot",
+        "text": "Simmer first pot.",
+        "start_minute": 0,
+        "minutes": 10,
+        "passive_minutes": 9,
+        "equipment": "Duxtop 9120MC · Power 2"
+      },
+      {
+        "title": "Simmer second pot",
+        "text": "Simmer second pot.",
+        "start_minute": 2,
+        "minutes": 3,
+        "passive_minutes": 2,
+        "equipment": "duxtop · Power 3"
+      },
+      {
+        "title": "Chop herbs",
+        "text": "Chop herbs.",
+        "start_minute": 3,
+        "minutes": 1,
+        "equipment": "Counter · knife"
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": 2,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 540000
+            }
+          ],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 2,
+        "expected": {
+          "now": 2,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 540000
+            }
+          ],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 2,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 540000
+            }
+          ],
+          "next": 1,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 540000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 540000,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 1,
+              "endsAt": 660000
+            }
+          ],
+          "next": null,
+          "waitingOn": {
+            "step": 1,
+            "endsAt": 660000
+          }
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 1,
+              "endsAt": 660000
+            }
+          ],
+          "next": null,
+          "waitingOn": {
+            "step": 1,
+            "endsAt": 660000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 660000,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Stove permits several pans; multiple timers sort by deadline",
+    "steps": [
+      {
+        "title": "Simmer first pan",
+        "text": "Simmer first pan.",
+        "start_minute": 0,
+        "minutes": 12,
+        "passive_minutes": 10,
+        "equipment": "Stove · low"
+      },
+      {
+        "title": "Simmer second pan",
+        "text": "Simmer second pan.",
+        "start_minute": 3,
+        "minutes": 6,
+        "passive_minutes": 4,
+        "equipment": "Stove · medium"
+      },
+      {
+        "title": "Combine pans",
+        "text": "Combine pans.",
+        "start_minute": 12,
+        "minutes": 1
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 600000
+            }
+          ],
+          "next": 2,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 1,
+              "endsAt": 240000
+            },
+            {
+              "step": 0,
+              "endsAt": 600000
+            }
+          ],
+          "next": 2,
+          "waitingOn": {
+            "step": 1,
+            "endsAt": 240000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 239999,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 1,
+              "endsAt": 240000
+            },
+            {
+              "step": 0,
+              "endsAt": 600000
+            }
+          ],
+          "next": 2,
+          "waitingOn": {
+            "step": 1,
+            "endsAt": 240000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 240000,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 600000
+            }
+          ],
+          "next": 2,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 600000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 600000,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 2,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 2,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Shared timeline start means prep begins immediately after setup",
+    "steps": [
+      {
+        "title": "Boil water",
+        "text": "Boil water.",
+        "start_minute": 0,
+        "minutes": 10,
+        "passive_minutes": 9,
+        "equipment": "Duxtop · Power 10"
+      },
+      {
+        "title": "Prep vegetables",
+        "text": "Prep vegetables.",
+        "start_minute": 0,
+        "minutes": 7,
+        "equipment": "Counter · knife"
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 540000
+            }
+          ],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 540000
+            }
+          ],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 540000
+            }
+          ],
+          "next": null,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 540000
+          }
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Boundary at passive end is a dependency, not overlap",
+    "steps": [
+      {
+        "title": "Press tofu",
+        "text": "Press tofu.",
+        "start_minute": 0,
+        "minutes": 20,
+        "passive_minutes": 19,
+        "equipment": "Counter · heavy pan"
+      },
+      {
+        "title": "Tear pressed tofu",
+        "text": "Tear pressed tofu.",
+        "start_minute": 20,
+        "minutes": 3
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 1140000
+            }
+          ],
+          "next": 1,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 1140000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 1139999,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 1140000
+            }
+          ],
+          "next": 1,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 1140000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 1140000,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Missing start time permits a timer but no parallel step",
+    "steps": [
+      {
+        "title": "Simmer soup",
+        "text": "Simmer soup.",
+        "minutes": 10,
+        "passive_minutes": 9,
+        "equipment": "Stove · low"
+      },
+      {
+        "title": "Chop garnish",
+        "text": "Chop garnish.",
+        "start_minute": 1,
+        "minutes": 1
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 540000
+            }
+          ],
+          "next": 1,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 540000
+          }
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Short reminder does not release appliance before passive duration",
+    "steps": [
+      {
+        "title": "Air fry",
+        "text": "Air fry.",
+        "start_minute": 0,
+        "minutes": 8,
+        "passive_minutes": 7,
+        "equipment": "Ninja · AIR FRY",
+        "timer_minutes": 5
+      },
+      {
+        "title": "Use Ninja again",
+        "text": "Use Ninja again.",
+        "start_minute": 8,
+        "minutes": 1,
+        "equipment": "Air fryer · basket"
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 420000
+            }
+          ],
+          "next": 1,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 420000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 300000,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 420000
+            }
+          ],
+          "next": 1,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 420000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 420000,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Timer with an earlier deadline is ignored when it does not block work",
+    "steps": [
+      {
+        "title": "Let dough rest",
+        "text": "Let dough rest.",
+        "start_minute": 0,
+        "minutes": 10,
+        "passive_minutes": 1,
+        "equipment": "Counter"
+      },
+      {
+        "title": "Preheat Ninja",
+        "text": "Preheat Ninja.",
+        "start_minute": 9,
+        "minutes": 5,
+        "passive_minutes": 4,
+        "equipment": "Ninja"
+      },
+      {
+        "title": "Load Ninja",
+        "text": "Load Ninja.",
+        "start_minute": 9,
+        "minutes": 1,
+        "equipment": "Ninja"
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 60000
+            }
+          ],
+          "next": 2,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 60000
+            },
+            {
+              "step": 1,
+              "endsAt": 240000
+            }
+          ],
+          "next": 2,
+          "waitingOn": {
+            "step": 1,
+            "endsAt": 240000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 60000,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 1,
+              "endsAt": 240000
+            }
+          ],
+          "next": 2,
+          "waitingOn": {
+            "step": 1,
+            "endsAt": 240000
+          }
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 2,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 2,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Fractional durations and shifted clock; timeline does not enforce appointments",
+    "initialTime": 1000000,
+    "steps": [
+      {
+        "title": "Warm oven",
+        "text": "Warm oven.",
+        "start_minute": 0,
+        "minutes": 2,
+        "passive_minutes": 1.5,
+        "equipment": "Oven"
+      },
+      {
+        "title": "Chop vegetables",
+        "text": "Chop vegetables.",
+        "start_minute": 0.5,
+        "minutes": 0.5,
+        "equipment": "Counter"
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 1000000,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 1090000
+            }
+          ],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 1090000
+            }
+          ],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "advance",
+        "time": 1030000,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 1090000
+            }
+          ],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 1090000
+            }
+          ],
+          "next": null,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 1090000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 1090000,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "All hands-on duration never auto-completes; zero passive is hands-on",
+    "steps": [
+      {
+        "title": "Stir sauce",
+        "text": "Stir sauce.",
+        "start_minute": 0,
+        "minutes": 1,
+        "passive_minutes": 0,
+        "equipment": "Stove"
+      },
+      {
+        "title": "Serve",
+        "text": "Serve.",
+        "start_minute": 1,
+        "minutes": 0
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "advance",
+        "time": 600000,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Equal timer deadlines sort by step index; pure passive needs one start",
+    "steps": [
+      {
+        "title": "Rest first bowl",
+        "text": "Rest first bowl.",
+        "start_minute": 0,
+        "minutes": 2,
+        "passive_minutes": 2,
+        "equipment": "Counter"
+      },
+      {
+        "title": "Rest second bowl",
+        "text": "Rest second bowl.",
+        "start_minute": 0,
+        "minutes": 2,
+        "passive_minutes": 2,
+        "equipment": "Counter"
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 120000
+            }
+          ],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 120000
+            },
+            {
+              "step": 1,
+              "endsAt": 120000
+            }
+          ],
+          "next": null,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 120000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 120000,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Untimed intervening dependency cannot be bypassed",
+    "steps": [
+      {
+        "title": "Simmer rice",
+        "text": "Simmer rice.",
+        "start_minute": 0,
+        "minutes": 10,
+        "passive_minutes": 9,
+        "equipment": "Duxtop"
+      },
+      {
+        "title": "Drain rice",
+        "text": "Drain rice."
+      },
+      {
+        "title": "Chop herbs",
+        "text": "Chop herbs.",
+        "start_minute": 2,
+        "minutes": 1
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 540000
+            }
+          ],
+          "next": 1,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 540000
+          }
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": 2,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": 2,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 2,
+        "expected": {
+          "now": 2,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 2,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Start before a distinct hands-off window preserves written dependencies",
+    "steps": [
+      {
+        "title": "Stir then simmer",
+        "text": "Stir then simmer.",
+        "start_minute": 0,
+        "minutes": 10,
+        "passive_minutes": 5,
+        "equipment": "Stove"
+      },
+      {
+        "title": "Prep garnish",
+        "text": "Prep garnish.",
+        "start_minute": 2,
+        "minutes": 1
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 300000
+            }
+          ],
+          "next": 1,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 300000
+          }
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Empty recipe",
+    "steps": [],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Microwave is exclusive",
+    "steps": [
+      {
+        "title": "Heat first dish",
+        "text": "Heat the first dish.",
+        "equipment": "Microwave · high",
+        "start_minute": 0,
+        "minutes": 5,
+        "passive_minutes": 4
+      },
+      {
+        "title": "Heat second dish",
+        "text": "Heat the second dish.",
+        "equipment": "microwave · low",
+        "start_minute": 1,
+        "minutes": 1
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 240000
+            }
+          ],
+          "next": 1,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 240000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 240000,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Conventional oven is exclusive",
+    "steps": [
+      {
+        "title": "Heat first dish",
+        "text": "Heat the first dish.",
+        "equipment": "Oven · 425°F",
+        "start_minute": 0,
+        "minutes": 5,
+        "passive_minutes": 4
+      },
+      {
+        "title": "Heat second dish",
+        "text": "Heat the second dish.",
+        "equipment": "oven · 350°F",
+        "start_minute": 1,
+        "minutes": 1
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 240000
+            }
+          ],
+          "next": 1,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 240000
+          }
+        }
+      },
+      {
+        "type": "advance",
+        "time": 240000,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": 1,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  },
+  {
+    "name": "Ninja and conventional oven are separate appliances",
+    "steps": [
+      {
+        "title": "Preheat oven",
+        "text": "Preheat oven.",
+        "equipment": "Oven",
+        "start_minute": 0,
+        "minutes": 5,
+        "passive_minutes": 4
+      },
+      {
+        "title": "Preheat Ninja",
+        "text": "Preheat Ninja.",
+        "equipment": "Ninja",
+        "start_minute": 1,
+        "minutes": 3,
+        "passive_minutes": 2
+      }
+    ],
+    "actions": [
+      {
+        "type": "advance",
+        "time": 0,
+        "expected": {
+          "now": 0,
+          "running": [],
+          "next": 1,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 0,
+        "expected": {
+          "now": 1,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 240000
+            }
+          ],
+          "next": null,
+          "waitingOn": null
+        }
+      },
+      {
+        "type": "start",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 1,
+              "endsAt": 120000
+            },
+            {
+              "step": 0,
+              "endsAt": 240000
+            }
+          ],
+          "next": null,
+          "waitingOn": {
+            "step": 1,
+            "endsAt": 120000
+          }
+        }
+      },
+      {
+        "type": "finish",
+        "step": 1,
+        "expected": {
+          "now": null,
+          "running": [
+            {
+              "step": 0,
+              "endsAt": 240000
+            }
+          ],
+          "next": null,
+          "waitingOn": {
+            "step": 0,
+            "endsAt": 240000
+          }
+        }
+      },
+      {
+        "type": "finish",
+        "step": 0,
+        "expected": {
+          "now": null,
+          "running": [],
+          "next": null,
+          "waitingOn": null
+        }
+      }
+    ]
+  }
+]

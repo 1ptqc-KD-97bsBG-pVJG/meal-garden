@@ -1,0 +1,20 @@
+{
+  "plan_id": "sample-week",
+  "cards": [
+    {
+      "recipe_id": "lentil-tomato-pot",
+      "source_sha256": "0752a05c98d26bfa577684ac5029a50c1a10f3c8cbb9ab557b546a99adfb2861",
+      "card": "generated/cooking/lentil-tomato-pot.html"
+    },
+    {
+      "recipe_id": "roast-chickpea-rice",
+      "source_sha256": "8993a0182c8b2366b15f28169f2119aef5b25b217f3908c83108f6f5c58fc1a6",
+      "card": "generated/cooking/roast-chickpea-rice.html"
+    },
+    {
+      "recipe_id": "apple-seed-oats",
+      "source_sha256": "d412d43b0c8c4eeb5392afd1858d9bcfa3acd2b9993f016dc8074366ff443c8e",
+      "card": "generated/cooking/apple-seed-oats.html"
+    }
+  ]
+}

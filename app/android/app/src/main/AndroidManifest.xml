@@ -1,0 +1,21 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+ <uses-permission android:name="android.permission.INTERNET" />
+ <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+ <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+ <uses-permission android:name="android.permission.CAMERA" />
+ <uses-permission android:name="android.permission.VIBRATE" />
+ <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+ <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+ <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+ <uses-feature android:name="android.hardware.camera" android:required="false" />
+ <application android:label="Meal Garden" android:icon="@drawable/ic_garden" android:theme="@style/Theme.MealGarden" android:allowBackup="false" android:usesCleartextTraffic="true" android:supportsRtl="true">
+  <activity android:name=".MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize">
+   <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+  </activity>
+  <activity android:name=".TimerAlarmActivity" android:exported="false" android:launchMode="singleTask" android:excludeFromRecents="true" android:showWhenLocked="true" android:turnScreenOn="true" android:taskAffinity="" />
+  <receiver android:name=".TimerReceiver" android:exported="false" />
+  <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.files" android:exported="false" android:grantUriPermissions="true">
+   <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+  </provider>
+ </application>
+</manifest>

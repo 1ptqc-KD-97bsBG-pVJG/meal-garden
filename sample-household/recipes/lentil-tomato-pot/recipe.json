@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "id": "lentil-tomato-pot",
+  "revision": 1,
+  "title": "Lentil Tomato Pot",
+  "readiness": "ready",
+  "tested_status": "untested",
+  "source_method": "original-sample",
+  "yield": {
+    "servings": 4
+  },
+  "yield_notes": "Makes 4 portions. This is fictional starter content, not a cooking report.",
+  "equipment": [
+    "medium saucepan",
+    "sieve",
+    "knife",
+    "board"
+  ],
+  "total_minutes": 35,
+  "active_minutes": 17,
+  "storage_days": "up to 4 days",
+  "ingredients": [
+    {
+      "id": "red-lentils",
+      "name": "Dry red lentils",
+      "amount": 200,
+      "unit": "g",
+      "detail": "Rinse in a sieve and drain.",
+      "purchase": {
+        "unit": "bag",
+        "capacity": 500,
+        "label": "500 g bag"
+      }
+    },
+    {
+      "id": "carrot",
+      "name": "Carrots",
+      "amount": 200,
+      "unit": "g",
+      "detail": "Wash, peel if needed, and dice into 1 cm pieces.",
+      "purchase": {
+        "unit": "bag",
+        "capacity": 1000,
+        "label": "1000 g bag"
+      }
+    },
+    {
+      "id": "tomatoes",
+      "name": "Crushed tomatoes",
+      "amount": 400,
+      "unit": "g",
+      "detail": "Use the entire can.",
+      "purchase": {
+        "unit": "can",
+        "capacity": 400,
+        "label": "400 g can"
+      }
+    },
+    {
+      "id": "olive-oil",
+      "name": "Olive oil",
+      "amount": 15,
+      "unit": "ml",
+      "detail": "Measure for the pot.",
+      "purchase": {
+        "unit": "bottle",
+        "capacity": 500,
+        "label": "500 ml bottle"
+      }
+    },
+    {
+      "id": "cumin",
+      "name": "Ground cumin",
+      "amount": 2,
+      "unit": "g",
+      "detail": "About 1 teaspoon.",
+      "purchase": {
+        "unit": "jar",
+        "capacity": 40,
+        "label": "40 g jar"
+      }
+    },
+    {
+      "id": "water",
+      "name": "Water",
+      "amount": 750,
+      "unit": "ml",
+      "detail": "Add more if needed to loosen the stew.",
+      "purchase": {
+        "unit": "tap water",
+        "capacity": 1000,
+        "label": "1000 ml tap water"
+      }
+    },
+    {
+      "id": "salt",
+      "name": "Salt",
+      "amount": 3,
+      "unit": "g",
+      "detail": "About 1/2 teaspoon; adjust at the table.",
+      "purchase": {
+        "unit": "box",
+        "capacity": 500,
+        "label": "500 g box"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "title": "Prepare the vegetables",
+      "text": "Rinse 200 g lentils. Wash and dice 200 g carrots into 1 cm pieces. Set out 400 g tomatoes, 750 ml water, 15 ml olive oil, 2 g cumin and 3 g salt.",
+      "start_minute": 0,
+      "minutes": 5,
+      "equipment": "Counter"
+    },
+    {
+      "title": "Soften the carrots",
+      "text": "Heat 15 ml olive oil in a medium saucepan over medium heat. Add 200 g diced carrots; stir for 5 minutes until their edges soften. Reduce heat if they brown rapidly.",
+      "start_minute": 5,
+      "minutes": 5,
+      "equipment": "Stove"
+    },
+    {
+      "title": "Simmer the lentils",
+      "text": "Stir in 2 g cumin for 30 seconds. Add 200 g lentils, 400 g tomatoes, 750 ml water and 3 g salt. Bring to a gentle boil, lower to a simmer and cook uncovered for 18 minutes. Stir occasionally; the lentils should be soft and the stew spoonable.",
+      "start_minute": 10,
+      "minutes": 20,
+      "equipment": "Stove",
+      "passive_minutes": 18,
+      "timer_minutes": 18
+    },
+    {
+      "title": "Check the texture",
+      "text": "Taste a lentil. If still firm, simmer 3\u20135 minutes more and add a splash of water to prevent sticking. Taste the stew and season at the table.",
+      "start_minute": 30,
+      "minutes": 3,
+      "equipment": "Stove"
+    },
+    {
+      "title": "Serve and store",
+      "text": "Divide into four bowls. Cool reserved portions in shallow containers and refrigerate within two hours. Label the preparation date; freeze portions intended beyond four days.",
+      "start_minute": 33,
+      "minutes": 2,
+      "equipment": "Counter"
+    }
+  ],
+  "notes": {
+    "storage": "Refrigerate within two hours in shallow covered containers. Use within four days or freeze promptly.",
+    "reheat": "Heat stored savory portions until steaming throughout. Stir to eliminate cold spots.",
+    "allergens": "Check ingredient labels and adapt to your household needs before preparing."
+  }
+}

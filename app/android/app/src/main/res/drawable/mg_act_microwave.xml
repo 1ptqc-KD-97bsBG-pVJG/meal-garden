@@ -1,0 +1,6 @@
+<!-- Converted from design-lab/icons/food-icons.svg (lane 03). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M4.0,5.0H20.0Q22.0,5.0 22.0,7.0V18.0Q22.0,20.0 20.0,20.0H4.0Q2.0,20.0 2.0,18.0V7.0Q2.0,5.0 4.0,5.0Z" android:fillColor="#F7F1E6" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M5.0,8.0H15.0Q16.0,8.0 16.0,9.0V16.0Q16.0,17.0 15.0,17.0H5.0Q4.0,17.0 4.0,16.0V9.0Q4.0,8.0 5.0,8.0Z" android:fillColor="#7FA7C4" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M6 11Q8 9 10 11Q12 13 14 11M6 14Q8 12 10 14Q12 16 14 14M19 9V11M19 15V16" android:fillColor="#00000000" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

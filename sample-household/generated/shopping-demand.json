@@ -1,0 +1,281 @@
+{
+  "plan_id": "sample-week",
+  "inventory_status": "unknown; no deductions made",
+  "items": [
+    {
+      "id": "red-lentils",
+      "name": "Dry red lentils",
+      "amount": 200,
+      "unit": "g",
+      "detail": "Rinse in a sieve and drain.",
+      "purchase": {
+        "unit": "bag",
+        "capacity": 500,
+        "label": "500 g bag"
+      },
+      "recipes": [
+        "Lentil Tomato Pot"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Lentil Tomato Pot. Need 200 g total. Check at home before buying."
+    },
+    {
+      "id": "carrot",
+      "name": "Carrots",
+      "amount": 200,
+      "unit": "g",
+      "detail": "Wash, peel if needed, and dice into 1 cm pieces.",
+      "purchase": {
+        "unit": "bag",
+        "capacity": 1000,
+        "label": "1000 g bag"
+      },
+      "recipes": [
+        "Lentil Tomato Pot"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Lentil Tomato Pot. Need 200 g total. Check at home before buying."
+    },
+    {
+      "id": "tomatoes",
+      "name": "Crushed tomatoes",
+      "amount": 400,
+      "unit": "g",
+      "detail": "Use the entire can.",
+      "purchase": {
+        "unit": "can",
+        "capacity": 400,
+        "label": "400 g can"
+      },
+      "recipes": [
+        "Lentil Tomato Pot"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Lentil Tomato Pot. Need 400 g total. Check at home before buying."
+    },
+    {
+      "id": "olive-oil",
+      "name": "Olive oil",
+      "amount": 30,
+      "unit": "ml",
+      "detail": "Measure for the pot.",
+      "purchase": {
+        "unit": "bottle",
+        "capacity": 500,
+        "label": "500 ml bottle"
+      },
+      "recipes": [
+        "Lentil Tomato Pot",
+        "Roasted Chickpea Rice Bowls"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Lentil Tomato Pot; Roasted Chickpea Rice Bowls. Need 30 ml total. Check at home before buying."
+    },
+    {
+      "id": "cumin",
+      "name": "Ground cumin",
+      "amount": 2,
+      "unit": "g",
+      "detail": "About 1 teaspoon.",
+      "purchase": {
+        "unit": "jar",
+        "capacity": 40,
+        "label": "40 g jar"
+      },
+      "recipes": [
+        "Lentil Tomato Pot"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Lentil Tomato Pot. Need 2 g total. Check at home before buying."
+    },
+    {
+      "id": "water",
+      "name": "Water",
+      "amount": 1200,
+      "unit": "ml",
+      "detail": "Add more if needed to loosen the stew.",
+      "purchase": {
+        "unit": "tap water",
+        "capacity": 1000,
+        "label": "1000 ml tap water"
+      },
+      "recipes": [
+        "Lentil Tomato Pot",
+        "Roasted Chickpea Rice Bowls"
+      ],
+      "purchase_count": 2,
+      "comment": "Used for: Lentil Tomato Pot; Roasted Chickpea Rice Bowls. Need 1200 ml total. Check at home before buying."
+    },
+    {
+      "id": "salt",
+      "name": "Salt",
+      "amount": 6,
+      "unit": "g",
+      "detail": "About 1/2 teaspoon; adjust at the table.",
+      "purchase": {
+        "unit": "box",
+        "capacity": 500,
+        "label": "500 g box"
+      },
+      "recipes": [
+        "Lentil Tomato Pot",
+        "Roasted Chickpea Rice Bowls"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Lentil Tomato Pot; Roasted Chickpea Rice Bowls. Need 6 g total. Check at home before buying."
+    },
+    {
+      "id": "brown-rice",
+      "name": "Brown rice",
+      "amount": 200,
+      "unit": "g",
+      "detail": "Dry; check package cooking time.",
+      "purchase": {
+        "unit": "bag",
+        "capacity": 1000,
+        "label": "1000 g bag"
+      },
+      "recipes": [
+        "Roasted Chickpea Rice Bowls"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Roasted Chickpea Rice Bowls. Need 200 g total. Check at home before buying."
+    },
+    {
+      "id": "chickpeas",
+      "name": "Cooked chickpeas",
+      "amount": 400,
+      "unit": "g",
+      "detail": "Drained and rinsed weight; choose cans accordingly.",
+      "purchase": {
+        "unit": "can",
+        "capacity": 400,
+        "label": "400 g can"
+      },
+      "recipes": [
+        "Roasted Chickpea Rice Bowls"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Roasted Chickpea Rice Bowls. Need 400 g total. Check at home before buying."
+    },
+    {
+      "id": "broccoli",
+      "name": "Broccoli florets",
+      "amount": 400,
+      "unit": "g",
+      "detail": "Cut large florets into 3 cm pieces.",
+      "purchase": {
+        "unit": "bag",
+        "capacity": 400,
+        "label": "400 g bag"
+      },
+      "recipes": [
+        "Roasted Chickpea Rice Bowls"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Roasted Chickpea Rice Bowls. Need 400 g total. Check at home before buying."
+    },
+    {
+      "id": "lemon",
+      "name": "Lemon juice",
+      "amount": 30,
+      "unit": "ml",
+      "detail": "For serving.",
+      "purchase": {
+        "unit": "bottle",
+        "capacity": 250,
+        "label": "250 ml bottle"
+      },
+      "recipes": [
+        "Roasted Chickpea Rice Bowls"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Roasted Chickpea Rice Bowls. Need 30 ml total. Check at home before buying."
+    },
+    {
+      "id": "rolled-oats",
+      "name": "Rolled oats",
+      "amount": 160,
+      "unit": "g",
+      "detail": "Use old-fashioned oats.",
+      "purchase": {
+        "unit": "bag",
+        "capacity": 500,
+        "label": "500 g bag"
+      },
+      "recipes": [
+        "Apple Seed Overnight Oats"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Apple Seed Overnight Oats. Need 160 g total. Check at home before buying."
+    },
+    {
+      "id": "soy-milk",
+      "name": "Unsweetened soy milk",
+      "amount": 600,
+      "unit": "ml",
+      "detail": "Chilled; check allergens on label.",
+      "purchase": {
+        "unit": "carton",
+        "capacity": 1000,
+        "label": "1000 ml carton"
+      },
+      "recipes": [
+        "Apple Seed Overnight Oats"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Apple Seed Overnight Oats. Need 600 ml total. Check at home before buying."
+    },
+    {
+      "id": "apple",
+      "name": "Apple",
+      "amount": 200,
+      "unit": "g",
+      "detail": "Wash and dice, discarding core and seeds.",
+      "purchase": {
+        "unit": "fruit",
+        "capacity": 200,
+        "label": "200 g fruit"
+      },
+      "recipes": [
+        "Apple Seed Overnight Oats"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Apple Seed Overnight Oats. Need 200 g total. Check at home before buying."
+    },
+    {
+      "id": "pumpkin-seeds",
+      "name": "Pumpkin seeds",
+      "amount": 40,
+      "unit": "g",
+      "detail": "Use unsalted seeds.",
+      "purchase": {
+        "unit": "bag",
+        "capacity": 200,
+        "label": "200 g bag"
+      },
+      "recipes": [
+        "Apple Seed Overnight Oats"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Apple Seed Overnight Oats. Need 40 g total. Check at home before buying."
+    },
+    {
+      "id": "cinnamon",
+      "name": "Ground cinnamon",
+      "amount": 2,
+      "unit": "g",
+      "detail": "About 1 teaspoon.",
+      "purchase": {
+        "unit": "jar",
+        "capacity": 40,
+        "label": "40 g jar"
+      },
+      "recipes": [
+        "Apple Seed Overnight Oats"
+      ],
+      "purchase_count": 1,
+      "comment": "Used for: Apple Seed Overnight Oats. Need 2 g total. Check at home before buying."
+    }
+  ]
+}

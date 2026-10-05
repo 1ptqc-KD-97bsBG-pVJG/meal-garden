@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "id": "apple-seed-oats",
+  "revision": 1,
+  "title": "Apple Seed Overnight Oats",
+  "readiness": "ready",
+  "tested_status": "untested",
+  "source_method": "original-sample",
+  "yield": {
+    "servings": 4
+  },
+  "yield_notes": "Makes 4 portions. This is fictional starter content, not a cooking report.",
+  "equipment": [
+    "four covered food containers",
+    "knife",
+    "board"
+  ],
+  "total_minutes": 368,
+  "active_minutes": 8,
+  "storage_days": "up to 4 days",
+  "ingredients": [
+    {
+      "id": "rolled-oats",
+      "name": "Rolled oats",
+      "amount": 160,
+      "unit": "g",
+      "detail": "Use old-fashioned oats.",
+      "purchase": {
+        "unit": "bag",
+        "capacity": 500,
+        "label": "500 g bag"
+      }
+    },
+    {
+      "id": "soy-milk",
+      "name": "Unsweetened soy milk",
+      "amount": 600,
+      "unit": "ml",
+      "detail": "Chilled; check allergens on label.",
+      "purchase": {
+        "unit": "carton",
+        "capacity": 1000,
+        "label": "1000 ml carton"
+      }
+    },
+    {
+      "id": "apple",
+      "name": "Apple",
+      "amount": 200,
+      "unit": "g",
+      "detail": "Wash and dice, discarding core and seeds.",
+      "purchase": {
+        "unit": "fruit",
+        "capacity": 200,
+        "label": "200 g fruit"
+      }
+    },
+    {
+      "id": "pumpkin-seeds",
+      "name": "Pumpkin seeds",
+      "amount": 40,
+      "unit": "g",
+      "detail": "Use unsalted seeds.",
+      "purchase": {
+        "unit": "bag",
+        "capacity": 200,
+        "label": "200 g bag"
+      }
+    },
+    {
+      "id": "cinnamon",
+      "name": "Ground cinnamon",
+      "amount": 2,
+      "unit": "g",
+      "detail": "About 1 teaspoon.",
+      "purchase": {
+        "unit": "jar",
+        "capacity": 40,
+        "label": "40 g jar"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "title": "Set out the containers",
+      "text": "Use four clean containers with lids. Measure 160 g oats, 600 ml soy milk, 40 g pumpkin seeds and 2 g cinnamon.",
+      "start_minute": 0,
+      "minutes": 2,
+      "equipment": "Counter"
+    },
+    {
+      "title": "Mix the oats",
+      "text": "Divide 160 g oats, 600 ml soy milk and 2 g cinnamon evenly among the four containers. Stir until no dry oats remain.",
+      "start_minute": 2,
+      "minutes": 3,
+      "equipment": "Counter"
+    },
+    {
+      "title": "Add apple and seeds",
+      "text": "Wash and dice 200 g apple into small pieces. Divide the apple and 40 g pumpkin seeds among the containers. Stir, cover and refrigerate.",
+      "start_minute": 5,
+      "minutes": 3,
+      "equipment": "Counter"
+    },
+    {
+      "title": "Chill and serve",
+      "text": "Chill at least 6 hours until the oats soften. Stir before eating; add a little soy milk if too thick. Keep refrigerated and use within four days of preparation.",
+      "start_minute": 8,
+      "minutes": 360,
+      "equipment": "Fridge",
+      "passive_minutes": 360,
+      "timer_minutes": 360
+    }
+  ],
+  "notes": {
+    "storage": "Refrigerate within two hours in shallow covered containers. Use within four days or freeze promptly.",
+    "reheat": "Heat stored savory portions until steaming throughout. Stir to eliminate cold spots.",
+    "allergens": "Check ingredient labels and adapt to your household needs before preparing."
+  }
+}

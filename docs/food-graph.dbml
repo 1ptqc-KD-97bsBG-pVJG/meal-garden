@@ -1,0 +1,427 @@
+// Meal Garden food graph — proposed schema for the next testing phase (draft 3, October 4, 2026)
+// Draft 2 applies an independent review: counts (stocktakes), confidence and events on movements,
+// explicit units and nutrition basis, batch nutrition snapshots, transfers, reversals, idempotency.
+// Paste into https://dbdiagram.io. SQLite underneath; "json" columns are TEXT holding JSON.
+// Existing tables that stay as they are (conversations, messages, jobs, job_events, devices,
+// settings, media, ui_events) are omitted. `events` is shown because everything links to it.
+
+Project meal_garden {
+  database_type: 'SQLite'
+  Note: 'One ledger for all food at home. Amount left is never stored: it is the latest count plus the movements after it; unknown when there is neither an opening amount nor a count.'
+}
+
+// ───────────── Enums ─────────────
+
+Enum product_kind {
+  packaged [note: 'Has a label; nutrition looked up once']
+  generic [note: 'Whole food (strawberries); no lookup, model estimate at logging time']
+  homemade [note: 'Created by a batch; nutrition computed from its ingredients']
+}
+
+Enum nutrition_source {
+  label_photo
+  usda_fdc
+  open_food_facts
+  web
+  computed [note: 'Homemade: from batch ingredients']
+  estimate
+  none
+}
+
+Enum base_unit {
+  g
+  ml
+  count
+}
+
+Enum location {
+  fridge
+  freezer
+  pantry
+  counter
+  unknown
+}
+
+Enum item_condition {
+  fine
+  use_soon
+}
+
+Enum nutrition_basis {
+  per_100g
+  per_100ml
+  per_unit [note: 'Count-based products: per egg, per gummy']
+}
+
+Enum quantity_basis {
+  measured
+  estimated
+  unknown
+}
+
+Enum movement_kind {
+  delta [note: 'amount is a signed change']
+  count [note: 'A stocktake: amount is the absolute amount present. Resets the balance']
+}
+
+Enum movement_reason {
+  purchase [note: 'Positive. First row of a bought item']
+  made [note: 'Positive. First row of a homemade item']
+  batch_use [note: 'Negative. Went into a batch']
+  intake [note: 'Negative. Eaten directly']
+  transfer [note: 'Pair of rows on two pantry items sharing transfer_id, e.g. fridge lot to freezer lot']
+  tossed
+  assumed_use [note: 'Negative. App inferred it; linked to an assumption']
+  stated [note: 'Used with kind = count: A person or a photo said how much is there']
+  reversal [note: 'Undoes another movement; reverses_movement_id set']
+}
+
+Enum confidence {
+  known
+  assumed
+  unknown
+}
+
+Enum batch_source {
+  cook_mode
+  report
+  chat
+  food_log
+}
+
+Enum intake_method {
+  computed [note: 'Grams times stored nutrition']
+  label
+  estimated [note: 'Model range from photo or note']
+}
+
+Enum assumption_status {
+  open
+  confirmed
+  corrected
+}
+
+Enum preference_kind {
+  constraint [note: 'Allergy, never-eat, medical']
+  taste [note: 'Likes and dislikes']
+  portion [note: 'Appetite, batch size, how much rice']
+  process [note: 'How he likes to cook: measured vs natural amounts, detail level, appliance choice']
+  routine [note: 'When and where he eats']
+  goal [note: 'Health priorities']
+}
+
+Enum stance {
+  never
+  avoid
+  neutral
+  like
+  love
+}
+
+Enum preference_source {
+  stated [note: 'a person said it']
+  inferred [note: 'Derived from reactions and behavior']
+  imported [note: 'Carried over from the earlier project; assumed until confirmed']
+}
+
+// ───────────── People ─────────────
+
+Table households {
+  id text [pk]
+  name text
+}
+
+Table persons {
+  id text [pk]
+  household_id text [not null, ref: > households.id]
+  name text
+}
+
+Table partner_links {
+  person_id text [not null, ref: > persons.id]
+  partner_id text [not null, ref: > persons.id]
+  access text [note: 'full for now; configurable later']
+  notify_on_intake boolean [default: false]
+  indexes {
+    (person_id, partner_id) [pk]
+  }
+  Note: 'Phase one. Separate kitchens, so two households; a link lets one person view as the other.'
+}
+
+// ───────────── What can be bought or eaten ─────────────
+
+Table products {
+  id text [pk]
+  name text [not null, note: 'Display name: Plain nonfat yogurt']
+  brand text
+  kind product_kind [not null]
+  size_amount real [note: 'One package, in base_unit: 907']
+  base_unit base_unit [not null]
+  barcode text
+  storage location
+  shelf_life_days integer [note: 'Typical, unopened; null for shelf-stable']
+  match_words json [note: 'Lowercase words used to match notes and receipt lines']
+  nutrition_basis nutrition_basis [note: 'What the nutrient columns are per']
+  grams_per_unit real [note: 'For count or ml products, to convert to grams; may be an estimate']
+  // Nutrient columns are per nutrition_basis. Null means unknown, never zero.
+  kcal real
+  protein_g real
+  carbs_g real
+  fat_g real
+  fiber_g real
+  sodium_mg real
+  sat_fat_g real
+  added_sugar_g real
+  serving_g real
+  nutrition_source nutrition_source [not null, default: 'none']
+  nutrition_url text
+  batch_id text [ref: - batches.id, note: 'Only for kind = homemade']
+  created_at timestamp
+}
+
+// ───────────── Buying ─────────────
+
+Table receipts {
+  id text [pk]
+  household_id text [not null, ref: > households.id]
+  store text
+  purchased_on date
+  total real
+  source text [note: 'retailer_history, photo, manual']
+}
+
+Table purchases {
+  id text [pk]
+  receipt_id text [not null, ref: > receipts.id]
+  product_id text [not null, ref: > products.id]
+  raw_line text [note: 'Receipt text as printed']
+  packages real [note: 'How many packages']
+  price real
+}
+
+// ───────────── Food at home: one ledger ─────────────
+
+Table pantry_items {
+  id text [pk]
+  household_id text [not null, ref: > households.id]
+  product_id text [not null, ref: > products.id]
+  purchase_id text [ref: > purchases.id, note: 'Null for homemade items and items added by hand']
+  split_from_id text [ref: > pantry_items.id, note: 'Set when this lot was split off another, e.g. half moved to the freezer']
+  location location [not null, default: 'unknown']
+  condition item_condition [note: 'The person\'s latest judgment; urgency is otherwise computed from age and shelf life']
+  opened_on date
+  last_confirmed_at timestamp [note: 'Last time the person looked at it']
+  created_at timestamp
+  Note: 'One lot of one product at one location. No amount and no state column: gone means the balance is zero.'
+}
+
+Table pantry_movements {
+  id text [pk]
+  pantry_item_id text [not null, ref: > pantry_items.id]
+  kind movement_kind [not null, default: 'delta']
+  amount real [note: 'In the product base_unit. Signed change for delta; absolute amount for count. Null = a use of unknown size']
+  reason movement_reason [not null]
+  confidence confidence [not null]
+  batch_ingredient_id text [ref: > batch_ingredients.id]
+  intake_component_id text [ref: > intake_components.id]
+  assumption_id text [ref: > assumptions.id]
+  transfer_id text [note: 'Shared by the two rows of a transfer']
+  reverses_movement_id text [ref: - pantry_movements.id]
+  event_id text [not null, ref: > events.id]
+  occurred_at timestamp [not null]
+  Note: 'Append-only. Balance = latest count + SUM(delta amounts after it). Balance quality = weakest confidence since that count. Unknown when there is no opening amount and no count, or a null-amount use since the last count.'
+}
+
+// ───────────── Cooking ─────────────
+
+Table recipes {
+  id text [pk, note: 'File-backed today: recipes/<id>/recipe.json']
+  title text
+  parent_recipe_id text [ref: > recipes.id]
+  revision integer
+  Note: 'Stays as files this phase; shown for its links.'
+}
+
+Table batches {
+  id text [pk]
+  household_id text [not null, ref: > households.id]
+  recipe_id text [ref: > recipes.id, note: 'Null for a one-off with no recipe']
+  recipe_revision integer
+  title text [not null]
+  made_at timestamp [not null]
+  recorded_from batch_source [not null]
+  yield_g real [note: 'Finished weight']
+  yield_basis quantity_basis [not null, default: 'unknown', note: 'measured when the person weighs the pot']
+  portions_made real
+  nutrition_total json [note: 'Snapshot: low and high per nutrient for the whole batch, with the source of each ingredient\'s values']
+  confidence confidence [not null]
+  Note: 'Making a batch creates a homemade product and one pantry item for it, so leftovers use the same ledger.'
+}
+
+Table batch_ingredients {
+  id text [pk]
+  batch_id text [not null, ref: > batches.id]
+  pantry_item_id text [ref: > pantry_items.id, note: 'The lot it came from, when known']
+  product_id text [ref: > products.id]
+  name text [not null]
+  amount real [note: 'In the product base_unit']
+  grams real [note: 'For nutrition; may be converted or estimated']
+  amount_text text [note: 'As said or written: a splash, 4 cloves']
+  confidence confidence [not null]
+}
+
+// ───────────── Eating (per person) ─────────────
+
+Table captures {
+  id text [pk]
+  person_id text [not null, ref: > persons.id]
+  captured_at timestamp [not null]
+  kind text
+  note text
+  Note: 'Exists today as captured events; shown as a table for its links.'
+}
+
+Table intake {
+  id text [pk]
+  capture_id text [not null, ref: - captures.id]
+  person_id text [not null, ref: > persons.id]
+  eaten_at timestamp [not null]
+  title text
+  category text
+  method intake_method [not null]
+  nutrition json [note: 'Snapshot: low and high per nutrient. Stays fixed if product nutrition later changes']
+  confidence confidence [not null]
+  superseded_by_id text [ref: - intake.id, note: 'A re-read of the capture replaces this row; its movements are reversed, never deducted twice']
+}
+
+Table intake_components {
+  id text [pk]
+  intake_id text [not null, ref: > intake.id]
+  pantry_item_id text [ref: > pantry_items.id, note: 'Packaged or homemade lot; null for food from elsewhere']
+  product_id text [ref: > products.id]
+  name text [not null]
+  amount real [note: 'In the product base_unit']
+  grams real
+  confidence confidence [not null]
+}
+
+// ───────────── Preferences (per person) ─────────────
+
+Table preferences {
+  id text [pk]
+  person_id text [not null, ref: > persons.id]
+  kind preference_kind [not null]
+  subject text [not null, note: 'What it is about, lowercase: bell pepper, tofu, batch size, duxtop']
+  product_id text [ref: > products.id]
+  recipe_id text [ref: > recipes.id]
+  stance stance [note: 'For tastes and constraints']
+  value json [note: 'For settings: {"portions":[4,5]}']
+  is_hard boolean [not null, default: false, note: 'true = must never be violated; checked in code']
+  statement text [not null, note: 'Plain sentence shown to the person and given to the assistant']
+  source preference_source [not null]
+  confidence confidence [not null]
+  evidence json [note: 'Reaction ids, event ids, messages']
+  superseded_by_id text [ref: - preferences.id, note: 'A changed preference replaces this row; current = not superseded']
+  created_at timestamp
+}
+
+Table reactions {
+  id text [pk]
+  person_id text [not null, ref: > persons.id]
+  batch_id text [ref: > batches.id]
+  recipe_id text [ref: > recipes.id]
+  intake_id text [ref: > intake.id]
+  rating integer [note: '1–10 when given']
+  aspects json [note: '{"portion":"too small","flavor":"not cohesive","effort":"fine"}']
+  notes text [note: 'His words']
+  event_id text [not null, ref: > events.id]
+  created_at timestamp
+  Note: 'Reactions are evidence; preferences are conclusions drawn from them by the after-cook reflection.'
+}
+
+// ───────────── Assumptions and history ─────────────
+
+Table assumptions {
+  id text [pk]
+  household_id text [not null, ref: > households.id]
+  statement text [not null, note: 'The mushrooms went into the pasta']
+  status assumption_status [not null, default: 'open']
+  evidence json
+  created_at timestamp
+  resolved_at timestamp
+}
+
+Table events {
+  id text [pk]
+  type text [not null]
+  subject text
+  occurred_at timestamp
+  recorded_at timestamp
+  actor text
+  payload json
+  evidence json
+  Note: 'Existing append-only log. Every write to the tables above also appends an event, in the same transaction.'
+}
+
+Table product_lookups {
+  id text [pk]
+  product_id text [not null, ref: > products.id]
+  step text [note: 'label_photo, usda_fdc, open_food_facts, model_choice, web']
+  succeeded boolean
+  tokens integer [note: '0 when no model ran']
+  seconds real
+  detail json
+  created_at timestamp
+  Note: 'One row per attempt, so lookup cost can be measured.'
+}
+
+Table idempotency_keys {
+  key text [pk]
+  operation text
+  result json
+  created_at timestamp
+  Note: 'Phone outbox and background jobs retry; a repeated key returns the first result and writes nothing.'
+}
+
+TableGroup people {
+  households
+  persons
+  partner_links
+}
+TableGroup buying {
+  products
+  receipts
+  purchases
+}
+TableGroup at_home {
+  pantry_items
+  pantry_movements
+}
+TableGroup cooking {
+  recipes
+  batches
+  batch_ingredients
+}
+TableGroup eating {
+  captures
+  intake
+  intake_components
+}
+TableGroup taste {
+  preferences
+  reactions
+}
+TableGroup history {
+  assumptions
+  events
+  product_lookups
+  idempotency_keys
+}
+
+// Fictional rows illustrating household and person identity.
+Records households(id, name) {
+  'example', 'Sample kitchen'
+}
+Records persons(id, household_id, name) {
+  'owner', 'example', 'You'
+}

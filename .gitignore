@@ -1,0 +1,14 @@
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+.env
+.tools
+.gradle/
+.kotlin/
+**/build/
+local.properties
+*.keystore
+node_modules/
+# Generated Android build input; rebuilt from sample by default.
+app/android/app/src/main/assets/snapshot.json

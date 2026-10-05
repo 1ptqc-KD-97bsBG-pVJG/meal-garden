@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "id": "roast-chickpea-rice",
+  "revision": 1,
+  "title": "Roasted Chickpea Rice Bowls",
+  "readiness": "ready",
+  "tested_status": "untested",
+  "source_method": "original-sample",
+  "yield": {
+    "servings": 4
+  },
+  "yield_notes": "Makes 4 portions. This is fictional starter content, not a cooking report.",
+  "equipment": [
+    "stove",
+    "medium saucepan with lid",
+    "conventional oven",
+    "rimmed tray"
+  ],
+  "total_minutes": 45,
+  "active_minutes": 15,
+  "storage_days": "up to 4 days",
+  "ingredients": [
+    {
+      "id": "brown-rice",
+      "name": "Brown rice",
+      "amount": 200,
+      "unit": "g",
+      "detail": "Dry; check package cooking time.",
+      "purchase": {
+        "unit": "bag",
+        "capacity": 1000,
+        "label": "1000 g bag"
+      }
+    },
+    {
+      "id": "chickpeas",
+      "name": "Cooked chickpeas",
+      "amount": 400,
+      "unit": "g",
+      "detail": "Drained and rinsed weight; choose cans accordingly.",
+      "purchase": {
+        "unit": "can",
+        "capacity": 400,
+        "label": "400 g can"
+      }
+    },
+    {
+      "id": "broccoli",
+      "name": "Broccoli florets",
+      "amount": 400,
+      "unit": "g",
+      "detail": "Cut large florets into 3 cm pieces.",
+      "purchase": {
+        "unit": "bag",
+        "capacity": 400,
+        "label": "400 g bag"
+      }
+    },
+    {
+      "id": "olive-oil",
+      "name": "Olive oil",
+      "amount": 15,
+      "unit": "ml",
+      "detail": "For chickpeas and broccoli.",
+      "purchase": {
+        "unit": "bottle",
+        "capacity": 500,
+        "label": "500 ml bottle"
+      }
+    },
+    {
+      "id": "lemon",
+      "name": "Lemon juice",
+      "amount": 30,
+      "unit": "ml",
+      "detail": "For serving.",
+      "purchase": {
+        "unit": "bottle",
+        "capacity": 250,
+        "label": "250 ml bottle"
+      }
+    },
+    {
+      "id": "water",
+      "name": "Water",
+      "amount": 450,
+      "unit": "ml",
+      "detail": "For rice; follow package ratio if different.",
+      "purchase": {
+        "unit": "tap water",
+        "capacity": 1000,
+        "label": "1000 ml tap water"
+      }
+    },
+    {
+      "id": "salt",
+      "name": "Salt",
+      "amount": 3,
+      "unit": "g",
+      "detail": "Half for rice and half for tray.",
+      "purchase": {
+        "unit": "box",
+        "capacity": 500,
+        "label": "500 g box"
+      }
+    }
+  ],
+  "steps": [
+    {
+      "title": "Start the rice",
+      "text": "Put 200 g brown rice, 450 ml water and 1.5 g salt in a medium saucepan. Bring to a boil, cover and reduce to low heat. Cook 35 minutes or the package time until tender, then rest covered 5 minutes.",
+      "start_minute": 0,
+      "minutes": 42,
+      "equipment": "Stove",
+      "passive_minutes": 35,
+      "timer_minutes": 35
+    },
+    {
+      "title": "Prepare the tray",
+      "text": "Heat a conventional oven to 220\u00b0C / 425\u00b0F. Drain 400 g cooked chickpeas and pat dry. Toss with 400 g broccoli, 15 ml olive oil and 1.5 g salt on a rimmed tray. Spread into one uncrowded layer.",
+      "start_minute": 2,
+      "minutes": 8,
+      "equipment": "Counter"
+    },
+    {
+      "title": "Roast the vegetables",
+      "text": "Place the tray on the middle oven rack. Roast 22 minutes, tossing after 12 minutes. Broccoli should be tender with browned edges; chickpeas should be hot throughout. Give pale or firm florets another 3 minutes.",
+      "start_minute": 10,
+      "minutes": 25,
+      "equipment": "Oven",
+      "passive_minutes": 22,
+      "timer_minutes": 22
+    },
+    {
+      "title": "Build the bowls",
+      "text": "Fluff the rested rice. Divide rice, chickpeas and broccoli among four bowls, adding 30 ml lemon juice across the bowls. Refrigerate reserved portions in shallow containers within two hours; freeze later portions promptly.",
+      "start_minute": 42,
+      "minutes": 3,
+      "equipment": "Counter"
+    }
+  ],
+  "notes": {
+    "storage": "Refrigerate within two hours in shallow covered containers. Use within four days or freeze promptly.",
+    "reheat": "Heat stored savory portions until steaming throughout. Stir to eliminate cold spots.",
+    "allergens": "Check ingredient labels and adapt to your household needs before preparing."
+  }
+}

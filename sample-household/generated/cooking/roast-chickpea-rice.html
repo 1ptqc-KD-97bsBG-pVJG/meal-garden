@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="en" data-state-key="owner:sample-week:2026-10-06:roast-chickpea-rice:8993a0182c8b" data-content-hierarchy="task-first" data-card-click="full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roasted Chickpea Rice Bowls</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202124;
+      --muted: #5f6368;
+      --line: #d9ded8;
+      --paper: #fbfcf7;
+      --panel: #ffffff;
+      --accent: #2f6f5e;
+      --accent-soft: #e4f1eb;
+      --warm: #8a5a24;
+      --warm-soft: #f6ecdc;
+      --done: #eef3ed;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding-bottom: 86px;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.45;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    header {
+      padding: 8px 0 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .page-shell {
+      display: grid;
+      gap: 14px;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 10vw, 3.35rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .quick-facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .fact,
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .fact {
+      min-height: 74px;
+      padding: 12px;
+    }
+
+    .fact strong {
+      display: block;
+      color: var(--warm);
+      font-size: 1.1rem;
+      line-height: 1.1;
+    }
+
+    .fact span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    section {
+      padding: 22px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 1.28rem;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 18px 0 8px;
+      font-size: 1rem;
+    }
+
+    p { margin: 0; }
+
+    ul,
+    ol {
+      margin: 0;
+      padding-left: 1.25rem;
+    }
+
+    li + li { margin-top: 7px; }
+
+    .panel { padding: 16px; }
+
+    .callout {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #c8ded6;
+      border-radius: 8px;
+      background: var(--accent-soft);
+    }
+
+    .source-panel {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--warm-soft);
+      color: var(--ink);
+      font-size: 0.95rem;
+    }
+
+    .source-panel a {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .mini-board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .mini-card {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .mini-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .mini-card strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--ink);
+      font-size: 0.98rem;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .check-item {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      cursor: pointer;
+    }
+
+    .check-item input {
+      width: 22px;
+      height: 22px;
+      margin: 1px 0 0;
+      accent-color: var(--accent);
+    }
+
+    .check-item input:checked + .item-body {
+      color: var(--muted);
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+    }
+
+    .item-body {
+      min-width: 0;
+    }
+
+    .item-title,
+    .step-title {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--ink);
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .item-detail,
+    .step-detail {
+      display: block;
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    .step-meta {
+      color: var(--warm);
+      font-weight: 800;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    .timeline {
+      list-style: none;
+      padding: 0;
+    }
+
+    .timeline li {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      margin: 0;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      cursor: pointer;
+    }
+
+    .timeline li + li { margin-top: 8px; }
+
+    .timeline input {
+      width: 22px;
+      height: 22px;
+      margin: 1px 0 0;
+      accent-color: var(--accent);
+    }
+
+    .timeline input:checked ~ .step-text {
+      color: var(--muted);
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+    }
+
+    .timer-control {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #cbdde8;
+      border-radius: 8px;
+      background: #e8f0f5;
+      cursor: default;
+    }
+
+    .timer-control.is-running {
+      border-color: #8bb9d1;
+      background: #eef7fb;
+    }
+
+    .timer-control.is-done {
+      border-color: #d7b779;
+      background: #fff7e6;
+    }
+
+    .timer-control button {
+      min-height: 38px;
+      padding: 8px 10px;
+      border: 1px solid #9fb8c8;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #345e7b;
+      font: inherit;
+      font-weight: 800;
+    }
+
+    .timer-control button:active {
+      transform: translateY(1px);
+    }
+
+    .timer-readout {
+      color: #345e7b;
+      font-size: 1.05rem;
+      font-variant-numeric: tabular-nums;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .timer-status {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .check-item.is-next {
+      border-color: #8bb9d1;
+      box-shadow: 0 0 0 2px rgba(47, 111, 94, 0.12);
+    }
+
+    .progress-dock {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 20;
+      padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--line);
+      background: rgba(251, 252, 247, 0.96);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 -4px 18px rgba(32, 33, 36, 0.08);
+      transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+    }
+
+    body.is-complete .progress-dock {
+      border-top-color: #d6a64d;
+      background: linear-gradient(180deg, rgba(255, 250, 229, 0.98), rgba(251, 252, 247, 0.98));
+      box-shadow: 0 -6px 24px rgba(138, 90, 36, 0.18);
+    }
+
+    .progress-inner {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .progress-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .progress-count {
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .progress-timers {
+      color: #345e7b;
+      min-width: 0;
+      overflow: hidden;
+      text-align: right;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .progress-next {
+      display: block;
+      min-width: 0;
+      margin-top: 3px;
+      color: var(--ink);
+      font-size: 0.86rem;
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .progress-track {
+      height: 8px;
+      margin-top: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #dfe7df;
+    }
+
+    .progress-save {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--warm));
+      transition: width 180ms ease;
+    }
+
+    body.is-complete .progress-fill {
+      background: linear-gradient(90deg, var(--accent), #d6a64d, var(--warm));
+    }
+
+    .confetti-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 24;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .confetti-piece {
+      position: absolute;
+      top: -18px;
+      width: 8px;
+      height: 14px;
+      border-radius: 3px;
+      opacity: 0.95;
+      transform: translate3d(0, 0, 0) rotate(0deg);
+      animation: confetti-fall var(--fall-duration, 1800ms) cubic-bezier(0.2, 0.78, 0.3, 1) forwards;
+    }
+
+    @keyframes confetti-fall {
+      0% {
+        transform: translate3d(0, -24px, 0) rotate(0deg);
+      }
+      78% {
+        opacity: 0.95;
+      }
+      100% {
+        opacity: 0;
+        transform: translate3d(var(--drift, 0px), calc(100vh - 92px), 0) rotate(var(--spin, 360deg));
+      }
+    }
+
+    @media (max-width: 560px) {
+      main { padding: 20px 14px 34px; }
+      .quick-facts { grid-template-columns: 1fr; }
+      .mini-board { grid-template-columns: 1fr; }
+      .timeline li { grid-template-columns: 32px minmax(0, 1fr); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .confetti-piece {
+        display: none;
+      }
+    }
+  </style>
+<!-- source-sha256: 8993a0182c8b2366b15f28169f2119aef5b25b217f3908c83108f6f5c58fc1a6; renderer-sha256: 428eb43fdfc3045845c8f1701b8cf08e8d0dbde6cedc731dd505efe136fb7c78 -->
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">2026-10-06 · You · meal prep</p>
+      <h1>Roasted Chickpea Rice Bowls</h1>
+      <p class="subtitle">Makes 4 portions. This is fictional starter content, not a cooking report.</p>
+      <div class="quick-facts">
+        <div class="fact"><strong>45 min</strong><span>Total time</span></div>
+        <div class="fact"><strong>15 min</strong><span>Active time</span></div>
+        <div class="fact"><strong>up to 4 days</strong><span>Refrigerated</span></div>
+      </div>
+      <div class="source-panel" data-source-panel>
+        <div><strong>Source:</strong> Recipe revision 1; 8993a0182c8b</div>
+        <div><strong>Plan link:</strong> <a href="../shopping-list.md">Weekly plan & shopping list</a></div>
+        <div><strong>Recipe link:</strong> <a href="../../recipes/roast-chickpea-rice/recipe.json">Recipe source</a></div>
+      </div>
+    </header>
+
+    <section>
+      <h2>Prep Board</h2>
+      <div class="mini-board">
+        <div class="mini-card"><span>Use first</span><strong>Perishables and opened packages</strong></div>
+        <div class="mini-card"><span>Make generous</span><strong>Serve the planned portion</strong></div>
+        <div class="mini-card"><span>Pack later</span><strong>Cool promptly in shallow containers</strong></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Ingredients</h2>
+      <div class="check-list">
+        <!-- Each row: .item-title = ingredient/component name; .item-detail = amount, prep, and qualifiers. -->
+        <label class="check-item" data-task-label="Gather Brown rice"><input type="checkbox" aria-label="Gather Brown rice"><span class="item-body"><span class="item-title">Brown rice</span><span class="item-detail">200 g · Dry; check package cooking time.</span></span></label>
+<label class="check-item" data-task-label="Gather Cooked chickpeas"><input type="checkbox" aria-label="Gather Cooked chickpeas"><span class="item-body"><span class="item-title">Cooked chickpeas</span><span class="item-detail">400 g · Drained and rinsed weight; choose cans accordingly.</span></span></label>
+<label class="check-item" data-task-label="Gather Broccoli florets"><input type="checkbox" aria-label="Gather Broccoli florets"><span class="item-body"><span class="item-title">Broccoli florets</span><span class="item-detail">400 g · Cut large florets into 3 cm pieces.</span></span></label>
+<label class="check-item" data-task-label="Gather Olive oil"><input type="checkbox" aria-label="Gather Olive oil"><span class="item-body"><span class="item-title">Olive oil</span><span class="item-detail">15 ml · For chickpeas and broccoli.</span></span></label>
+<label class="check-item" data-task-label="Gather Lemon juice"><input type="checkbox" aria-label="Gather Lemon juice"><span class="item-body"><span class="item-title">Lemon juice</span><span class="item-detail">30 ml · For serving.</span></span></label>
+<label class="check-item" data-task-label="Gather Water"><input type="checkbox" aria-label="Gather Water"><span class="item-body"><span class="item-title">Water</span><span class="item-detail">450 ml · For rice; follow package ratio if different.</span></span></label>
+<label class="check-item" data-task-label="Gather Salt"><input type="checkbox" aria-label="Gather Salt"><span class="item-body"><span class="item-title">Salt</span><span class="item-detail">3 g · Half for rice and half for tray.</span></span></label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Cook</h2>
+      <ol class="timeline">
+        <!-- Each row: .step-title = action; .step-detail = timing, duration, method, and completion cue. -->
+        <li data-task-label="Start the rice"><input type="checkbox" aria-label="Start the rice"><div class="step-text"><span class="step-title">Start the rice</span><span class="step-detail">Put 200 g brown rice, 450 ml water and 1.5 g salt in a medium saucepan. Bring to a boil, cover and reduce to low heat. Cook 35 minutes or the package time until tender, then rest covered 5 minutes.</span><div class="timer-control" data-duration-seconds="2100" data-timer-label="Start the rice"><button type="button" class="timer-start">Start 35 min</button><span class="timer-readout">35:00</span><button type="button" class="timer-reset">Reset</button><span class="timer-status">Keep this page open for timer alerts.</span></div></div></li>
+<li data-task-label="Prepare the tray"><input type="checkbox" aria-label="Prepare the tray"><div class="step-text"><span class="step-title">Prepare the tray</span><span class="step-detail">Heat a conventional oven to 220°C / 425°F. Drain 400 g cooked chickpeas and pat dry. Toss with 400 g broccoli, 15 ml olive oil and 1.5 g salt on a rimmed tray. Spread into one uncrowded layer.</span></div></li>
+<li data-task-label="Roast the vegetables"><input type="checkbox" aria-label="Roast the vegetables"><div class="step-text"><span class="step-title">Roast the vegetables</span><span class="step-detail">Place the tray on the middle oven rack. Roast 22 minutes, tossing after 12 minutes. Broccoli should be tender with browned edges; chickpeas should be hot throughout. Give pale or firm florets another 3 minutes.</span><div class="timer-control" data-duration-seconds="1320" data-timer-label="Roast the vegetables"><button type="button" class="timer-start">Start 22 min</button><span class="timer-readout">22:00</span><button type="button" class="timer-reset">Reset</button><span class="timer-status">Keep this page open for timer alerts.</span></div></div></li>
+<li data-task-label="Build the bowls"><input type="checkbox" aria-label="Build the bowls"><div class="step-text"><span class="step-title">Build the bowls</span><span class="step-detail">Fluff the rested rice. Divide rice, chickpeas and broccoli among four bowls, adding 30 ml lemon juice across the bowls. Refrigerate reserved portions in shallow containers within two hours; freeze later portions promptly.</span></div></li>
+      </ol>
+      <div class="callout">Equipment: stove, medium saucepan with lid, conventional oven, rimmed tray.</div>
+    </section>
+
+    <section>
+      <h2>Notes</h2>
+      <ul>
+        <li>Refrigerate within two hours in shallow covered containers. Use within four days or freeze promptly.</li>
+<li>Heat stored savory portions until steaming throughout. Stir to eliminate cold spots.</li>
+<li>Check ingredient labels and adapt to your household needs before preparing.</li>
+<li>Checkoffs stay on this device; report what you cooked and what remains to update inventory.</li>
+      </ul>
+    </section>
+    <p><button type="button" id="start-over">Start over for a new cooking session</button></p>
+  </main>
+  <aside class="progress-dock" aria-label="Cooking progress">
+    <div class="progress-inner">
+      <div class="progress-row">
+        <span class="progress-count">0 done</span>
+        <span class="progress-timers">No timers running</span>
+      </div>
+      <span class="progress-next">Next: first task</span>
+      <div class="progress-track" aria-hidden="true">
+        <div class="progress-fill"></div>
+      </div>
+      <span class="progress-save">Checking save support...</span>
+    </div>
+  </aside>
+  <script>
+    (() => {
+      const timers = new Map();
+      let audioContext = null;
+      let wakeLock = null;
+      const checkboxes = [...document.querySelectorAll('.check-item > input[type="checkbox"], .timeline > li > input[type="checkbox"]')];
+      const timerControls = [...document.querySelectorAll(".timer-control")];
+      const progressCount = document.querySelector(".progress-count");
+      const progressTimers = document.querySelector(".progress-timers");
+      const progressNext = document.querySelector(".progress-next");
+      const progressFill = document.querySelector(".progress-fill");
+      const progressSave = document.querySelector(".progress-save");
+      let progressInitialized = false;
+      let wasComplete = false;
+      const stateKey = `meal-planning:${document.documentElement.dataset.stateKey || location.pathname || document.title}`;
+
+      const storage = (() => {
+        try {
+          const testKey = `${stateKey}:test`;
+          window.localStorage.setItem(testKey, "1");
+          window.localStorage.removeItem(testKey);
+          return window.localStorage;
+        } catch (error) {
+          return null;
+        }
+      })();
+
+      const loadState = () => {
+        if (!storage) return {};
+        try {
+          return JSON.parse(storage.getItem(stateKey) || "{}");
+        } catch (error) {
+          return {};
+        }
+      };
+
+      const savedState = loadState();
+
+      const saveState = () => {
+        if (!storage) {
+          if (progressSave) progressSave.textContent = "Session only; this viewer is not allowing persistent save.";
+          return;
+        }
+        const timerState = timerControls.map((control) => {
+          const active = timers.get(control);
+          return {
+            endsAt: active?.endsAt || null,
+            done: control.classList.contains("is-done"),
+          };
+        });
+        storage.setItem(stateKey, JSON.stringify({
+          checked: checkboxes.map((box) => box.checked),
+          timers: timerState,
+          savedAt: new Date().toISOString(),
+        }));
+        if (progressSave) progressSave.textContent = "Progress saved on this device.";
+      };
+
+      const formatTime = (seconds) => {
+        const safe = Math.max(0, Math.ceil(seconds));
+        const mins = Math.floor(safe / 60);
+        const secs = safe % 60;
+        return `${mins}:${String(secs).padStart(2, "0")}`;
+      };
+
+      const beep = async () => {
+        try {
+          audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+          if (audioContext.state === "suspended") await audioContext.resume();
+          const now = audioContext.currentTime;
+          [0, 0.22, 0.44].forEach((offset) => {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(880, now + offset);
+            gain.gain.setValueAtTime(0.0001, now + offset);
+            gain.gain.exponentialRampToValueAtTime(0.25, now + offset + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.16);
+            osc.connect(gain).connect(audioContext.destination);
+            osc.start(now + offset);
+            osc.stop(now + offset + 0.18);
+          });
+        } catch (error) {
+          // Browser may block audio; vibration/status text still help.
+        }
+      };
+
+      const alertDone = async (label) => {
+        if ("vibrate" in navigator) navigator.vibrate([350, 120, 350, 120, 500]);
+        await beep();
+        document.title = `${label} done`;
+      };
+
+      const taskName = (checkbox) => {
+        const item = checkbox.closest(".check-item, li");
+        if (item?.dataset.taskLabel) return item.dataset.taskLabel;
+        const label = item?.querySelector(".step-title, .item-title, .action-label")?.textContent?.trim();
+        if (label) return label;
+        return item?.innerText?.trim()?.split("\n")[0] || "next task";
+      };
+
+      const timerSummary = () => {
+        const running = [...document.querySelectorAll(".timer-control.is-running")].map((control) => {
+          const label = control.dataset.timerLabel || "Timer";
+          const readout = control.querySelector(".timer-readout")?.textContent || "";
+          return `${label}: ${readout}`;
+        });
+        return running.length ? running.join(" | ") : "No timers running";
+      };
+
+      const celebrateCompletion = () => {
+        if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;
+        const layer = document.createElement("div");
+        const colors = ["#2f6f5e", "#d6a64d", "#8a5a24", "#d86f45", "#345e7b", "#f5cf6b"];
+        layer.className = "confetti-layer";
+        layer.setAttribute("aria-hidden", "true");
+        document.body.appendChild(layer);
+
+        for (let index = 0; index < 44; index += 1) {
+          const piece = document.createElement("span");
+          const color = colors[index % colors.length];
+          piece.className = "confetti-piece";
+          piece.style.left = `${5 + Math.random() * 90}%`;
+          piece.style.background = color;
+          piece.style.setProperty("--drift", `${Math.round((Math.random() - 0.5) * 180)}px`);
+          piece.style.setProperty("--spin", `${Math.round(240 + Math.random() * 520)}deg`);
+          piece.style.setProperty("--fall-duration", `${1400 + Math.random() * 1300}ms`);
+          piece.style.animationDelay = `${Math.random() * 260}ms`;
+          if (index % 3 === 0) piece.style.borderRadius = "999px";
+          layer.appendChild(piece);
+        }
+
+        window.setTimeout(() => layer.remove(), 3400);
+      };
+
+      const updateProgress = () => {
+        if (!progressCount || !progressNext || !progressFill) return;
+        const total = checkboxes.length;
+        const done = checkboxes.filter((box) => box.checked).length;
+        const pct = total ? Math.round((done / total) * 100) : 0;
+        const isComplete = total > 0 && done === total;
+        document.querySelectorAll(".check-item.is-next, li.is-next").forEach((item) => item.classList.remove("is-next"));
+        const next = checkboxes.find((box) => !box.checked);
+        if (next) next.closest(".check-item, li")?.classList.add("is-next");
+        document.body.classList.toggle("is-complete", isComplete);
+        progressCount.textContent = total ? `${done}/${total} done` : "No checklist";
+        if (progressTimers) progressTimers.textContent = isComplete ? "Cook flow complete" : timerSummary();
+        progressNext.textContent = next ? `Next action: ${taskName(next)}` : "Done - everything is checked. Nice work; the meal is ready.";
+        progressFill.style.width = `${pct}%`;
+        if (progressInitialized && isComplete && !wasComplete) celebrateCompletion();
+        wasComplete = isComplete;
+        progressInitialized = true;
+      };
+
+      const requestWakeLock = async () => {
+        try {
+          if ("wakeLock" in navigator && !wakeLock) {
+            wakeLock = await navigator.wakeLock.request("screen");
+            wakeLock.addEventListener("release", () => { wakeLock = null; });
+          }
+        } catch (error) {
+          // Wake lock is optional and not supported on every phone/browser.
+        }
+      };
+
+      const resetTimer = (control) => {
+        const state = timers.get(control);
+        if (state?.interval) clearInterval(state.interval);
+        timers.delete(control);
+        const duration = Number(control.dataset.durationSeconds || 0);
+        control.classList.remove("is-running", "is-done");
+        control.querySelector(".timer-readout").textContent = formatTime(duration);
+        control.querySelector(".timer-start").textContent = control.querySelector(".timer-start").dataset.originalText;
+        control.querySelector(".timer-status").textContent = "Timer not started.";
+        saveState();
+      };
+
+      const updateTimer = (control) => {
+        const state = timers.get(control);
+        if (!state) return;
+        const remaining = (state.endsAt - Date.now()) / 1000;
+        control.querySelector(".timer-readout").textContent = formatTime(remaining);
+        updateProgress();
+        if (remaining <= 0) {
+          clearInterval(state.interval);
+          timers.delete(control);
+          control.classList.remove("is-running");
+          control.classList.add("is-done");
+          control.querySelector(".timer-readout").textContent = "Done";
+          control.querySelector(".timer-start").textContent = "Start again";
+          control.querySelector(".timer-status").textContent = `${control.dataset.timerLabel} is done.`;
+          saveState();
+          updateProgress();
+          alertDone(control.dataset.timerLabel || "Timer");
+        }
+      };
+
+      checkboxes.forEach((box, index) => {
+        if (Array.isArray(savedState.checked) && typeof savedState.checked[index] === "boolean") {
+          box.checked = savedState.checked[index];
+        }
+      });
+
+      timerControls.forEach((control, index) => {
+        const start = control.querySelector(".timer-start");
+        const reset = control.querySelector(".timer-reset");
+        const duration = Number(control.dataset.durationSeconds || 0);
+        start.dataset.originalText = start.textContent;
+        control.querySelector(".timer-readout").textContent = formatTime(duration);
+
+        start.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          await requestWakeLock();
+          if (timers.has(control)) return;
+          control.classList.remove("is-done");
+          control.classList.add("is-running");
+          start.textContent = "Running";
+          control.querySelector(".timer-status").textContent = `${control.dataset.timerLabel} timer running. Keep this page open for sound/vibration.`;
+          const state = {
+            endsAt: Date.now() + duration * 1000,
+            interval: setInterval(() => updateTimer(control), 500),
+          };
+          timers.set(control, state);
+          saveState();
+          updateTimer(control);
+          updateProgress();
+        });
+
+        reset.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          resetTimer(control);
+          updateProgress();
+        });
+
+        const restored = savedState.timers?.[index];
+        if (restored?.endsAt) {
+          if (restored.endsAt > Date.now()) {
+            control.classList.add("is-running");
+            start.textContent = "Running";
+            control.querySelector(".timer-status").textContent = `${control.dataset.timerLabel} timer restored. Keep this page open for sound/vibration.`;
+            timers.set(control, {
+              endsAt: restored.endsAt,
+              interval: setInterval(() => updateTimer(control), 500),
+            });
+            updateTimer(control);
+          } else {
+            control.classList.add("is-done");
+            control.querySelector(".timer-readout").textContent = "Done";
+            start.textContent = "Start again";
+            control.querySelector(".timer-status").textContent = `${control.dataset.timerLabel} finished while the page was closed.`;
+          }
+        } else if (restored?.done) {
+          control.classList.add("is-done");
+          control.querySelector(".timer-readout").textContent = "Done";
+          start.textContent = "Start again";
+          control.querySelector(".timer-status").textContent = `${control.dataset.timerLabel} was marked done.`;
+        }
+      });
+
+      checkboxes.forEach((box) => box.addEventListener("change", () => {
+        saveState();
+        updateProgress();
+      }));
+
+      const bindFullCardToggle = (card) => {
+        if (card.tagName === "LABEL") return;
+        const box = card.querySelector('input[type="checkbox"]');
+        if (!box) return;
+        card.addEventListener("click", (event) => {
+          if (event.target.closest("input, button, a, .timer-control")) return;
+          box.checked = !box.checked;
+          box.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      };
+      document.querySelectorAll(".check-item, .timeline > li").forEach(bindFullCardToggle);
+      document.getElementById("start-over").addEventListener("click", () => {
+        if (!window.confirm("Clear checkoffs and timers for a fresh cooking session?")) return;
+        checkboxes.forEach(box => { box.checked = false; });
+        timerControls.forEach(control => resetTimer(control));
+        saveState();
+        updateProgress();
+      });
+      saveState();
+      updateProgress();
+    })();
+  </script>
+</body>
+</html>

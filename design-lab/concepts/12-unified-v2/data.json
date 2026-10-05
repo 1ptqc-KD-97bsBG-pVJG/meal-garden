@@ -1,0 +1,1592 @@
+{
+  "note": "Entirely fictional UI example. Stock, receipts, cooking reports, activity and nutrition estimates are authored for this prototype and describe no real household.",
+  "now": "2030-04-10T18:40:00Z",
+  "profile": {
+    "schema_version": 1,
+    "name": "Sample owner",
+    "people": 1,
+    "timezone": "UTC",
+    "preferences": [],
+    "exclude": [],
+    "unknown": [
+      "personal goals"
+    ]
+  },
+  "kitchen": {
+    "schema_version": 1,
+    "available": [
+      "Stove",
+      "Oven",
+      "Microwave"
+    ],
+    "unconfirmed": []
+  },
+  "activePlan": {
+    "schema_version": 1,
+    "id": "fictional-plan",
+    "timezone": "UTC",
+    "status": "active",
+    "meals": [
+      {
+        "date": "2030-04-10",
+        "recipe_id": "roast-chickpea-rice",
+        "recipe_revision": 1,
+        "batches": 1
+      }
+    ]
+  },
+  "recipes": [
+    {
+      "schema_version": 1,
+      "id": "roast-chickpea-rice",
+      "revision": 1,
+      "title": "Roasted Chickpea Rice Bowls",
+      "readiness": "ready",
+      "tested_status": "untested",
+      "source_method": "original-sample",
+      "yield": {
+        "servings": 4
+      },
+      "yield_notes": "Makes 4 portions. This is fictional starter content, not a cooking report.",
+      "equipment": [
+        "stove",
+        "medium saucepan with lid",
+        "conventional oven",
+        "rimmed tray"
+      ],
+      "total_minutes": 45,
+      "active_minutes": 15,
+      "storage_days": "up to 4 days",
+      "ingredients": [
+        {
+          "id": "brown-rice",
+          "name": "Brown rice",
+          "amount": 200,
+          "unit": "g",
+          "detail": "Dry; check package cooking time.",
+          "purchase": {
+            "unit": "bag",
+            "capacity": 1000,
+            "label": "1000 g bag"
+          }
+        },
+        {
+          "id": "chickpeas",
+          "name": "Cooked chickpeas",
+          "amount": 400,
+          "unit": "g",
+          "detail": "Drained and rinsed weight; choose cans accordingly.",
+          "purchase": {
+            "unit": "can",
+            "capacity": 400,
+            "label": "400 g can"
+          }
+        },
+        {
+          "id": "broccoli",
+          "name": "Broccoli florets",
+          "amount": 400,
+          "unit": "g",
+          "detail": "Cut large florets into 3 cm pieces.",
+          "purchase": {
+            "unit": "bag",
+            "capacity": 400,
+            "label": "400 g bag"
+          }
+        },
+        {
+          "id": "olive-oil",
+          "name": "Olive oil",
+          "amount": 15,
+          "unit": "ml",
+          "detail": "For chickpeas and broccoli.",
+          "purchase": {
+            "unit": "bottle",
+            "capacity": 500,
+            "label": "500 ml bottle"
+          }
+        },
+        {
+          "id": "lemon",
+          "name": "Lemon juice",
+          "amount": 30,
+          "unit": "ml",
+          "detail": "For serving.",
+          "purchase": {
+            "unit": "bottle",
+            "capacity": 250,
+            "label": "250 ml bottle"
+          }
+        },
+        {
+          "id": "water",
+          "name": "Water",
+          "amount": 450,
+          "unit": "ml",
+          "detail": "For rice; follow package ratio if different.",
+          "purchase": {
+            "unit": "tap water",
+            "capacity": 1000,
+            "label": "1000 ml tap water"
+          }
+        },
+        {
+          "id": "salt",
+          "name": "Salt",
+          "amount": 3,
+          "unit": "g",
+          "detail": "Half for rice and half for tray.",
+          "purchase": {
+            "unit": "box",
+            "capacity": 500,
+            "label": "500 g box"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "title": "Start the rice",
+          "text": "Put 200 g brown rice, 450 ml water and 1.5 g salt in a medium saucepan. Bring to a boil, cover and reduce to low heat. Cook 35 minutes or the package time until tender, then rest covered 5 minutes.",
+          "start_minute": 0,
+          "minutes": 42,
+          "equipment": "Stove",
+          "passive_minutes": 35,
+          "timer_minutes": 35
+        },
+        {
+          "title": "Prepare the tray",
+          "text": "Heat a conventional oven to 220°C / 425°F. Drain 400 g cooked chickpeas and pat dry. Toss with 400 g broccoli, 15 ml olive oil and 1.5 g salt on a rimmed tray. Spread into one uncrowded layer.",
+          "start_minute": 2,
+          "minutes": 8,
+          "equipment": "Counter"
+        },
+        {
+          "title": "Roast the vegetables",
+          "text": "Place the tray on the middle oven rack. Roast 22 minutes, tossing after 12 minutes. Broccoli should be tender with browned edges; chickpeas should be hot throughout. Give pale or firm florets another 3 minutes.",
+          "start_minute": 10,
+          "minutes": 25,
+          "equipment": "Oven",
+          "passive_minutes": 22,
+          "timer_minutes": 22
+        },
+        {
+          "title": "Build the bowls",
+          "text": "Fluff the rested rice. Divide rice, chickpeas and broccoli among four bowls, adding 30 ml lemon juice across the bowls. Refrigerate reserved portions in shallow containers within two hours; freeze later portions promptly.",
+          "start_minute": 42,
+          "minutes": 3,
+          "equipment": "Counter"
+        }
+      ],
+      "notes": {
+        "storage": "Refrigerate within two hours in shallow covered containers. Use within four days or freeze promptly.",
+        "reheat": "Heat stored savory portions until steaming throughout. Stir to eliminate cold spots.",
+        "allergens": "Check ingredient labels and adapt to your household needs before preparing."
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "lentil-tomato-pot",
+      "revision": 1,
+      "title": "Lentil Tomato Pot",
+      "readiness": "ready",
+      "tested_status": "untested",
+      "source_method": "original-sample",
+      "yield": {
+        "servings": 4
+      },
+      "yield_notes": "Makes 4 portions. This is fictional starter content, not a cooking report.",
+      "equipment": [
+        "medium saucepan",
+        "sieve",
+        "knife",
+        "board"
+      ],
+      "total_minutes": 35,
+      "active_minutes": 17,
+      "storage_days": "up to 4 days",
+      "ingredients": [
+        {
+          "id": "red-lentils",
+          "name": "Dry red lentils",
+          "amount": 200,
+          "unit": "g",
+          "detail": "Rinse in a sieve and drain.",
+          "purchase": {
+            "unit": "bag",
+            "capacity": 500,
+            "label": "500 g bag"
+          }
+        },
+        {
+          "id": "carrot",
+          "name": "Carrots",
+          "amount": 200,
+          "unit": "g",
+          "detail": "Wash, peel if needed, and dice into 1 cm pieces.",
+          "purchase": {
+            "unit": "bag",
+            "capacity": 1000,
+            "label": "1000 g bag"
+          }
+        },
+        {
+          "id": "tomatoes",
+          "name": "Crushed tomatoes",
+          "amount": 400,
+          "unit": "g",
+          "detail": "Use the entire can.",
+          "purchase": {
+            "unit": "can",
+            "capacity": 400,
+            "label": "400 g can"
+          }
+        },
+        {
+          "id": "olive-oil",
+          "name": "Olive oil",
+          "amount": 15,
+          "unit": "ml",
+          "detail": "Measure for the pot.",
+          "purchase": {
+            "unit": "bottle",
+            "capacity": 500,
+            "label": "500 ml bottle"
+          }
+        },
+        {
+          "id": "cumin",
+          "name": "Ground cumin",
+          "amount": 2,
+          "unit": "g",
+          "detail": "About 1 teaspoon.",
+          "purchase": {
+            "unit": "jar",
+            "capacity": 40,
+            "label": "40 g jar"
+          }
+        },
+        {
+          "id": "water",
+          "name": "Water",
+          "amount": 750,
+          "unit": "ml",
+          "detail": "Add more if needed to loosen the stew.",
+          "purchase": {
+            "unit": "tap water",
+            "capacity": 1000,
+            "label": "1000 ml tap water"
+          }
+        },
+        {
+          "id": "salt",
+          "name": "Salt",
+          "amount": 3,
+          "unit": "g",
+          "detail": "About 1/2 teaspoon; adjust at the table.",
+          "purchase": {
+            "unit": "box",
+            "capacity": 500,
+            "label": "500 g box"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "title": "Prepare the vegetables",
+          "text": "Rinse 200 g lentils. Wash and dice 200 g carrots into 1 cm pieces. Set out 400 g tomatoes, 750 ml water, 15 ml olive oil, 2 g cumin and 3 g salt.",
+          "start_minute": 0,
+          "minutes": 5,
+          "equipment": "Counter"
+        },
+        {
+          "title": "Soften the carrots",
+          "text": "Heat 15 ml olive oil in a medium saucepan over medium heat. Add 200 g diced carrots; stir for 5 minutes until their edges soften. Reduce heat if they brown rapidly.",
+          "start_minute": 5,
+          "minutes": 5,
+          "equipment": "Stove"
+        },
+        {
+          "title": "Simmer the lentils",
+          "text": "Stir in 2 g cumin for 30 seconds. Add 200 g lentils, 400 g tomatoes, 750 ml water and 3 g salt. Bring to a gentle boil, lower to a simmer and cook uncovered for 18 minutes. Stir occasionally; the lentils should be soft and the stew spoonable.",
+          "start_minute": 10,
+          "minutes": 20,
+          "equipment": "Stove",
+          "passive_minutes": 18,
+          "timer_minutes": 18
+        },
+        {
+          "title": "Check the texture",
+          "text": "Taste a lentil. If still firm, simmer 3–5 minutes more and add a splash of water to prevent sticking. Taste the stew and season at the table.",
+          "start_minute": 30,
+          "minutes": 3,
+          "equipment": "Stove"
+        },
+        {
+          "title": "Serve and store",
+          "text": "Divide into four bowls. Cool reserved portions in shallow containers and refrigerate within two hours. Label the preparation date; freeze portions intended beyond four days.",
+          "start_minute": 33,
+          "minutes": 2,
+          "equipment": "Counter"
+        }
+      ],
+      "notes": {
+        "storage": "Refrigerate within two hours in shallow covered containers. Use within four days or freeze promptly.",
+        "reheat": "Heat stored savory portions until steaming throughout. Stir to eliminate cold spots.",
+        "allergens": "Check ingredient labels and adapt to your household needs before preparing."
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "apple-seed-oats",
+      "revision": 1,
+      "title": "Apple Seed Overnight Oats",
+      "readiness": "ready",
+      "tested_status": "untested",
+      "source_method": "original-sample",
+      "yield": {
+        "servings": 4
+      },
+      "yield_notes": "Makes 4 portions. This is fictional starter content, not a cooking report.",
+      "equipment": [
+        "four covered food containers",
+        "knife",
+        "board"
+      ],
+      "total_minutes": 368,
+      "active_minutes": 8,
+      "storage_days": "up to 4 days",
+      "ingredients": [
+        {
+          "id": "rolled-oats",
+          "name": "Rolled oats",
+          "amount": 160,
+          "unit": "g",
+          "detail": "Use old-fashioned oats.",
+          "purchase": {
+            "unit": "bag",
+            "capacity": 500,
+            "label": "500 g bag"
+          }
+        },
+        {
+          "id": "soy-milk",
+          "name": "Unsweetened soy milk",
+          "amount": 600,
+          "unit": "ml",
+          "detail": "Chilled; check allergens on label.",
+          "purchase": {
+            "unit": "carton",
+            "capacity": 1000,
+            "label": "1000 ml carton"
+          }
+        },
+        {
+          "id": "apple",
+          "name": "Apple",
+          "amount": 200,
+          "unit": "g",
+          "detail": "Wash and dice, discarding core and seeds.",
+          "purchase": {
+            "unit": "fruit",
+            "capacity": 200,
+            "label": "200 g fruit"
+          }
+        },
+        {
+          "id": "pumpkin-seeds",
+          "name": "Pumpkin seeds",
+          "amount": 40,
+          "unit": "g",
+          "detail": "Use unsalted seeds.",
+          "purchase": {
+            "unit": "bag",
+            "capacity": 200,
+            "label": "200 g bag"
+          }
+        },
+        {
+          "id": "cinnamon",
+          "name": "Ground cinnamon",
+          "amount": 2,
+          "unit": "g",
+          "detail": "About 1 teaspoon.",
+          "purchase": {
+            "unit": "jar",
+            "capacity": 40,
+            "label": "40 g jar"
+          }
+        }
+      ],
+      "steps": [
+        {
+          "title": "Set out the containers",
+          "text": "Use four clean containers with lids. Measure 160 g oats, 600 ml soy milk, 40 g pumpkin seeds and 2 g cinnamon.",
+          "start_minute": 0,
+          "minutes": 2,
+          "equipment": "Counter"
+        },
+        {
+          "title": "Mix the oats",
+          "text": "Divide 160 g oats, 600 ml soy milk and 2 g cinnamon evenly among the four containers. Stir until no dry oats remain.",
+          "start_minute": 2,
+          "minutes": 3,
+          "equipment": "Counter"
+        },
+        {
+          "title": "Add apple and seeds",
+          "text": "Wash and dice 200 g apple into small pieces. Divide the apple and 40 g pumpkin seeds among the containers. Stir, cover and refrigerate.",
+          "start_minute": 5,
+          "minutes": 3,
+          "equipment": "Counter"
+        },
+        {
+          "title": "Chill and serve",
+          "text": "Chill at least 6 hours until the oats soften. Stir before eating; add a little soy milk if too thick. Keep refrigerated and use within four days of preparation.",
+          "start_minute": 8,
+          "minutes": 360,
+          "equipment": "Fridge",
+          "passive_minutes": 360,
+          "timer_minutes": 360
+        }
+      ],
+      "notes": {
+        "storage": "Refrigerate within two hours in shallow covered containers. Use within four days or freeze promptly.",
+        "reheat": "Heat stored savory portions until steaming throughout. Stir to eliminate cold spots.",
+        "allergens": "Check ingredient labels and adapt to your household needs before preparing."
+      }
+    }
+  ],
+  "cooking": [
+    {
+      "id": "fictional-lentil-cook",
+      "recipeId": "lentil-tomato-pot",
+      "createdAt": "2030-04-09T18:00:00Z",
+      "source": "Fictional UI fixture",
+      "status": "reported_cooked",
+      "note": "Fictional example: four portions prepared, two reserved. This is not a real cooking report."
+    },
+    {
+      "id": "fictional-oat-prep",
+      "recipeId": "apple-seed-oats",
+      "createdAt": "2030-04-09T20:00:00Z",
+      "source": "Fictional UI fixture",
+      "status": "reported_cooked",
+      "note": "Fictional example: four breakfast jars prepared."
+    }
+  ],
+  "receipts": [
+    {
+      "id": "fictional-receipt-produce",
+      "store": "Sample Market",
+      "date": "2030-04-08",
+      "total": 10.5,
+      "source": "Fictional UI fixture",
+      "items": [
+        {
+          "name": "Broccoli",
+          "quantity": "400 g bag",
+          "price": 3
+        },
+        {
+          "name": "Apples",
+          "quantity": "4 apples",
+          "price": 4
+        },
+        {
+          "name": "Soy milk",
+          "quantity": "1 litre carton",
+          "price": 3.5
+        }
+      ]
+    },
+    {
+      "id": "fictional-receipt-pantry",
+      "store": "Example Grocer",
+      "date": "2030-04-08",
+      "total": 9,
+      "source": "Fictional UI fixture",
+      "items": [
+        {
+          "name": "Chickpeas",
+          "quantity": "2 cans",
+          "price": 3
+        },
+        {
+          "name": "Red lentils",
+          "quantity": "500 g bag",
+          "price": 2.5
+        },
+        {
+          "name": "Rolled oats",
+          "quantity": "500 g pack",
+          "price": 3.5
+        }
+      ]
+    }
+  ],
+  "kitchenReset": {
+    "items": [
+      {
+        "key": "fictional-stock-oatjars",
+        "name": "Prepared apple oats",
+        "fullName": "Prepared apple oats",
+        "location": "fridge",
+        "purchasedOn": "2030-04-09",
+        "ageDays": 1,
+        "typicalDays": 3,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Four jars prepared in this fictional example",
+        "packages": true,
+        "count": 2,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-09",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-soymilk",
+        "name": "Soy milk",
+        "fullName": "Soy milk",
+        "location": "fridge",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 7,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Opened amount unknown",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-hummus",
+        "name": "Hummus",
+        "fullName": "Hummus",
+        "location": "fridge",
+        "purchasedOn": "2030-04-06",
+        "ageDays": 4,
+        "typicalDays": 5,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional package: inspect before using",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-06",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-seitan",
+        "name": "Seitan",
+        "fullName": "Seitan",
+        "location": "fridge",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 5,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "One unopened example pack",
+        "packages": true,
+        "count": 1,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-lentilpot",
+        "name": "Lentil tomato pot",
+        "fullName": "Lentil tomato pot",
+        "location": "fridge",
+        "purchasedOn": "2030-04-09",
+        "ageDays": 1,
+        "typicalDays": 4,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional cook: two reserved portions",
+        "packages": true,
+        "count": 2,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-09",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-peasoup",
+        "name": "Pea soup",
+        "fullName": "Pea soup",
+        "location": "fridge",
+        "purchasedOn": "2030-04-07",
+        "ageDays": 3,
+        "typicalDays": 4,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Example remainder: amount unconfirmed",
+        "packages": true,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-07",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-squash",
+        "name": "Baked squash",
+        "fullName": "Baked squash",
+        "location": "fridge",
+        "purchasedOn": "2030-04-02",
+        "ageDays": 8,
+        "typicalDays": 4,
+        "state": "fictional-example",
+        "risk": "example-warning",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional age warning: check and discard if unsafe",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-02",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-grapes",
+        "name": "Grapes",
+        "fullName": "Grapes",
+        "location": "fridge",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 7,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Example produce box",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-pears",
+        "name": "Pears",
+        "fullName": "Pears",
+        "location": "fridge",
+        "purchasedOn": "2030-04-05",
+        "ageDays": 5,
+        "typicalDays": 7,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional ripeness reminder",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-05",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-romaine",
+        "name": "Romaine lettuce",
+        "fullName": "Romaine lettuce",
+        "location": "drawers",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 5,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Example small head",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-broccoli",
+        "name": "Broccoli",
+        "fullName": "Broccoli",
+        "location": "drawers",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 5,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Example bag: quantity unconfirmed",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-fennel",
+        "name": "Fennel",
+        "fullName": "Fennel",
+        "location": "drawers",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 7,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "One fictional bulb",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-carrot",
+        "name": "Carrots",
+        "fullName": "Carrots",
+        "location": "drawers",
+        "purchasedOn": "2030-04-04",
+        "ageDays": 6,
+        "typicalDays": 10,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional suggestion: add some to tonight’s bowls",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-04",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-leeks",
+        "name": "Leeks",
+        "fullName": "Leeks",
+        "location": "drawers",
+        "purchasedOn": "2030-04-07",
+        "ageDays": 3,
+        "typicalDays": 7,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Example bunch",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-07",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-lemon",
+        "name": "Lemons",
+        "fullName": "Lemons",
+        "location": "drawers",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 14,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Example citrus bag",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-radish",
+        "name": "Radishes",
+        "fullName": "Radishes",
+        "location": "drawers",
+        "purchasedOn": "2030-04-05",
+        "ageDays": 5,
+        "typicalDays": 7,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Example bunch: check texture",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-05",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-mango",
+        "name": "Frozen mango",
+        "fullName": "Frozen mango",
+        "location": "freezer",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 90,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional freezer bag",
+        "packages": true,
+        "count": 1,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-corn",
+        "name": "Frozen sweetcorn",
+        "fullName": "Frozen sweetcorn",
+        "location": "freezer",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 90,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional freezer bag",
+        "packages": true,
+        "count": 1,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-rye",
+        "name": "Rye rolls",
+        "fullName": "Rye rolls",
+        "location": "freezer",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 30,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional frozen bread pack",
+        "packages": true,
+        "count": 1,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-rice",
+        "name": "Brown rice",
+        "fullName": "Brown rice",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 180,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional dry rice bag",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-lentils",
+        "name": "Red lentils",
+        "fullName": "Red lentils",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 180,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Example bag: about half remains after the lentil pot",
+        "packages": false,
+        "count": null,
+        "level": 2,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-chickpeas",
+        "name": "Chickpeas",
+        "fullName": "Chickpeas",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 365,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Two cans in the fictional receipt",
+        "packages": true,
+        "count": 2,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-tomatoes",
+        "name": "Canned tomatoes",
+        "fullName": "Canned tomatoes",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 365,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "One spare fictional can",
+        "packages": true,
+        "count": 1,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-oats",
+        "name": "Rolled oats",
+        "fullName": "Rolled oats",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 180,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional breakfast supply",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-cornmeal",
+        "name": "Cornmeal",
+        "fullName": "Cornmeal",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 180,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Example dry-goods box",
+        "packages": true,
+        "count": 1,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-pumpkin",
+        "name": "Pumpkin seeds",
+        "fullName": "Pumpkin seeds",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 90,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional oats topping",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-sunflower",
+        "name": "Sunflower seeds",
+        "fullName": "Sunflower seeds",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 90,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Example alternate topping",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-cinnamon",
+        "name": "Cinnamon",
+        "fullName": "Cinnamon",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 365,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional spice jar",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-oil",
+        "name": "Olive oil",
+        "fullName": "Olive oil",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 180,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional cooking oil",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-cumin",
+        "name": "Cumin",
+        "fullName": "Cumin",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 365,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional lentil-pot seasoning",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-tahini",
+        "name": "Tahini",
+        "fullName": "Tahini",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 90,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Example jar: amount unconfirmed",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-salt",
+        "name": "Salt",
+        "fullName": "Salt",
+        "location": "pantry",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 365,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Example seasoning box",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      },
+      {
+        "key": "fictional-stock-apples",
+        "name": "Apples",
+        "fullName": "Apples",
+        "location": "drawers",
+        "purchasedOn": "2030-04-08",
+        "ageDays": 2,
+        "typicalDays": 14,
+        "state": "fictional-example",
+        "risk": "normal",
+        "note": "Fictional UI fixture; never a real pantry observation.",
+        "knowledge": "Fictional oats ingredient",
+        "packages": false,
+        "count": null,
+        "level": 3,
+        "sources": [
+          {
+            "type": "fictional-fixture",
+            "date": "2030-04-08",
+            "quantity": "example quantity"
+          }
+        ]
+      }
+    ],
+    "planned": [
+      {
+        "recipeId": "roast-chickpea-rice",
+        "title": "Roasted Chickpea Rice Bowls",
+        "date": "2030-04-10",
+        "cooked": false
+      }
+    ],
+    "leftovers": [
+      {
+        "cookingId": "fictional-lentil-cook",
+        "recipeId": "lentil-tomato-pot",
+        "title": "Lentil tomato pot",
+        "cookedOn": "2030-04-09",
+        "ageDays": 1,
+        "disposition": "fictional-unconfirmed",
+        "servings": 2
+      }
+    ],
+    "counts": {
+      "toCheck": 33,
+      "checked": 0,
+      "perishable": 17,
+      "stable": 16
+    }
+  },
+  "foodLog": [
+    {
+      "id": "fictional-oats-yesterday",
+      "capturedAt": "2030-04-09T08:10:00Z",
+      "kind": "meal",
+      "title": "Apple seed oats",
+      "short": "Apple seed oats",
+      "recipe": "apple-seed-oats",
+      "note": "Fictional UI fixture: one example serving. Nutrition ranges are illustrative estimates.",
+      "hasPhoto": false,
+      "items": [
+        {
+          "name": "Rolled oats",
+          "portion": "example portion",
+          "confidence": "estimated"
+        },
+        {
+          "name": "Soy milk",
+          "portion": "example portion",
+          "confidence": "estimated"
+        },
+        {
+          "name": "Apple",
+          "portion": "example portion",
+          "confidence": "estimated"
+        },
+        {
+          "name": "Pumpkin seeds",
+          "portion": "example portion",
+          "confidence": "estimated"
+        }
+      ],
+      "nutrition": {
+        "calories": {
+          "low": 280,
+          "high": 350
+        },
+        "protein_g": {
+          "low": 10,
+          "high": 15
+        },
+        "fiber_g": {
+          "low": 6,
+          "high": 9
+        }
+      },
+      "confidence": "estimated",
+      "questions": []
+    },
+    {
+      "id": "fictional-lentils-evening",
+      "capturedAt": "2030-04-09T18:20:00Z",
+      "kind": "meal",
+      "title": "Lentil tomato pot",
+      "short": "Lentil tomato pot",
+      "recipe": "lentil-tomato-pot",
+      "note": "Fictional UI fixture: one example serving. Nutrition ranges are illustrative estimates.",
+      "hasPhoto": false,
+      "items": [
+        {
+          "name": "Red lentils",
+          "portion": "example portion",
+          "confidence": "estimated"
+        },
+        {
+          "name": "Carrot",
+          "portion": "example portion",
+          "confidence": "estimated"
+        },
+        {
+          "name": "Tomatoes",
+          "portion": "example portion",
+          "confidence": "estimated"
+        },
+        {
+          "name": "Cumin",
+          "portion": "example portion",
+          "confidence": "estimated"
+        }
+      ],
+      "nutrition": {
+        "calories": {
+          "low": 260,
+          "high": 340
+        },
+        "protein_g": {
+          "low": 13,
+          "high": 18
+        },
+        "fiber_g": {
+          "low": 9,
+          "high": 13
+        }
+      },
+      "confidence": "estimated",
+      "questions": []
+    },
+    {
+      "id": "fictional-oats-today",
+      "capturedAt": "2030-04-10T08:00:00Z",
+      "kind": "meal",
+      "title": "Apple seed oats",
+      "short": "Apple seed oats",
+      "recipe": "apple-seed-oats",
+      "note": "Fictional UI fixture: one example serving. Nutrition ranges are illustrative estimates.",
+      "hasPhoto": false,
+      "items": [
+        {
+          "name": "Rolled oats",
+          "portion": "example portion",
+          "confidence": "estimated"
+        },
+        {
+          "name": "Soy milk",
+          "portion": "example portion",
+          "confidence": "estimated"
+        },
+        {
+          "name": "Apple",
+          "portion": "example portion",
+          "confidence": "estimated"
+        },
+        {
+          "name": "Pumpkin seeds",
+          "portion": "example portion",
+          "confidence": "estimated"
+        }
+      ],
+      "nutrition": {
+        "calories": {
+          "low": 280,
+          "high": 350
+        },
+        "protein_g": {
+          "low": 10,
+          "high": 15
+        },
+        "fiber_g": {
+          "low": 6,
+          "high": 9
+        }
+      },
+      "confidence": "estimated",
+      "questions": []
+    },
+    {
+      "id": "fictional-lentils-lunch",
+      "capturedAt": "2030-04-10T12:10:00Z",
+      "kind": "meal",
+      "title": "Leftover lentil tomato pot",
+      "short": "Leftover lentil tomato pot",
+      "recipe": "lentil-tomato-pot",
+      "note": "Fictional UI fixture: one example serving. Nutrition ranges are illustrative estimates.",
+      "hasPhoto": false,
+      "items": [
+        {
+          "name": "Red lentils",
+          "portion": "example portion",
+          "confidence": "estimated"
+        },
+        {
+          "name": "Carrot",
+          "portion": "example portion",
+          "confidence": "estimated"
+        },
+        {
+          "name": "Tomatoes",
+          "portion": "example portion",
+          "confidence": "estimated"
+        }
+      ],
+      "nutrition": {
+        "calories": {
+          "low": 260,
+          "high": 340
+        },
+        "protein_g": {
+          "low": 13,
+          "high": 18
+        },
+        "fiber_g": {
+          "low": 9,
+          "high": 13
+        }
+      },
+      "confidence": "estimated",
+      "questions": []
+    },
+    {
+      "id": "fictional-tea",
+      "capturedAt": "2030-04-10T12:15:00Z",
+      "kind": "drink",
+      "title": "Mint tea",
+      "short": "Mint tea",
+      "recipe": null,
+      "note": "Fictional UI fixture: one example serving. Nutrition ranges are illustrative estimates.",
+      "hasPhoto": false,
+      "items": [
+        {
+          "name": "Mint tea",
+          "portion": "example portion",
+          "confidence": "estimated"
+        }
+      ],
+      "nutrition": {
+        "calories": {
+          "low": 0,
+          "high": 5
+        },
+        "protein_g": {
+          "low": 0,
+          "high": 0
+        },
+        "fiber_g": {
+          "low": 0,
+          "high": 0
+        }
+      },
+      "confidence": "estimated",
+      "questions": []
+    },
+    {
+      "id": "fictional-grapes",
+      "capturedAt": "2030-04-10T15:00:00Z",
+      "kind": "snack",
+      "title": "Grapes",
+      "short": "Grapes",
+      "recipe": null,
+      "note": "Fictional UI fixture: one example serving. Nutrition ranges are illustrative estimates.",
+      "hasPhoto": false,
+      "items": [
+        {
+          "name": "Grapes",
+          "portion": "example portion",
+          "confidence": "estimated"
+        }
+      ],
+      "nutrition": {
+        "calories": {
+          "low": 60,
+          "high": 90
+        },
+        "protein_g": {
+          "low": 0,
+          "high": 1
+        },
+        "fiber_g": {
+          "low": 1,
+          "high": 2
+        }
+      },
+      "confidence": "estimated",
+      "questions": []
+    }
+  ],
+  "activity": [
+    {
+      "i": "cam",
+      "x": "Sample: apple seed oats logged",
+      "w": "this morning"
+    },
+    {
+      "i": "hat",
+      "x": "Sample: lentil pot prepared · 4 portions",
+      "w": "Apr 9"
+    },
+    {
+      "i": "check",
+      "x": "Sample: chickpeas · 2 cans in receipt",
+      "w": "Apr 8"
+    },
+    {
+      "i": "box",
+      "x": "Sample: mango moved to freezer",
+      "w": "Apr 8"
+    }
+  ]
+}

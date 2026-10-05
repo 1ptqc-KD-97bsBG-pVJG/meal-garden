@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "sample-week",
+  "title": "Sample three-day plan",
+  "status": "active",
+  "timezone": "UTC",
+  "note": "Illustrative scheduled meals. No cooking, eating or leftovers have been reported.",
+  "meals": [
+    {
+      "date": "2026-10-05",
+      "slot": "meal prep",
+      "recipe_id": "lentil-tomato-pot",
+      "recipe_revision": 1,
+      "batches": 1
+    },
+    {
+      "date": "2026-10-06",
+      "slot": "meal prep",
+      "recipe_id": "roast-chickpea-rice",
+      "recipe_revision": 1,
+      "batches": 1
+    },
+    {
+      "date": "2026-10-07",
+      "slot": "meal prep",
+      "recipe_id": "apple-seed-oats",
+      "recipe_revision": 1,
+      "batches": 1
+    }
+  ],
+  "inventory_policy": "Check all ingredients at home. No inventory has been deducted."
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "sample",
+  "name": "Sample kitchen",
+  "person": {
+    "id": "owner",
+    "name": "You",
+    "pronouns": "they/them"
+  },
+  "timezone": "UTC",
+  "assistant_notes": "assistant-notes.md"
+}

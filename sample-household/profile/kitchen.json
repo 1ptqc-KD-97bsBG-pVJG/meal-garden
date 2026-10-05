@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "available": [
+    "stove",
+    "conventional oven",
+    "microwave",
+    "medium saucepan with lid",
+    "rimmed tray",
+    "knife",
+    "board",
+    "food containers"
+  ],
+  "unconfirmed": [],
+  "note": "Generic sample equipment; confirm the actual kitchen before tailoring recipes."
+}

@@ -1,0 +1,994 @@
+{
+  "icons": [
+    {
+      "id": "food-spinach",
+      "name": "Spinach",
+      "category": "vegetable",
+      "matchWords": [
+        "spinach",
+        "baby spinach",
+        "greens"
+      ]
+    },
+    {
+      "id": "food-broccoli",
+      "name": "Broccoli",
+      "category": "vegetable",
+      "matchWords": [
+        "broccoli",
+        "broccoli florets",
+        "broccoli crown"
+      ]
+    },
+    {
+      "id": "food-cauliflower",
+      "name": "Cauliflower",
+      "category": "vegetable",
+      "matchWords": [
+        "cauliflower",
+        "cauliflower florets"
+      ]
+    },
+    {
+      "id": "food-cabbage",
+      "name": "Cabbage",
+      "category": "vegetable",
+      "matchWords": [
+        "cabbage",
+        "green cabbage",
+        "coleslaw",
+        "coleslaw mix"
+      ]
+    },
+    {
+      "id": "food-carrot",
+      "name": "Carrot",
+      "category": "vegetable",
+      "matchWords": [
+        "carrot",
+        "carrots"
+      ]
+    },
+    {
+      "id": "food-green-onion",
+      "name": "Green onions",
+      "category": "vegetable",
+      "matchWords": [
+        "green onion",
+        "green onions",
+        "scallion",
+        "scallions"
+      ]
+    },
+    {
+      "id": "food-onion",
+      "name": "Onion",
+      "category": "vegetable",
+      "matchWords": [
+        "onion",
+        "onions",
+        "red onion",
+        "red onions"
+      ]
+    },
+    {
+      "id": "food-garlic",
+      "name": "Garlic",
+      "category": "vegetable",
+      "matchWords": [
+        "garlic",
+        "garlic cloves"
+      ]
+    },
+    {
+      "id": "food-ginger",
+      "name": "Ginger",
+      "category": "vegetable",
+      "matchWords": [
+        "ginger",
+        "ginger root",
+        "fresh ginger"
+      ]
+    },
+    {
+      "id": "food-mushroom",
+      "name": "Mushrooms",
+      "category": "vegetable",
+      "matchWords": [
+        "mushroom",
+        "mushrooms",
+        "crimini",
+        "shiitake"
+      ]
+    },
+    {
+      "id": "food-zucchini",
+      "name": "Zucchini",
+      "category": "vegetable",
+      "matchWords": [
+        "zucchini",
+        "courgette"
+      ]
+    },
+    {
+      "id": "food-cucumber",
+      "name": "Cucumber",
+      "category": "vegetable",
+      "matchWords": [
+        "cucumber",
+        "english cucumber"
+      ]
+    },
+    {
+      "id": "food-tomato",
+      "name": "Tomatoes",
+      "category": "vegetable",
+      "matchWords": [
+        "tomato",
+        "tomatoes",
+        "cherry tomatoes"
+      ]
+    },
+    {
+      "id": "food-lettuce",
+      "name": "Lettuce",
+      "category": "vegetable",
+      "matchWords": [
+        "lettuce",
+        "romaine"
+      ]
+    },
+    {
+      "id": "food-corn",
+      "name": "Corn",
+      "category": "vegetable",
+      "matchWords": [
+        "corn",
+        "baby corn"
+      ]
+    },
+    {
+      "id": "food-green-bean",
+      "name": "Green beans",
+      "category": "vegetable",
+      "matchWords": [
+        "green bean",
+        "green beans",
+        "string bean",
+        "string beans"
+      ]
+    },
+    {
+      "id": "food-chickpea",
+      "name": "Chickpeas",
+      "category": "legume",
+      "matchWords": [
+        "chickpea",
+        "chickpeas",
+        "garbanzo",
+        "garbanzos"
+      ]
+    },
+    {
+      "id": "food-cannellini",
+      "name": "Cannellini beans",
+      "category": "legume",
+      "matchWords": [
+        "cannellini",
+        "cannellini beans",
+        "white beans"
+      ]
+    },
+    {
+      "id": "food-black-bean",
+      "name": "Black beans",
+      "category": "legume",
+      "matchWords": [
+        "black bean",
+        "black beans"
+      ]
+    },
+    {
+      "id": "food-lentil",
+      "name": "Lentils",
+      "category": "legume",
+      "matchWords": [
+        "lentil",
+        "lentils",
+        "lentil beans",
+        "beans and lentils",
+        "black lentils"
+      ]
+    },
+    {
+      "id": "food-edamame",
+      "name": "Edamame",
+      "category": "legume",
+      "matchWords": [
+        "edamame",
+        "mukimame"
+      ]
+    },
+    {
+      "id": "food-rice",
+      "name": "Rice",
+      "category": "grain",
+      "matchWords": [
+        "rice",
+        "brown rice",
+        "jasmine rice",
+        "long grain brown rice"
+      ]
+    },
+    {
+      "id": "food-quinoa",
+      "name": "Quinoa",
+      "category": "grain",
+      "matchWords": [
+        "quinoa",
+        "cooked quinoa"
+      ]
+    },
+    {
+      "id": "food-oats",
+      "name": "Oats",
+      "category": "grain",
+      "matchWords": [
+        "oat",
+        "oats",
+        "rolled oats",
+        "quick oats"
+      ]
+    },
+    {
+      "id": "food-pasta",
+      "name": "Pasta",
+      "category": "grain",
+      "matchWords": [
+        "pasta",
+        "penne",
+        "whole grain penne",
+        "short pasta"
+      ]
+    },
+    {
+      "id": "food-spaghetti",
+      "name": "Spaghetti",
+      "category": "grain",
+      "matchWords": [
+        "spaghetti",
+        "whole wheat spaghetti",
+        "whole grain spaghetti"
+      ]
+    },
+    {
+      "id": "food-gnocchi",
+      "name": "Gnocchi",
+      "category": "grain",
+      "matchWords": [
+        "gnocchi",
+        "potato italian gnocchi"
+      ]
+    },
+    {
+      "id": "food-cornstarch",
+      "name": "Cornstarch",
+      "category": "grain",
+      "matchWords": [
+        "cornstarch",
+        "corn starch"
+      ]
+    },
+    {
+      "id": "food-banana",
+      "name": "Banana",
+      "category": "fruit",
+      "matchWords": [
+        "banana",
+        "bananas"
+      ]
+    },
+    {
+      "id": "food-strawberry",
+      "name": "Strawberries",
+      "category": "fruit",
+      "matchWords": [
+        "strawberry",
+        "strawberries"
+      ]
+    },
+    {
+      "id": "food-berries",
+      "name": "Mixed berries",
+      "category": "fruit",
+      "matchWords": [
+        "berry",
+        "berries",
+        "triple berry medley",
+        "mixed berries"
+      ]
+    },
+    {
+      "id": "food-plum",
+      "name": "Plums",
+      "category": "fruit",
+      "matchWords": [
+        "plum",
+        "plums",
+        "black plums"
+      ]
+    },
+    {
+      "id": "food-mango",
+      "name": "Mango",
+      "category": "fruit",
+      "matchWords": [
+        "mango",
+        "mangoes",
+        "jumbo mango"
+      ]
+    },
+    {
+      "id": "food-lime",
+      "name": "Limes",
+      "category": "fruit",
+      "matchWords": [
+        "lime",
+        "limes"
+      ]
+    },
+    {
+      "id": "food-cranberry",
+      "name": "Dried cranberries",
+      "category": "fruit",
+      "matchWords": [
+        "cranberry",
+        "cranberries",
+        "craisins",
+        "dried cranberries"
+      ]
+    },
+    {
+      "id": "food-walnut",
+      "name": "Walnuts",
+      "category": "nut-seed",
+      "matchWords": [
+        "walnut",
+        "walnuts",
+        "walnut halves",
+        "halves and pieces walnuts"
+      ]
+    },
+    {
+      "id": "food-almond",
+      "name": "Almonds",
+      "category": "nut-seed",
+      "matchWords": [
+        "almond",
+        "almonds",
+        "whole almonds"
+      ]
+    },
+    {
+      "id": "food-chia",
+      "name": "Chia seeds",
+      "category": "nut-seed",
+      "matchWords": [
+        "chia",
+        "chia seeds"
+      ]
+    },
+    {
+      "id": "food-flax",
+      "name": "Flaxseed",
+      "category": "nut-seed",
+      "matchWords": [
+        "flaxseed",
+        "flaxseed meal",
+        "flax",
+        "ground flaxseed"
+      ]
+    },
+    {
+      "id": "food-hemp",
+      "name": "Hemp hearts",
+      "category": "nut-seed",
+      "matchWords": [
+        "hemp",
+        "hemp hearts",
+        "hemp seed hearts"
+      ]
+    },
+    {
+      "id": "food-sesame",
+      "name": "Sesame seeds",
+      "category": "nut-seed",
+      "matchWords": [
+        "sesame",
+        "sesame seeds",
+        "roasted sesame seeds"
+      ]
+    },
+    {
+      "id": "food-pumpkin-seed",
+      "name": "Pumpkin seeds",
+      "category": "nut-seed",
+      "matchWords": [
+        "pumpkin seed",
+        "pumpkin seeds",
+        "pepita",
+        "pepitas",
+        "pumpkin and sunflower seeds"
+      ]
+    },
+    {
+      "id": "food-trail-mix",
+      "name": "Trail mix",
+      "category": "nut-seed",
+      "matchWords": [
+        "trail mix",
+        "protein mix",
+        "protein trail mix",
+        "seed protein mix"
+      ]
+    },
+    {
+      "id": "food-tofu",
+      "name": "Tofu",
+      "category": "protein",
+      "matchWords": [
+        "tofu",
+        "extra firm tofu",
+        "super firm tofu",
+        "herb marinated tofu"
+      ]
+    },
+    {
+      "id": "food-chicken",
+      "name": "Chicken",
+      "category": "protein",
+      "matchWords": [
+        "chicken",
+        "rotisserie chicken",
+        "whole roasted chicken"
+      ]
+    },
+    {
+      "id": "food-egg",
+      "name": "Eggs",
+      "category": "protein",
+      "matchWords": [
+        "egg",
+        "eggs",
+        "hard boiled eggs"
+      ]
+    },
+    {
+      "id": "food-yogurt",
+      "name": "Yogurt",
+      "category": "dairy",
+      "matchWords": [
+        "yogurt",
+        "yoghurt",
+        "plain yogurt",
+        "greek yogurt",
+        "nonfat yogurt"
+      ]
+    },
+    {
+      "id": "food-milk",
+      "name": "Milk",
+      "category": "dairy",
+      "matchWords": [
+        "milk",
+        "milk alternative"
+      ]
+    },
+    {
+      "id": "food-almond-milk",
+      "name": "Almond milk",
+      "category": "drink",
+      "matchWords": [
+        "almond milk",
+        "almondmilk",
+        "almond milk matcha"
+      ]
+    },
+    {
+      "id": "food-soy-milk",
+      "name": "Soy milk",
+      "category": "drink",
+      "matchWords": [
+        "soy milk",
+        "unsweetened soy milk"
+      ]
+    },
+    {
+      "id": "food-olive-oil",
+      "name": "Olive oil",
+      "category": "sauce",
+      "matchWords": [
+        "olive oil",
+        "extra virgin olive oil"
+      ]
+    },
+    {
+      "id": "food-cooking-oil",
+      "name": "Cooking oil",
+      "category": "sauce",
+      "matchWords": [
+        "cooking oil",
+        "neutral cooking oil",
+        "vegetable oil",
+        "canola oil"
+      ]
+    },
+    {
+      "id": "food-soy-sauce",
+      "name": "Soy sauce",
+      "category": "sauce",
+      "matchWords": [
+        "soy sauce",
+        "low sodium soy sauce",
+        "tamari",
+        "low sodium tamari"
+      ]
+    },
+    {
+      "id": "food-teriyaki",
+      "name": "Teriyaki / barbecue sauce",
+      "category": "sauce",
+      "matchWords": [
+        "teriyaki",
+        "teriyaki sauce",
+        "japanese barbecue sauce",
+        "barbecue sauce"
+      ]
+    },
+    {
+      "id": "food-stir-fry-sauce",
+      "name": "Stir-fry sauce",
+      "category": "sauce",
+      "matchWords": [
+        "stir fry sauce",
+        "ginger soy stir fry sauce",
+        "roasted garlic ginger soy stir fry sauce"
+      ]
+    },
+    {
+      "id": "food-tomato-sauce",
+      "name": "Tomato sauce",
+      "category": "sauce",
+      "matchWords": [
+        "tomato sauce",
+        "pasta sauce",
+        "prego",
+        "traditional italian sauce",
+        "prego pasta sauce garlic and black pepper",
+        "prego tomato sauce with olive oil and garlic"
+      ]
+    },
+    {
+      "id": "food-vinegar",
+      "name": "Vinegar",
+      "category": "sauce",
+      "matchWords": [
+        "vinegar",
+        "apple cider vinegar",
+        "rice vinegar"
+      ]
+    },
+    {
+      "id": "food-miso",
+      "name": "Miso",
+      "category": "sauce",
+      "matchWords": [
+        "miso",
+        "white miso"
+      ]
+    },
+    {
+      "id": "food-dressing",
+      "name": "Dressing / dipping sauce",
+      "category": "sauce",
+      "matchWords": [
+        "dressing",
+        "marinade",
+        "herb marinade or dressing",
+        "dipping sauce",
+        "preferred sesame or bowl dipping sauce"
+      ]
+    },
+    {
+      "id": "food-honey",
+      "name": "Honey",
+      "category": "sweet",
+      "matchWords": [
+        "honey",
+        "raw honey",
+        "raw and unfiltered honey"
+      ]
+    },
+    {
+      "id": "food-peanut-butter",
+      "name": "Peanut butter",
+      "category": "nut-seed",
+      "matchWords": [
+        "peanut butter",
+        "fresh ground peanut butter"
+      ]
+    },
+    {
+      "id": "food-cinnamon",
+      "name": "Cinnamon",
+      "category": "sauce",
+      "matchWords": [
+        "cinnamon",
+        "regular cinnamon",
+        "ceylon"
+      ]
+    },
+    {
+      "id": "food-cumin",
+      "name": "Cumin",
+      "category": "sauce",
+      "matchWords": [
+        "cumin",
+        "ground cumin"
+      ]
+    },
+    {
+      "id": "food-oregano",
+      "name": "Oregano",
+      "category": "vegetable",
+      "matchWords": [
+        "oregano",
+        "dried oregano"
+      ]
+    },
+    {
+      "id": "food-basil",
+      "name": "Basil",
+      "category": "vegetable",
+      "matchWords": [
+        "basil",
+        "fresh basil"
+      ]
+    },
+    {
+      "id": "food-pepper",
+      "name": "Black pepper",
+      "category": "sauce",
+      "matchWords": [
+        "pepper",
+        "black pepper",
+        "coarse ground black pepper"
+      ]
+    },
+    {
+      "id": "food-salt",
+      "name": "Salt",
+      "category": "sauce",
+      "matchWords": [
+        "salt",
+        "table salt",
+        "plain table salt"
+      ]
+    },
+    {
+      "id": "food-cereal",
+      "name": "Cereal",
+      "category": "grain",
+      "matchWords": [
+        "cereal",
+        "raisin bran",
+        "raisin bran original",
+        "life cinnamon multigrain cereal"
+      ]
+    },
+    {
+      "id": "food-strudel",
+      "name": "Toaster strudel",
+      "category": "sweet",
+      "matchWords": [
+        "strudel",
+        "toaster strudel",
+        "frozen pastries"
+      ]
+    },
+    {
+      "id": "food-donut",
+      "name": "Doughnuts",
+      "category": "sweet",
+      "matchWords": [
+        "donut",
+        "donuts",
+        "doughnut",
+        "doughnuts",
+        "voodoo doughnuts",
+        "boston cream donut",
+        "chocolate frosted boston cream donut"
+      ]
+    },
+    {
+      "id": "food-matcha",
+      "name": "Matcha",
+      "category": "drink",
+      "matchWords": [
+        "matcha",
+        "almond milk matcha",
+        "iced white chocolate almond milk matcha"
+      ]
+    },
+    {
+      "id": "food-chocolate",
+      "name": "Chocolate / chips",
+      "category": "sweet",
+      "matchWords": [
+        "chocolate",
+        "chocolate chips",
+        "chocolate morsels",
+        "milk chocolate",
+        "milk chocolate morsels"
+      ]
+    },
+    {
+      "id": "food-white-chocolate",
+      "name": "White chocolate syrup",
+      "category": "sweet",
+      "matchWords": [
+        "white chocolate",
+        "white chocolate sauce",
+        "white chocolate sauce or syrup"
+      ]
+    },
+    {
+      "id": "food-ice",
+      "name": "Ice",
+      "category": "drink",
+      "matchWords": [
+        "ice",
+        "ice cubes"
+      ]
+    },
+    {
+      "id": "food-pomegranate-juice",
+      "name": "Pomegranate juice",
+      "category": "drink",
+      "matchWords": [
+        "pomegranate",
+        "pomegranate juice",
+        "just pomegranate juice"
+      ]
+    },
+    {
+      "id": "food-multivitamin",
+      "name": "Multivitamin gummies",
+      "category": "supplement",
+      "matchWords": [
+        "multivitamin",
+        "multivitamin gummies",
+        "vitamin gummies"
+      ]
+    },
+    {
+      "id": "food-salad",
+      "name": "Salad",
+      "category": "vegetable",
+      "matchWords": [
+        "salad",
+        "seed salad",
+        "seed salad with craisins"
+      ]
+    },
+    {
+      "id": "food-yogurt-bowl",
+      "name": "Yogurt bowl",
+      "category": "dairy",
+      "matchWords": [
+        "yogurt bowl",
+        "yogurt bowl with nuts chia strawberries and honey",
+        "peanut butter yogurt bowl"
+      ]
+    },
+    {
+      "id": "food-vegetable",
+      "name": "Vegetable",
+      "category": "vegetable",
+      "fallback": true,
+      "matchWords": [
+        "vegetable",
+        "vegetables",
+        "produce"
+      ]
+    },
+    {
+      "id": "food-fruit",
+      "name": "Fruit",
+      "category": "fruit",
+      "fallback": true,
+      "matchWords": [
+        "fruit",
+        "fruits"
+      ]
+    },
+    {
+      "id": "food-grain",
+      "name": "Grain",
+      "category": "grain",
+      "fallback": true,
+      "matchWords": [
+        "grain",
+        "grains",
+        "bread",
+        "flour"
+      ]
+    },
+    {
+      "id": "food-legume",
+      "name": "Legume",
+      "category": "legume",
+      "fallback": true,
+      "matchWords": [
+        "legume",
+        "legumes",
+        "bean",
+        "beans"
+      ]
+    },
+    {
+      "id": "food-protein",
+      "name": "Protein",
+      "category": "protein",
+      "fallback": true,
+      "matchWords": [
+        "protein",
+        "meat",
+        "fish",
+        "seafood"
+      ]
+    },
+    {
+      "id": "food-dairy",
+      "name": "Dairy",
+      "category": "dairy",
+      "fallback": true,
+      "matchWords": [
+        "dairy",
+        "cheese",
+        "cream"
+      ]
+    },
+    {
+      "id": "food-sauce",
+      "name": "Sauce",
+      "category": "sauce",
+      "fallback": true,
+      "matchWords": [
+        "sauce",
+        "sauces",
+        "condiment",
+        "seasoning"
+      ]
+    },
+    {
+      "id": "food-nut-seed",
+      "name": "Nut Seed",
+      "category": "nut-seed",
+      "fallback": true,
+      "matchWords": [
+        "nut",
+        "nuts",
+        "seed",
+        "seeds"
+      ]
+    },
+    {
+      "id": "food-drink",
+      "name": "Drink",
+      "category": "drink",
+      "fallback": true,
+      "matchWords": [
+        "drink",
+        "drinks",
+        "juice",
+        "tea",
+        "coffee",
+        "water",
+        "beverage"
+      ]
+    },
+    {
+      "id": "food-sweet",
+      "name": "Sweet",
+      "category": "sweet",
+      "fallback": true,
+      "matchWords": [
+        "sweet",
+        "sweets",
+        "candy",
+        "dessert",
+        "syrup",
+        "pastry"
+      ]
+    },
+    {
+      "id": "food-supplement",
+      "name": "Supplement",
+      "category": "supplement",
+      "fallback": true,
+      "matchWords": [
+        "supplement",
+        "supplements",
+        "vitamin",
+        "vitamins",
+        "gummies"
+      ]
+    },
+    {
+      "id": "food-unknown",
+      "name": "Unknown",
+      "category": "unknown",
+      "fallback": true,
+      "matchWords": [
+        "unknown"
+      ]
+    }
+  ],
+  "categoryFallbacks": {
+    "vegetable": "food-vegetable",
+    "fruit": "food-fruit",
+    "grain": "food-grain",
+    "legume": "food-legume",
+    "protein": "food-protein",
+    "dairy": "food-dairy",
+    "sauce": "food-sauce",
+    "nut-seed": "food-nut-seed",
+    "drink": "food-drink",
+    "sweet": "food-sweet",
+    "supplement": "food-supplement",
+    "unknown": "food-unknown"
+  },
+  "activities": [
+    {
+      "id": "act-heat",
+      "name": "Heat"
+    },
+    {
+      "id": "act-chop",
+      "name": "Chop"
+    },
+    {
+      "id": "act-mix",
+      "name": "Mix"
+    },
+    {
+      "id": "act-wait",
+      "name": "Wait"
+    },
+    {
+      "id": "act-boil",
+      "name": "Boil"
+    },
+    {
+      "id": "act-roast",
+      "name": "Roast"
+    },
+    {
+      "id": "act-microwave",
+      "name": "Microwave"
+    },
+    {
+      "id": "act-press",
+      "name": "Press tofu"
+    },
+    {
+      "id": "act-assemble",
+      "name": "Assemble"
+    },
+    {
+      "id": "act-wash",
+      "name": "Wash"
+    }
+  ]
+}

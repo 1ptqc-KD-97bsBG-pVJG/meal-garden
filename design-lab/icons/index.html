@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Meal Garden · Food icons</title>
+<style>
+:root{color-scheme:light;--paper:#F7F1E6;--card:#FFFCF6;--ink:#2C2721;--line:#E6DBC8;--forest:#2F5A3F}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.4 system-ui,sans-serif}
+main{max-width:1480px;margin:auto;padding:32px 24px 56px}header{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+h1{font:normal 38px/1.1 Georgia,serif;margin:0}nav{display:flex;gap:16px;flex-wrap:wrap}a{color:var(--forest);text-underline-offset:4px}
+h2{font:normal 26px Georgia,serif;margin:32px 0 16px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(256px,1fr));gap:16px}
+article{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card)}h3{font-size:15px;font-weight:600;margin:12px 14px 2px}
+code{display:block;font:11px/1.5 ui-monospace,monospace;margin:0 14px 10px;color:#6B6155;overflow-wrap:anywhere}
+.sizes{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;font-size:11px;color:#6B6155;padding:0 12px 6px}
+.samples{display:grid;grid-template-columns:repeat(3,1fr);align-items:center;justify-items:center;height:90px;padding:10px 12px;background:var(--paper)}
+.samples.dark{background:var(--ink);--food-icon-ink:#F7F1E6}svg{display:block;flex:none}.matcher{display:flex;align-items:center;gap:16px;margin-top:24px;flex-wrap:wrap}
+label{font-weight:600}input{font:inherit;color:var(--ink);border:1px solid var(--line);border-radius:10px;background:var(--card);padding:10px 12px;width:min(100%,320px)}
+output{display:flex;align-items:center;gap:10px;font:13px ui-monospace,monospace}output svg{width:32px;height:32px}#error{color:#C24E3A}
+@media(max-width:580px){main{padding:24px 16px}h1{font-size:32px}.grid{grid-template-columns:1fr}.matcher{gap:10px}}
+</style>
+</head>
+<body>
+<main>
+<header><h1>Food & cooking icons</h1><nav aria-label="Icon groups"><a href="#foods">Foods</a><a href="#fallbacks">Category fallbacks</a><a href="#activities">Cooking</a></nav></header>
+<div class="matcher"><label for="name">Find an icon</label><input id="name" type="search" placeholder="Baby spinach" autocomplete="off"><output id="match" for="name" aria-live="polite"></output></div>
+<p id="error" role="alert" hidden></p>
+<section aria-labelledby="foods"><h2 id="foods">Foods</h2><div id="food-grid" class="grid"></div></section>
+<section aria-labelledby="fallbacks"><h2 id="fallbacks">Category fallbacks</h2><div id="fallback-grid" class="grid"></div></section>
+<section aria-labelledby="activities"><h2 id="activities">Cooking</h2><div id="activity-grid" class="grid"></div></section>
+</main>
+<script src="./match.js"></script>
+<script>
+(async () => {
+try {
+  const response = await fetch('./icons.json');
+  if (!response.ok) throw new Error(`icons.json: HTTP ${response.status}`);
+  const catalog = await response.json();
+  const iconFor = FoodIcons.createIconMatcher(catalog);
+  const ns = 'http://www.w3.org/2000/svg';
+  function sample(id, size) {
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('width', size); svg.setAttribute('height', size);
+    svg.setAttribute('viewBox', '0 0 24 24'); svg.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS(ns, 'use');
+    use.setAttribute('href', `./food-icons.svg#${id}`); svg.append(use);
+    return svg;
+  }
+  function card(icon) {
+    const article = document.createElement('article'); article.dataset.icon = icon.id;
+    const title = document.createElement('h3'); title.textContent = icon.name;
+    const id = document.createElement('code'); id.textContent = icon.id;
+    const sizes = document.createElement('div'); sizes.className = 'sizes';
+    for (const size of [20,32,64]) {
+      const label = document.createElement('span'); label.textContent = `${size} px`; sizes.append(label);
+    }
+    article.append(title, id, sizes);
+    for (const dark of [false, true]) {
+      const row = document.createElement('div'); row.className = `samples${dark ? ' dark' : ''}`;
+      row.setAttribute('aria-label', dark ? 'Dark background' : 'Light background');
+      for (const size of [20,32,64]) row.append(sample(icon.id, size));
+      article.append(row);
+    }
+    return article;
+  }
+  const foods = catalog.icons.filter(icon => !icon.fallback);
+  const fallbacks = catalog.icons.filter(icon => icon.fallback);
+  for (const [heading, grid, icons] of [
+    ['foods','food-grid',foods], ['fallbacks','fallback-grid',fallbacks], ['activities','activity-grid',catalog.activities]
+  ]) {
+    document.getElementById(heading).append(` · ${icons.length}`);
+    document.getElementById(grid).append(...icons.map(card));
+  }
+  const input = document.getElementById('name'), output = document.getElementById('match');
+  function update() { const id = iconFor(input.value); output.replaceChildren(sample(id,32),document.createTextNode(id)); }
+  input.addEventListener('input', update); update();
+  document.documentElement.dataset.ready = 'true';
+} catch (error) {
+  const alert = document.getElementById('error'); alert.hidden = false;
+  alert.textContent = `Icon preview could not load: ${error.message}`;
+  throw error;
+}
+})();
+</script>
+</body>
+</html>
