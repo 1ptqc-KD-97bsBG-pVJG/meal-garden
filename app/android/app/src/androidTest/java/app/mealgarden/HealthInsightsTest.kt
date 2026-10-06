@@ -124,6 +124,32 @@ class HealthInsightsTest {
         compose.onNodeWithText("Values for 1 of 1 read food entries · 1 awaiting details").assertIsDisplayed()
     }
 
+    @Test fun nextMealRecipeOpensItsDetailWhenHealthWasOpenedFromFoodLog() {
+        val title = "Aurora supper"
+        val recipe = j("id" to "aurora-supper", "revision" to 1, "title" to title, "readiness" to "ready",
+            "yield" to j("servings" to 4), "active_minutes" to 5,
+            "ingredients" to JSONArray().put(j("id" to "grain", "name" to "Millet", "amount" to 200, "unit" to "g")),
+            "steps" to JSONArray().put(j("id" to "mix", "title" to "Mix", "text" to "Stir the cooked grain and serve.", "minutes" to 5)))
+        compose.runOnUiThread {
+            assertTrue("Use an unpaired test emulator", Vault(compose.activity.application).token.isEmpty())
+            val vm = GardenModel(compose.activity.application)
+            val time = java.time.ZonedDateTime.now(householdZone).toOffsetDateTime().toString()
+            vm.snapshot.put("recipes", JSONArray().put(recipe)).put("settings", j("dayStartHour" to 4))
+                .put("captures", JSONArray().put(j("id" to "aurora-lunch", "kind" to "meal", "capturedAt" to time, "status" to "interpreted",
+                    "interpretation" to j("title" to "Aurora lunch", "category" to "meal"))))
+            vm.openFoodLog = true
+            compose.activity.setContent { GardenTheme { GardenApp(vm) } }
+        }
+        compose.onNodeWithTag("food-log-list").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Open health insights").performClick()
+        compose.onNodeWithText("Health insights").assertIsDisplayed()
+        compose.onNodeWithTag("health-next-recipe").performScrollTo().performClick()
+        compose.onNodeWithTag("recipe-scroll").assertIsDisplayed()
+        compose.onNode(hasText(title) and hasAnyAncestor(hasTestTag("recipe-scroll"))).assertIsDisplayed()
+        compose.onNodeWithTag("food-log-list").assertDoesNotExist()
+        compose.onNodeWithText("Health insights").assertDoesNotExist()
+    }
+
 }
 private fun MainActivity.setContentForHealthTest(vm: GardenModel) {
     this.setContent { MaterialTheme { HealthScreen(vm) } }

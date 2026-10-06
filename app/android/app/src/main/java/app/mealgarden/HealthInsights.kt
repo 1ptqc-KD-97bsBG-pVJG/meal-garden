@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.unit.*
 import org.json.JSONObject
@@ -183,7 +184,7 @@ fun HealthScreen(vm: GardenModel) {
                     Text(if (date == today) "Next meal" else "Try next", style = GardenType.Section)
                     Text(healthNextStep(day, preferences).first, style = GardenType.Body, color = Forest)
                     recommendations.firstOrNull()?.let { recipe ->
-                        GardenQuietButton(recipe.s("title"), onClick = { vm.openHealth = false; vm.selectedRecipe = recipe.s("id") }, modifier = Modifier.fillMaxWidth(), icon = Icons.Outlined.MenuBook)
+                        GardenQuietButton(recipe.s("title"), onClick = { vm.openHealth = false; vm.openFoodLog = false; vm.selectedRecipe = recipe.s("id") }, modifier = Modifier.fillMaxWidth().testTag("health-next-recipe"), icon = Icons.Outlined.MenuBook)
                     }
                 }
             }
