@@ -1,6 +1,6 @@
 # Android application
 
-Meal Garden is a Kotlin/Jetpack Compose client with a Node laptop companion. The current app version is `0.2.0` (`versionCode 24`), application ID and namespace `app.mealgarden`. The redesign keeps the neutral package identity and the existing snapshot, outbox, pairing and food graph engine. Installation on a physical phone is a separate action.
+Meal Garden is a Kotlin/Jetpack Compose client with a Node laptop companion. The current app version is `0.2.1` (`versionCode 25`), application ID and namespace `app.mealgarden`. The redesign keeps the neutral package identity and the existing snapshot, outbox, pairing and food graph engine. Installation on a physical phone is a separate action.
 
 Install companion dependencies with Node 24 or later:
 

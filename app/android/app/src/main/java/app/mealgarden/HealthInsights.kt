@@ -120,9 +120,13 @@ fun HealthEntryCard(vm: GardenModel, entries: List<JSONObject>) {
                     Text(label, style = GardenType.Small)
                     Text(day.sum(key)?.text(" g") ?: "Unknown", style = GardenType.Body,
                         fontWeight = FontWeight.SemiBold, color = Forest)
-                    val target = vm.healthPreferences.o("targets").optDouble(key, Double.NaN)
-                        .takeIf { it.isFinite() } ?: healthNutrients.first { it.key == key }.reference
-                    if (target != null) day.sum(key)?.let { RangeRail(it, target, false) }
+                    val nutrient = healthNutrients.first { it.key == key }
+                    val custom = vm.healthPreferences.o("targets").optDouble(key, Double.NaN).takeIf { it.isFinite() }
+                    val target = custom ?: nutrient.reference
+                    if (target != null) {
+                        day.sum(key)?.let { RangeRail(it, target, false) }
+                        Text(healthTargetLabel(nutrient, custom), style = GardenType.Small)
+                    }
                 }
             }
         }
@@ -142,6 +146,10 @@ fun HealthScreen(vm: GardenModel) {
     val date = LocalDate.parse(selected)
     val day = dayHealth(log.filter { localDay(it.s("capturedAt")) == date })
     val preferences = vm.healthPreferences
+    val recommendations = vm.snapshot.a("recipes").objects().filter { recipeReady(it) }.sortedByDescending { r ->
+        val evidence = recipeEvidence(r)
+        evidence.keys.count { !day.evidence.containsKey(it) } * 3 + if (evidence.containsKey("plant_protein")) 1 else 0
+    }.take(3)
     Column(Modifier.fillMaxSize().background(Paper)) {
         GardenTopBar("Health insights", onBack = { vm.openHealth = false }) {
             IconButton(onClick = { method = true }) { Icon(Icons.Outlined.Info, "How insights work", tint = Muted) }
@@ -149,7 +157,7 @@ fun HealthScreen(vm: GardenModel) {
         LazyColumn(contentPadding = PaddingValues(14.dp, 0.dp, 14.dp, 100.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    dates.forEach { d -> GardenChip(if (d == today) "Today" else d.format(DateTimeFormatter.ofPattern("MMM d")),
+                    dates.forEach { d -> GardenChip(if (d == today) "Today" else humanDate(d.toString()),
                         selected = selected == d.toString(), onClick = { selected = d.toString() }) }
                 }
             }
@@ -174,6 +182,9 @@ fun HealthScreen(vm: GardenModel) {
                 GardenCard(color = Mist) {
                     Text(if (date == today) "Next meal" else "Try next", style = GardenType.Section)
                     Text(healthNextStep(day, preferences).first, style = GardenType.Body, color = Forest)
+                    recommendations.firstOrNull()?.let { recipe ->
+                        GardenQuietButton(recipe.s("title"), onClick = { vm.openHealth = false; vm.selectedRecipe = recipe.s("id") }, modifier = Modifier.fillMaxWidth(), icon = Icons.Outlined.MenuBook)
+                    }
                 }
             }
             item { SectionLabel("Nutrients") }
@@ -191,14 +202,10 @@ fun HealthScreen(vm: GardenModel) {
                 }
             }
             item { SectionLabel("Ideas from your recipes") }
-            val recommendations = vm.snapshot.a("recipes").objects().filter { recipeReady(it) }.sortedByDescending { r ->
-                val evidence = recipeEvidence(r)
-                evidence.keys.count { !day.evidence.containsKey(it) } * 3 + if (evidence.containsKey("plant_protein")) 1 else 0
-            }.take(3)
             items(recommendations, key = { "health-${it.s("id")}" }) { r ->
                 GardenCard(onClick = { vm.openHealth = false; vm.openFoodLog = false; vm.selectedRecipe = r.s("id") }) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        GardenBowl(Modifier.size(48.dp), r.s("id").hashCode())
+                        GardenRecipePlate(r, Modifier.size(48.dp))
                         Text(r.s("title"), style = GardenType.Section, modifier = Modifier.weight(1f))
                         Icon(Icons.Outlined.ChevronRight, null, tint = Muted, modifier = Modifier.size(18.dp))
                     }
@@ -233,7 +240,10 @@ private fun GoalFitCard(day: DayHealth, preferences: JSONObject) {
         }
         val custom = preferences.o("targets").optDouble(key, Double.NaN).takeIf { it.isFinite() }
         val target = custom ?: n.reference
-        if (target != null) day.sum(key)?.let { RangeRail(it, target, false) }
+        if (target != null) {
+            day.sum(key)?.let { RangeRail(it, target, n.limit) }
+            Text(healthTargetLabel(n, custom), style = GardenType.Small)
+        }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             if (active == "longevity") GardenChip("${day.evidence.keys.count { it != "other_protein" }} plant-food groups")
             if (key == "calories" && custom == null) GardenChip("Calorie needs not set")
@@ -273,9 +283,16 @@ private fun NutrientCard(n: HealthNutrient, day: DayHealth, preferences: JSONObj
                 Text(status, fontSize = 12.sp, color = if (n.limit && value.low > target) Clay else Forest)
             }
         } else Text(if (n.key == "calories") "No calorie target" else "No protein target", fontSize = 12.sp, color = Muted)
-        Text("Known for $coverage of ${day.consumed.size} food entries${if (day.unresolved > 0) " · ${day.unresolved} awaiting details" else ""}", fontSize = 11.sp, color = Muted)
+        Text("Values for $coverage of ${day.consumed.size} read food entries${if (day.unresolved > 0) " · ${day.unresolved} awaiting details" else ""}", fontSize = 11.sp, color = Muted)
         if (expanded) Text(n.why, fontSize = 13.sp)
     }
+}
+
+internal fun healthTargetLabel(n: HealthNutrient, custom: Double?): String {
+    val target = custom ?: n.reference ?: return if (n.key == "calories") "Calorie needs not set" else "Protein target not set"
+    val amount = NutritionRange(target, target).text(n.unit)
+    return if (custom != null) "Your ${if (n.limit) "limit" else "target"}: $amount"
+        else "FDA daily reference${if (n.limit) " limit" else ""}: $amount"
 }
 
 @Composable

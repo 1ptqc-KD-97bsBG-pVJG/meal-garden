@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import kotlinx.coroutines.launch
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -256,7 +257,10 @@ fun CaptureSheet(vm: GardenModel) {
                         val amount = java.math.BigDecimal.valueOf(enteredWeight!!).stripTrailingZeros().toPlainString()
                         listOf(note.trim(), "Weight: $amount g").filter { it.isNotBlank() }.joinToString("\n")
                     } else note
-                    vm.saveCapture(kind, evidence)
+                    if (vm.saveCapture(kind, evidence)) {
+                        vm.openCapture = false; vm.openHealth = false
+                        vm.openFoodLog = true
+                    }
                 }, modifier = Modifier.weight(1f).testTag("capture-save"), icon = Icons.Outlined.Check,
                     enabled = !vm.capturePhotoBusy && (!weightVisible || weightValid) && (hasPhoto || note.isNotBlank() || hasWeight))
             }
@@ -392,12 +396,17 @@ fun TodayStripKey(onDismiss: () -> Unit) {
         confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } })
 }
 
+internal fun captureFoodIcon(entry: JSONObject): String {
+    val candidates = listOf(stripInterpretation(entry).s("title"), entry.s("note"), stripCategory(entry))
+    return candidates.map(::foodIconId).firstOrNull { it != "food-unknown" } ?: "food-unknown"
+}
+
 @Composable
 private fun FoodPlate(vm: GardenModel, plate: TodayPlate) {
     val entry = plate.entries.first()
     val stacked = plate.entries.size > 1
     val mark = plate.entries.map { todayPlateMark(it, vm.snapshot) }.distinct().singleOrNull()
-    val title = stripInterpretation(entry).s("title").ifBlank { entry.s("kind", "Food") }
+    val title = stripInterpretation(entry).s("title").ifBlank { entry.s("note").lineSequence().firstOrNull().orEmpty() }.ifBlank { entry.s("kind", "Food") }
     var expand by remember { mutableStateOf(false) }
     GardenPlate(title, seed = title.hashCode(), count = plate.entries.size, drink = plate.drinks.isNotEmpty(), mark = mark, onClick = {
         vm.track(if (stacked) "today_stack_tap" else "today_plate_tap", "captureId" to entry.s("id"), "count" to plate.entries.size)
@@ -405,7 +414,7 @@ private fun FoodPlate(vm: GardenModel, plate: TodayPlate) {
     }, food = {
         val photo = vm.capturePhotos(entry).firstOrNull()?.let { vm.capturePhotoFile(entry,it) }?.takeIf { it.exists() }
         if (photo != null) LocalPhoto(photo, Modifier.size(54.dp).clip(CircleShape), 240)
-        else Icon(ingredientIcon(j("name" to title), kindIcon(stripCategory(entry))), null, Modifier.size(38.dp), tint = Color.Unspecified)
+        else FoodIcon(captureFoodIcon(entry), Modifier.size(38.dp))
     })
     if (expand) AlertDialog(onDismissRequest = { expand = false }, title = { Text(title, style = GardenType.Section) }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -438,6 +447,14 @@ fun FoodLogScreen(vm: GardenModel) {
     val today = foodToday()
     var expanded by rememberSaveable { mutableStateOf("") }
     var detailFor by rememberSaveable { mutableStateOf("") }
+    val list = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val groups = entries.groupBy { localDay(it.s("capturedAt")) }
+    var latestSeen by rememberSaveable { mutableStateOf(entries.firstOrNull()?.s("id").orEmpty()) }
+    LaunchedEffect(entries.firstOrNull()?.s("id")) {
+        val latest = entries.firstOrNull()?.s("id").orEmpty()
+        if (latest != latestSeen) { list.scrollToItem(0); expanded = ""; latestSeen = latest }
+    }
     Column(Modifier.fillMaxSize().background(Paper)) {
         GardenTopBar("Food log", onBack = { vm.openFoodLog = false })
         Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -446,7 +463,17 @@ fun FoodLogScreen(vm: GardenModel) {
             GardenQuietButton("No photo", { vm.beginTextCapture() }, icon = Icons.Outlined.EditNote,
                 modifier = Modifier.weight(1f))
         }
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            groups.keys.forEach { day ->
+                val label = when (day) { LocalDate.MIN -> "Unknown date"; today -> "Today"; today.minusDays(1) -> "Yesterday"; else -> humanDate(day.toString()) }
+                GardenChip(label, modifier = Modifier.testTag("food-log-jump-$day"), onClick = {
+                    val index = (if (showNutrition) 1 else 0) + groups.entries.takeWhile { it.key != day }.sumOf { it.value.size + 1 }
+                    scope.launch { list.scrollToItem(index) }
+                })
+            }
+        }
         LazyColumn(
+            modifier = Modifier.testTag("food-log-list"), state = list,
             contentPadding = PaddingValues(14.dp, 8.dp, 14.dp, 100.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -458,13 +485,13 @@ fun FoodLogScreen(vm: GardenModel) {
                     Text("No food logged", style = GardenType.Section, color = Muted)
                 }
             }
-            entries.groupBy { localDay(it.s("capturedAt")) }.forEach { (day, dayEntries) ->
+            groups.forEach { (day, dayEntries) ->
                 item(key = "day-$day") {
                     val dayHealth = dayHealth(dayEntries)
                     val total = dayHealth.sum("calories")
                     Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.Bottom) {
                         Text(
-                            when (day) { LocalDate.MIN -> "Unknown date"; today -> "Today"; today.minusDays(1) -> "Yesterday"; else -> day.format(DateTimeFormatter.ofPattern("EEE, MMM d")) },
+                            when (day) { LocalDate.MIN -> "Unknown date"; today -> "Today"; today.minusDays(1) -> "Yesterday"; else -> humanDate(day.toString()) },
                             style = GardenType.Section, modifier = Modifier.weight(1f),
                         )
                         if (showNutrition && total != null) {
@@ -517,7 +544,7 @@ private fun FoodLogRow(vm: GardenModel, entry: JSONObject, showNutrition: Boolea
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val thumb = Modifier.size(58.dp).clip(GardenShape.Button)
             if (hasPhoto) LocalPhoto(vm.capturePhotoFile(entry, photos.first()), thumb, 200)
-            else Box(thumb.background(Mist), contentAlignment = Alignment.Center) { Icon(kindIcon(entry.s("kind")), null, tint = Forest) }
+            else Box(thumb.background(Mist), contentAlignment = Alignment.Center) { FoodIcon(captureFoodIcon(entry), Modifier.size(45.dp)) }
             Column(Modifier.weight(1f)) {
                 Text(
                     interp?.s("title")?.ifBlank { null } ?: entry.s("note").ifBlank { entry.s("kind").replaceFirstChar { it.uppercase() } },
@@ -536,6 +563,11 @@ private fun FoodLogRow(vm: GardenModel, entry: JSONObject, showNutrition: Boolea
                 }
             }
         }
+        // Correction and retry belong beside the entry, before optional photo/evidence.
+        if (entry.optBoolean("synced", false)) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GardenQuietButton("Correct", addDetail, modifier = Modifier.testTag("food-log-correct-$id"), icon = Icons.Outlined.EditNote)
+            if (status == "failed") GardenQuietButton("Try again", { vm.retryInterpretation(id) }, modifier = Modifier.testTag("food-log-retry-$id"), icon = Icons.Outlined.Refresh)
+        }
         if (!open) {
             interp?.takeIf { status == "interpreted" }?.optJSONArray("questions")?.strings()?.firstOrNull { it.isNotBlank() }?.let { q ->
                 Row(Modifier.testTag("food-log-question-$id").clip(GardenShape.Button).background(Mist).clickable(onClick = addDetail).padding(10.dp, 8.dp),
@@ -548,7 +580,7 @@ private fun FoodLogRow(vm: GardenModel, entry: JSONObject, showNutrition: Boolea
             return@Column
         }
         if (hasPhoto) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            photos.forEach { photo -> LocalPhoto(vm.capturePhotoFile(entry, photo), Modifier.size(200.dp).clip(GardenShape.Card), 1000) }
+            photos.forEach { photo -> LocalPhoto(vm.capturePhotoFile(entry, photo), Modifier.size(148.dp).clip(GardenShape.Card), 480) }
         }
         if (interp != null) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -620,10 +652,6 @@ private fun FoodLogRow(vm: GardenModel, entry: JSONObject, showNutrition: Boolea
         entry.s("note").takeIf { it.isNotBlank() }?.let { Text("“$it”", fontSize = 13.sp, color = Muted) }
         server?.optJSONArray("details")?.objects()?.forEach { Text(it.s("text"), style = GardenType.Small) }
         if (status == "failed") Text(server?.s("error") ?: "", fontSize = 12.sp, color = Clay)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (entry.optBoolean("synced", false)) GardenQuietButton("Add detail", addDetail, icon = Icons.Outlined.EditNote)
-            if (status == "failed") GardenQuietButton("Try again", { vm.retryInterpretation(id) }, icon = Icons.Outlined.Refresh)
-        }
     }
 }
 

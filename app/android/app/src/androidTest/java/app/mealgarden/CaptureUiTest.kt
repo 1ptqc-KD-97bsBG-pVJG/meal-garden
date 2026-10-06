@@ -159,4 +159,44 @@ class CaptureUiTest {
         compose.onNodeWithTag("kitchen-drawing").assertExists()
         shot("phase6-capture-linked-kitchen")
     }
+    @Test fun correctionAndRetryStayVisibleBeforePhotoEvidence() {
+        val image = syntheticPhoto("correction-preview", android.graphics.Color.MAGENTA)
+        compose.runOnUiThread { vm.beginPhotoCapture(image) }
+        compose.waitUntil(10_000) { !vm.capturePhotoBusy && vm.draftCapture != null }
+        compose.runOnUiThread {
+            assertTrue(vm.saveCapture("meal", "Aurora bowl"))
+            val capture = vm.captures.first().put("synced", true)
+            vm.snapshot.put("captures", JSONArray().put(j("id" to capture.s("id"), "capturedAt" to capture.s("capturedAt"), "status" to "failed", "kind" to "meal")))
+            vm.openFoodLog = true
+        }
+        val id = vm.captures.single().s("id")
+        compose.onNodeWithTag("food-log-correct-$id").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Detail").assertIsDisplayed()
+        compose.onNodeWithText("Cancel").performClick()
+        compose.onNodeWithTag("food-log-retry-$id").assertIsDisplayed()
+        shot("lane16-food-correction-retry")
+        compose.onNodeWithText("Aurora bowl").performClick()
+        compose.onNodeWithTag("food-log-correct-$id").assertIsDisplayed()
+        shot("lane16-bounded-food-photo")
+        compose.runOnIdle { assertEquals(1, vm.foodLog().size); assertTrue(vm.outbox.isEmpty()) }
+    }
+
+    @Test fun yesterdayJumpAndNewCaptureReturnToNewestEntry() {
+        val now = java.time.ZonedDateTime.now(householdZone)
+        val remote = JSONArray()
+        repeat(24) { index ->
+            remote.put(j("id" to "older-$index", "kind" to "meal", "capturedAt" to now.minusDays(1).minusMinutes(index.toLong()).toOffsetDateTime().toString(),
+                "note" to "Aurora meal $index", "status" to "interpreted", "interpretation" to j("title" to "Aurora meal $index", "category" to "meal")))
+        }
+        compose.runOnUiThread { vm.snapshot.put("captures", remote); vm.openFoodLog = true }
+        compose.onNodeWithTag("food-log-jump-${foodToday().minusDays(1)}").performClick()
+        compose.onNodeWithTag("food-log-list").performScrollToNode(hasText("Aurora meal 20"))
+        compose.runOnUiThread { vm.beginTextCapture() }
+        compose.onNodeWithText("Note").performTextInput("New aurora snack")
+        compose.onNodeWithTag("capture-save").performScrollTo().performClick()
+        compose.onNodeWithText("New aurora snack").assertIsDisplayed()
+        shot("lane16-new-food-visible")
+        compose.runOnIdle { assertEquals(25, vm.foodLog().size) }
+    }
+
 }

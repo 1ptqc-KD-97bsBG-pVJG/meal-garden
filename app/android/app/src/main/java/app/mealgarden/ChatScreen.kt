@@ -4,6 +4,7 @@ package app.mealgarden
 
 import android.content.Intent
 import android.graphics.ImageDecoder
+import java.io.File
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.json.JSONObject
@@ -124,7 +126,7 @@ internal fun taskMessageTitle(vm: GardenModel, message: JSONObject): String? {
 }
 
 @Composable
-private fun ChatMessage(vm: GardenModel, message: JSONObject) {
+internal fun ChatMessage(vm: GardenModel, message: JSONObject) {
     val taskTitle = taskMessageTitle(vm, message)
     if (taskTitle != null) {
         var expanded by rememberSaveable(message.s("id")) { mutableStateOf(false) }
@@ -141,20 +143,61 @@ private fun ChatMessage(vm: GardenModel, message: JSONObject) {
         Text(message.s("text"), style = GardenType.Body, modifier = Modifier.widthIn(max = 330.dp).clip(GardenShape.Card).background(Mist).padding(12.dp))
     } else {
         val panels = message.a("panels").objects()
-        if (message.s("text").isNotBlank()) GardenCard { RichText(message.s("text")) }
-        panels.forEach { NativePanel(vm, it) }
+        var expanded by rememberSaveable(message.s("id")) { mutableStateOf(false) }
+        val text = message.s("text")
+        GardenCard(modifier = Modifier.testTag("chat-answer:${message.s("id")}")) {
+            val summary = panels.firstOrNull()?.s("title")?.takeIf { it.isNotBlank() }
+                ?: text.trim().lineSequence().firstOrNull { it.isNotBlank() }.orEmpty().replace(Regex("^[#*\\s]+"), "")
+            Text(summary, style = GardenType.Body, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            // Actions stay next to the recommendation rather than below the full transcript.
+            panels.flatMap { it.a("actions").objects() }.forEach { action ->
+                GardenPrimaryButton(action.s("label"), onClick = {
+                    if (action.s("type") == "recipe") vm.selectedRecipe = action.s("value")
+                    else vm.ask(action.s("value"), origin = "native_card")
+                }, modifier = Modifier.fillMaxWidth())
+            }
+            if (text.isNotBlank() || panels.any { it.s("body").isNotBlank() }) {
+                TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("chat-answer-details:${message.s("id")}")) { Text(if (expanded) "Less" else "Details") }
+                if (expanded) {
+                    if (text.isNotBlank()) RichText(text)
+                    panels.forEach { panel ->
+                        if (panel.s("title").isNotBlank()) Text(panel.s("title"), style = GardenType.Section)
+                        if (panel.s("body").isNotBlank() && panel.s("body") != text) RichText(panel.s("body"))
+                    }
+                }
+            }
+        }
     }
 }
 
 @Composable
-private fun ChatComposer(vm: GardenModel, compact: Boolean = false) {
+internal fun ChatComposer(vm: GardenModel, compact: Boolean = false, previews: ChatPreviewCache? = null) {
     val context = LocalContext.current
+    val previewCache = previews ?: remember { ChatPreviewCache(context.cacheDir) }
+    var pendingPreview by remember { mutableStateOf<File?>(null) }
+    var previousAttachment by remember { mutableStateOf(vm.attachment) }
+    fun attach(source: ImageDecoder.Source) {
+        val bytes = compressPhoto(source).first
+        pendingPreview?.delete()
+        pendingPreview = File.createTempFile("ask-preview-", ".jpg", context.cacheDir).apply { writeBytes(bytes) }
+        previousAttachment = vm.attachment
+        vm.upload(bytes)
+    }
+    LaunchedEffect(vm.attachment) {
+        if (vm.attachment.isNotBlank() && vm.attachment != previousAttachment) {
+            pendingPreview?.let { file ->
+                previewCache.complete(vm.attachment, file)
+                file.delete(); pendingPreview = null
+            }
+            previousAttachment = vm.attachment
+        }
+    }
     val photo = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) try { vm.upload(compressPhoto(ImageDecoder.createSource(context.contentResolver, uri)).first) }
+        if (uri != null) try { attach(ImageDecoder.createSource(context.contentResolver, uri)) }
         catch (_: Exception) { vm.error = "Could not read that photo" }
     }
     val camera = rememberCamera { file ->
-        try { vm.upload(compressPhoto(ImageDecoder.createSource(file)).first) }
+        try { attach(ImageDecoder.createSource(file)) }
         catch (_: Exception) { vm.error = "Could not read that photo" }
         finally { file.delete() }
     }
@@ -164,9 +207,12 @@ private fun ChatComposer(vm: GardenModel, compact: Boolean = false) {
     Column(Modifier.fillMaxWidth().imePadding().background(Paper).padding(horizontal = 14.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (!vm.online && vm.paired) Text("Laptop offline · reconnect to send", style = GardenType.Small, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         if (vm.attachment.isNotBlank()) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(Icons.Outlined.Image, null, Modifier.size(18.dp), tint = Forest)
-            Text(vm.attachmentName.ifBlank { "Photo attached" }, style = GardenType.Small, modifier = Modifier.weight(1f))
-            TextButton(onClick = { vm.attachment = ""; vm.attachmentName = "" }) { Text("Remove") }
+            val preview = previewCache.file(vm.attachment)
+            if (preview != null) LocalPhoto(preview, Modifier.size(52.dp).clip(GardenShape.Button).testTag("chat-attachment-preview"), 160)
+            else Icon(Icons.Outlined.Image, "Attached photo", Modifier.size(28.dp), tint = Forest)
+            Text("1 photo", style = GardenType.Small, modifier = Modifier.weight(1f))
+            TextButton(onClick = { photo.launch("image/*") }, enabled = !vm.busy) { Text("Replace") }
+            TextButton(onClick = { preview?.delete(); pendingPreview?.delete(); pendingPreview = null; vm.attachment = ""; vm.attachmentName = "" }, enabled = !vm.busy) { Text("Remove") }
         }
         Row(Modifier.fillMaxWidth().clip(GardenShape.Card).background(CardSurface).border(1.dp, Line, GardenShape.Card).padding(4.dp), verticalAlignment = Alignment.Bottom) {
             TextField(vm.draft, onValueChange = { vm.editDraft(it) }, modifier = Modifier.weight(1f).testTag("chat-input"), minLines = 1, maxLines = if (compact) 3 else 5,
@@ -177,16 +223,33 @@ private fun ChatComposer(vm: GardenModel, compact: Boolean = false) {
             }
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { if (vm.paired) camera() else vm.openSettings = true }) { Icon(Icons.Outlined.PhotoCamera, "Take a photo", tint = Muted) }
-            IconButton(onClick = { if (vm.paired) photo.launch("image/*") else vm.openSettings = true }) { Icon(Icons.Outlined.AddPhotoAlternate, "Attach from gallery", tint = Muted) }
+            IconButton(onClick = { if (vm.paired) camera() else vm.openSettings = true }, enabled = !vm.busy) { Icon(Icons.Outlined.PhotoCamera, if (vm.attachment.isBlank()) "Take a photo" else "Replace photo with camera", tint = Muted) }
+            IconButton(onClick = { if (vm.paired) photo.launch("image/*") else vm.openSettings = true }, enabled = !vm.busy) { Icon(Icons.Outlined.AddPhotoAlternate, if (vm.attachment.isBlank()) "Attach from gallery" else "Replace photo from gallery", tint = Muted) }
             IconButton(onClick = {
                 try { voice.launch(Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)) }
                 catch (_: Exception) { vm.error = "Use your keyboard's microphone for dictation on this device." }
             }) { Icon(Icons.Outlined.Mic, "Dictate", tint = Muted) }
             Spacer(Modifier.weight(1f))
-            GardenChip(vm.modelLabel(), selected = vm.quick, icon = if (vm.quick) Icons.Outlined.Bolt else Icons.Outlined.AutoAwesome, onClick = { vm.toggleQuick() })
+            GardenChip(if (vm.quick) "Quick" else "Thorough", selected = vm.quick, icon = if (vm.quick) Icons.Outlined.Bolt else Icons.Outlined.AutoAwesome, onClick = { vm.toggleQuick() })
         }
     }
+}
+
+/** The upload callback publishes the completed preview to the composer as observable UI state. */
+internal class ChatPreviewCache(private val cacheDir: File) {
+    private var ready by mutableStateOf<Pair<String, File>?>(null)
+
+    fun complete(attachmentId: String, source: File) {
+        val target = target(attachmentId)
+        source.copyTo(target, overwrite = true)
+        ready = attachmentId to target
+    }
+
+    fun file(attachmentId: String): File? =
+        ready?.takeIf { it.first == attachmentId }?.second
+            ?: target(attachmentId).takeIf { it.exists() }
+
+    private fun target(attachmentId: String) = File(cacheDir, "ask-photo-${attachmentId.hashCode()}.jpg")
 }
 
 @Composable

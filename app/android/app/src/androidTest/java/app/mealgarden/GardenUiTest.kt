@@ -1,6 +1,7 @@
 package app.mealgarden
 
 import androidx.compose.ui.test.*
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Rule
@@ -19,8 +20,8 @@ class GardenUiTest {
   compose.onNodeWithTag("recipe-scroll").performScrollToNode(hasText("Start cooking"))
   compose.onNodeWithText("Start cooking").performClick()
   compose.onNodeWithText("STEP 1 OF 5").assertIsDisplayed()
-  compose.onNodeWithText("Start step").performScrollTo().performClick()
-  compose.onNodeWithText("Finish step").performScrollTo().performClick()
+  compose.onNodeWithTag("cook-primary").assertIsDisplayed().assertHeightIsAtLeast(56.dp)
+  compose.onNodeWithText("Next").performClick()
   compose.onNodeWithText("STEP 2 OF 5").assertIsDisplayed()
   compose.onNodeWithContentDescription("Leave cooking").performClick()
   compose.onNodeWithText("Start cooking").performScrollTo().performClick()

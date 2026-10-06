@@ -32,8 +32,9 @@ fun GardenApp(vm: GardenModel = viewModel()) {
     var page by rememberSaveable { mutableStateOf("") }
     var askSheet by rememberSaveable { mutableStateOf(false) }
     var gallery by rememberSaveable { mutableStateOf(false) }
+    // A restored debug route must never become a release navigation path.
+    val showGallery = componentGalleryAvailable() && gallery
     val view = LocalView.current
-    val context = LocalContext.current
     val camera = rememberCamera { vm.beginPhotoCapture(it) }
     LaunchedEffect(vm.cameraRequests) { if (vm.cameraRequests > 0) camera() }
     LaunchedEffect(vm.error) { if (vm.error.isNotBlank()) { snack.showSnackbar(vm.error, duration = SnackbarDuration.Long); vm.error = "" } }
@@ -59,7 +60,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
     val selected = vm.selectedRecipe?.let { vm.recipe(it) }
     val key = when {
         askSheet -> "ask-sheet"
-        gallery -> "components"
+        showGallery -> "components"
         vm.openShopping -> "shopping"
         vm.openActivity -> "activity"
         vm.openPreferences -> "preferences"
@@ -75,7 +76,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
     }
     val title = when {
         askSheet -> "Ask"
-        gallery -> "Components"
+        showGallery -> "Components"
         vm.openShopping -> "Shopping"
         vm.openActivity -> "Activity"
         vm.openPreferences -> "Preferences"
@@ -100,7 +101,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
     fun back() {
         when {
             askSheet -> { askSheet = false; if (vm.tab == 2) vm.tab = 4 }
-            gallery -> gallery = false
+            showGallery -> gallery = false
             vm.openShopping -> vm.openShopping = false
             vm.openActivity -> vm.openActivity = false
             vm.openPreferences -> vm.openPreferences = false
@@ -115,7 +116,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
             vm.tab == 2 -> vm.tab = 4
         }
     }
-    val nested = askSheet || vm.openShopping || gallery || vm.openActivity || vm.openPreferences || vm.openSettings || vm.openHistory || vm.openFridgeCheck || vm.openHealth || vm.openFoodLog || vm.openCapture || selected != null || page.isNotBlank() || vm.tab == 2
+    val nested = askSheet || vm.openShopping || showGallery || vm.openActivity || vm.openPreferences || vm.openSettings || vm.openHistory || vm.openFridgeCheck || vm.openHealth || vm.openFoodLog || vm.openCapture || selected != null || page.isNotBlank() || vm.tab == 2
     BackHandler(enabled = nested && noteStage.isEmpty()) { back() }
     LaunchedEffect(key) { vm.track("screen", "key" to key) }
     fun note() { vm.captureNoteScreen(view, key, title, selected?.optInt("revision")); noteStage = "menu" }
@@ -126,14 +127,11 @@ fun GardenApp(vm: GardenModel = viewModel()) {
         topBar = {
             Row(Modifier.statusBarsPadding().fillMaxWidth().padding(start = 14.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("meal garden", style = GardenType.Section, color = Forest, modifier = Modifier.weight(1f))
-                if (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0)
-                    IconButton(onClick = { gallery = true }) { Icon(Icons.Outlined.Widgets, "Component gallery", tint = Muted, modifier = Modifier.size(20.dp)) }
-                IconButton(onClick = { clearNavigation(); vm.openSettings = true }) { Icon(if (vm.online) Icons.Outlined.Link else Icons.Outlined.LinkOff, "Settings", tint = if (vm.online) Forest else Muted, modifier = Modifier.size(20.dp)) }
                 IconButton(onClick = { note() }) { Icon(Icons.Outlined.EditNote, "Leave an app note", tint = Forest, modifier = Modifier.size(22.dp)) }
             }
         },
         bottomBar = {
-            if (!gallery) GardenBottomBar(
+            if (!showGallery) GardenBottomBar(
                 selected = if (vm.openCapture) 2 else when (vm.tab) { 0 -> 0; 3 -> 1; 1 -> 3; else -> 4 },
                 onSelect = { index ->
                     askSheet = false; vm.openShopping = false
@@ -151,10 +149,11 @@ fun GardenApp(vm: GardenModel = viewModel()) {
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
             Column(Modifier.fillMaxSize()) {
+                ConnectionStatus(vm.paired, vm.online) { clearNavigation(); vm.openSettings = true }
                 TimerDock(vm)
                 screens.SaveableStateProvider(key) {
                     when {
-                        gallery -> ComponentGallery(insetTop = false) { gallery = false }
+                        showGallery -> ComponentGallery(insetTop = false) { gallery = false }
                         vm.openShopping -> ShellDetail(vm, "shopping") { vm.openShopping = false }
                         vm.openActivity -> ShellDetail(vm, "activity") { vm.openActivity = false }
                         vm.openPreferences -> PreferencesScreen(vm)
@@ -167,7 +166,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
                         selected != null -> RecipeScreen(vm, selected)
                         page.isNotBlank() -> ShellDetail(vm, page) { page = "" }
                         else -> when (if (askSheet) 4 else vm.tab) {
-                            0 -> TodayScreen(vm)
+                            0 -> if (vm.paired) TodayScreen(vm) else ConnectWelcome { vm.openSettings = true }
                             1 -> RecipesScreen(vm)
                             2 -> ChatScreen(vm)
                             3 -> PantryScreen(vm)
@@ -175,6 +174,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
                                 when (route) {
                                     "preferences" -> vm.openPreferences = true
                                     "connection" -> vm.openSettings = true
+                                    "components" -> if (componentGalleryAvailable()) gallery = true
                                     "ask" -> { page = ""; askSheet = true }
                                     else -> page = route
                                 }
@@ -192,3 +192,5 @@ fun GardenApp(vm: GardenModel = viewModel()) {
         }
     }
 }
+
+internal fun componentGalleryAvailable(debug: Boolean = BuildConfig.DEBUG): Boolean = debug

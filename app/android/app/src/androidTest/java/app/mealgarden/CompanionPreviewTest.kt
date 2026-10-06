@@ -132,7 +132,8 @@ class CompanionPreviewTest {
     }
 
     private fun gallery() {
-        compose.onNodeWithContentDescription("Component gallery").performClick()
+        assumeTrue("The component gallery is a debug-only menu", BuildConfig.DEBUG)
+        resetTo(4); click("Components")
         shot("components-top")
         lazyScroll("Amounts"); shot("components-amounts")
         lazyScroll("Still have it?"); shot("components-panel")
@@ -234,10 +235,11 @@ class CompanionPreviewTest {
         val substitutions = compose.onAllNodes(hasText("I substituted") and hasClickAction() and isEnabled())
         if (substitutions.fetchSemanticsNodes().isNotEmpty()) { substitutions[0].performScrollTo().performClick(); shot("cook-substitute-picker"); click("Cancel") }
         compose.onNodeWithContentDescription("Ask a question").performScrollTo().performClick(); shot("cook-question"); click("Cancel")
-        val start = compose.onAllNodes(hasText("Start step") and hasClickAction())
-        val timer = compose.onAllNodes(hasText("Start ", substring = true) and hasText("min timer", substring = true) and hasClickAction())
-        if (start.fetchSemanticsNodes().isNotEmpty()) { start[0].performScrollTo().performClick(); shot("cook-started-step") }
-        else if (timer.fetchSemanticsNodes().isNotEmpty()) { timer[0].performScrollTo().performClick(); shot("cook-timer-next-step") }
+        compose.onNodeWithTag("cook-primary").assertIsDisplayed().performClick()
+        shot("cook-primary-advanced")
+        if (hasTextNode("Kitchen timer")) {
+            click("Kitchen timer"); shot("cook-short-timer-controls"); click("Cancel")
+        }
         compose.onNodeWithContentDescription("Leave cooking").performClick()
         resetTo(1)
         val variant = vm.snapshot.a("recipes").objects().firstOrNull { recipeReady(it) && it.s("parent_recipe_id").isNotBlank() }

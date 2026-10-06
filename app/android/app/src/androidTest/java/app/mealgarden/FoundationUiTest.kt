@@ -76,13 +76,15 @@ class FoundationUiTest {
         lazyScroll("Amounts")
         compose.onNodeWithContentDescription("More Portions").performScrollTo().performClick()
         compose.onNodeWithContentDescription("Portions: 5").assertExists()
-        compose.onNode(hasContentDescription("Half") and hasAnyAncestor(hasTestTag("gallery-amounts"))).performClick().assertIsSelected()
-        compose.onNodeWithContentDescription("Less Portions").performClick()
+        // Scrolling the stepper into view does not bring the amount row below it above the fixed navigation bar.
+        compose.onNode(hasContentDescription("Half") and hasAnyAncestor(hasTestTag("gallery-amounts")))
+            .performScrollTo().assertIsDisplayed().performClick().assertIsSelected()
+        compose.onNodeWithContentDescription("Less Portions").performScrollTo().assertIsDisplayed().performClick()
         compose.onNodeWithContentDescription("Portions: 4").assertExists()
         shot("phase1-components-amounts")
         lazyScroll("Still have it?")
-        compose.onNodeWithContentDescription("Close panel").performClick()
-        compose.onNodeWithText("Open panel").performClick()
+        compose.onNodeWithContentDescription("Close panel").performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithText("Open panel").performScrollTo().assertIsDisplayed().performClick()
         compose.onNodeWithText("Still have it?").assertExists()
         shot("phase1-components-panel")
     }
@@ -112,6 +114,86 @@ class FoundationUiTest {
         shot("phase3-today")
         lazyScroll("This week")
         shot("phase3-today-week")
+    }
+
+    @Test fun freshTodayShowsConnectionBeforeHouseholdCards() {
+        compose.onNodeWithText("Your kitchen starts here").assertIsDisplayed()
+        compose.onNodeWithText("Tonight?").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Component gallery").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Settings").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Leave an app note").assertIsDisplayed()
+        shot("lane16-first-connect")
+        compose.onNodeWithText("Connect your laptop").performClick()
+        compose.onNodeWithTag("garden-connection").assertIsDisplayed()
+    }
+
+    @Test fun askKeepsActionAboveLongEvidenceAndShowsOnePhotoControls() {
+        val text = "Try the aurora dish.\n\n" + "Original evidence and reasoning remain available. ".repeat(40)
+        val message = j("id" to "answer", "role" to "assistant", "text" to text, "panels" to JSONArray().put(
+            j("title" to "Aurora dish", "body" to "Panel evidence", "actions" to JSONArray().put(j("type" to "recipe", "value" to "aurora", "label" to "Cook Aurora")))))
+        compose.runOnUiThread { compose.activity.setContent { GardenTheme { ChatMessage(vm, message) } } }
+        compose.onNodeWithText("Cook Aurora").assertIsDisplayed()
+        shot("lane16-compact-ask")
+        compose.onNodeWithText("Cook Aurora").performClick()
+        compose.runOnIdle { assertEquals("aurora", vm.selectedRecipe) }
+        compose.onNodeWithText("Panel evidence").assertDoesNotExist()
+        compose.onNodeWithTag("chat-answer-details:answer").performClick()
+        compose.onNodeWithText("Panel evidence").assertExists()
+        compose.runOnUiThread {
+            vm.selectedRecipe = null; vm.attachment = "fictional-attachment"
+            val preview = File(compose.activity.cacheDir, "ask-photo-${vm.attachment.hashCode()}.jpg")
+            val bitmap = Bitmap.createBitmap(30, 30, Bitmap.Config.ARGB_8888)
+            bitmap.eraseColor(android.graphics.Color.CYAN)
+            preview.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 80, it) }
+            bitmap.recycle()
+            compose.activity.setContent { GardenTheme { ChatScreen(vm) } }
+        }
+        compose.onNodeWithText("1 photo").assertIsDisplayed()
+        compose.onNodeWithTag("chat-attachment-preview").assertIsDisplayed()
+        compose.onNodeWithText("Replace").assertIsDisplayed()
+        shot("lane16-ask-attachment")
+        compose.onNodeWithText("Remove").performClick()
+        compose.onNodeWithText("1 photo").assertDoesNotExist()
+        compose.runOnIdle { assertEquals("", vm.attachment); assertTrue(vm.outbox.isEmpty()) }
+    }
+
+    @Test fun healthyConnectionStaysQuietAndOfflineWarningOpensConnection() {
+        var opened = false
+        compose.runOnUiThread { compose.activity.setContent { GardenTheme { ConnectionStatus(true, true) { opened = true } } } }
+        compose.onNodeWithText("Laptop offline").assertDoesNotExist()
+        compose.runOnUiThread { compose.activity.setContent { GardenTheme { ConnectionStatus(true, false) { opened = true } } } }
+        compose.onNodeWithText("Laptop offline").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertTrue(opened) }
+        compose.runOnUiThread { compose.activity.setContent { GardenTheme { ConnectionStatus(false, false) {} } } }
+        compose.onNodeWithText("Laptop offline").assertDoesNotExist()
+    }
+
+    @Test fun attachedPhotoAppearsWhenItsCacheArrivesAfterUploadId() {
+        val id = "delayed-preview-fixture"
+        val cache = ChatPreviewCache(compose.activity.cacheDir)
+        val file = File(compose.activity.cacheDir, "ask-photo-${id.hashCode()}.jpg")
+        val source = File.createTempFile("delayed-preview-", ".jpg", compose.activity.cacheDir)
+        file.delete()
+        try {
+            compose.runOnUiThread {
+                vm.attachment = id
+                compose.activity.setContent { GardenTheme { ChatComposer(vm, previews = cache) } }
+            }
+            compose.onNodeWithText("1 photo").assertIsDisplayed()
+            compose.onNodeWithContentDescription("Attached photo").assertIsDisplayed()
+            compose.onNodeWithTag("chat-attachment-preview").assertDoesNotExist()
+            val bitmap = Bitmap.createBitmap(40, 40, Bitmap.Config.ARGB_8888)
+            bitmap.eraseColor(android.graphics.Color.MAGENTA)
+            source.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 80, it) }
+            bitmap.recycle()
+            // Complete the same delayed upload/cache handoff used by the real composer.
+            compose.runOnUiThread { cache.complete(id, source) }
+            // No typing, mode toggle, or other event is needed to refresh the attachment.
+            compose.onNodeWithTag("chat-attachment-preview").assertIsDisplayed()
+            compose.onNodeWithContentDescription("Attached photo").assertDoesNotExist()
+            compose.onNodeWithText("Remove").performClick()
+            compose.onNodeWithTag("chat-attachment-preview").assertDoesNotExist()
+        } finally { file.delete(); source.delete() }
     }
 
 }

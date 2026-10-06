@@ -63,21 +63,27 @@ class HealthInsightsTest {
         val app = compose.activity.application as Application
         val file = java.io.File(app.filesDir, "snapshot.json")
         val before = if (file.exists()) file.readText() else null
-        val now = foodToday().toString() + "T12:00:00-07:00"
+        // The preceding offset-boundary test changes householdZone; this fixture owns its clock context.
+        val fixtureDay = java.time.ZonedDateTime.now(java.time.ZoneOffset.UTC).minusHours(4).toLocalDate()
+        val now = fixtureDay.atTime(12, 0).atOffset(java.time.ZoneOffset.UTC).toString()
         fun remote(entry: JSONObject) = entry.o("server").put("id",entry.s("id")).put("kind","meal").put("capturedAt",now)
         val first = entry("one",nutrition="""{"calories":{"low":500,"high":650},"protein_g":{"low":25,"high":35},"fiber_g":{"low":8,"high":12},"sodium_mg":{"low":600,"high":1100}}""",items="""[{"name":"Broccoli and tofu","confidence":"high"}]""")
         val second = entry("two",nutrition="""{"calories":{"low":500,"high":700},"protein_g":{"low":35,"high":45},"fiber_g":{"low":14,"high":18}}""",items="""[{"name":"Rolled oats and berries","confidence":"high"}]""")
         val label = entry("label","nutrition_label","""{"calories":{"low":2000,"high":2000}}""")
         try {
-            file.writeText(JSONObject().put("recipes",JSONArray()).put("captures",JSONArray(listOf(remote(first),remote(second),remote(label)))).toString())
+            val snapshot = JSONObject().put("household", j("id" to "health-fixture", "timezone" to "UTC"))
+                .put("settings", j("dayStartHour" to 4)).put("recipes", JSONArray())
+                .put("captures", JSONArray(listOf(remote(first), remote(second), remote(label))))
+            file.writeText(snapshot.toString())
             val vm = GardenModel(app); vm.disconnect()
             compose.activity.setContentForHealthTest(vm)
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("2 food entries"))
             compose.onNodeWithText("2 food entries").assertIsDisplayed()
             compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Energy",substring=false))
             compose.onNodeWithText("1000–1350 kcal").assertIsDisplayed()
             compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Sodium",substring=false))
             compose.onNodeWithText("600–1100 mg").assertIsDisplayed()
-            compose.onNodeWithText("Known for 1 of 2 food entries").assertIsDisplayed()
+            compose.onNodeWithText("Values for 1 of 2 read food entries").assertIsDisplayed()
             compose.onNodeWithText("Total may exceed reference; check missing values").assertIsDisplayed()
         } finally { if (before == null) file.delete() else file.writeText(before) }
     }
@@ -100,6 +106,24 @@ class HealthInsightsTest {
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Sodium"))
         compose.onNodeWithText("FDA daily reference limit: 2300 mg").assertIsDisplayed()
     }
+    @Test fun generalAndPersonalTargetsHaveDistinctVisibleLabels() {
+        val fiber = healthNutrients.first { it.key == "fiber_g" }
+        assertEquals("FDA daily reference: 28 g", healthTargetLabel(fiber, null))
+        assertEquals("Your target: 35 g", healthTargetLabel(fiber, 35.0))
+        assertEquals("Protein target not set", healthTargetLabel(healthNutrients.first { it.key == "protein_g" }, null))
+        val app = compose.activity.application
+        val vm = GardenModel(app)
+        vm.disconnect()
+        val time = java.time.ZonedDateTime.now(householdZone).toOffsetDateTime().toString()
+        val read = j("id" to "read", "capturedAt" to time, "status" to "interpreted",
+            "interpretation" to j("category" to "meal", "nutrition" to j("calories" to j("low" to 100, "high" to 130))))
+        val pending = j("id" to "pending", "capturedAt" to time, "status" to "interpreting")
+        vm.snapshot.put("captures", JSONArray().put(read).put(pending))
+        compose.activity.setContentForHealthTest(vm)
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Energy", substring = false))
+        compose.onNodeWithText("Values for 1 of 1 read food entries · 1 awaiting details").assertIsDisplayed()
+    }
+
 }
 private fun MainActivity.setContentForHealthTest(vm: GardenModel) {
     this.setContent { MaterialTheme { HealthScreen(vm) } }

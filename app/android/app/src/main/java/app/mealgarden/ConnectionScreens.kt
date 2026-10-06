@@ -85,3 +85,22 @@ fun HistoryScreen(vm: GardenModel) {
         }
     }
 }
+
+@Composable
+fun ConnectWelcome(onConnect: () -> Unit) {
+    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically), horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(Icons.Outlined.Kitchen, null, Modifier.size(64.dp), tint = Forest)
+        Text("Your kitchen starts here", style = GardenType.Title)
+        GardenPrimaryButton("Connect your laptop", onConnect, Modifier.fillMaxWidth(), icon = Icons.Outlined.Link)
+    }
+}
+
+@Composable
+fun ConnectionWarning(onConnect: () -> Unit) {
+    GardenQuietButton("Laptop offline", onConnect, Modifier.fillMaxWidth().padding(horizontal = 14.dp), icon = Icons.Outlined.LinkOff)
+}
+
+@Composable
+internal fun ConnectionStatus(paired: Boolean, online: Boolean, onConnect: () -> Unit) {
+    if (paired && !online) ConnectionWarning(onConnect)
+}
