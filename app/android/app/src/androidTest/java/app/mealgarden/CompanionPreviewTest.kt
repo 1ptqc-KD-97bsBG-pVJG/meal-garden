@@ -63,7 +63,7 @@ class CompanionPreviewTest {
         if (compose.onAllNodes(isDialog()).fetchSemanticsNodes().isNotEmpty()) back()
         compose.runOnUiThread {
             vm.selectedRecipe = null; vm.openSettings = false; vm.openPreferences = false
-            vm.openHistory = false; vm.openFridgeCheck = false; vm.openHealth = false; vm.openFoodLog = false
+            vm.openHistory = false; vm.openFridgeCheck = false; vm.openHealth = false; vm.openFoodLog = false; vm.openCapture = false
             vm.tab = destination
         }
         compose.waitForIdle()
@@ -260,13 +260,78 @@ class CompanionPreviewTest {
         resetTo(0)
         compose.runOnUiThread { vm.openFoodLog = true }
         shot("food-log")
-        val capture = vm.foodLog().firstOrNull()
+        val capture = vm.foodLog().firstOrNull { it.o("server").s("status") == "interpreted" && it.o("server").o("interpretation").s("intakeId").isNotBlank() } ?: vm.foodLog().firstOrNull()
         if (capture != null) {
             val title = capture.o("server").o("interpretation").s("title").ifBlank { capture.s("note").ifBlank { capture.s("kind").replaceFirstChar { it.uppercase() } } }
             if (title.isNotBlank()) {
                 lazyScroll(title); click(title); shot("food-log-detail")
                 val rating = compose.onAllNodes(SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsActions.SetProgress))
                 if (rating.fetchSemanticsNodes().isNotEmpty()) { rating[0].performScrollTo(); shot("food-log-rating") }
+            }
+        }
+        previewCaptureEvidence()
+        resetTo(0)
+    }
+
+    private fun previewCaptureEvidence() {
+        val entries = vm.foodLog()
+        val pantry = vm.graphPantry()
+        val batches = vm.snapshot.a("batches").objects()
+        fun interpretation(entry: JSONObject) = entry.o("server").o("interpretation")
+        fun openEntry(entry: JSONObject) {
+            resetTo(0)
+            compose.runOnUiThread { vm.openFoodLog = true }
+            compose.waitForIdle()
+            val tag = "food-log-entry-${entry.s("id")}"
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag(tag))
+            val node = compose.onNodeWithTag(tag)
+            if (node.fetchSemanticsNode().config[SemanticsProperties.StateDescription] != "Expanded") node.performClick()
+            compose.waitForIdle()
+        }
+        entries.firstOrNull { it.o("server").s("status") == "interpreted" &&
+            interpretation(it).a("questions").strings().any { question -> question.isNotBlank() }
+        }?.let { entry ->
+            resetTo(0)
+            compose.runOnUiThread { vm.openFoodLog = true }
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("food-log-entry-${entry.s("id")}"))
+            compose.onNodeWithTag("food-log-question-${entry.s("id")}").performScrollTo().performClick()
+            shot("food-log-follow-up")
+            compose.onNode(hasText("Cancel") and hasClickAction()).performClick()
+        }
+        entries.firstOrNull { it.o("server").a("details").length() > 0 }?.let { entry ->
+            openEntry(entry)
+            val detail = entry.o("server").a("details").objects().firstOrNull { it.s("text").isNotBlank() }
+            if (detail != null) {
+                compose.onAllNodesWithText(detail.s("text"), useUnmergedTree = true)[0].performScrollTo()
+                shot("food-log-saved-details")
+            }
+        }
+        entries.firstOrNull { entry ->
+            val batch = batches.firstOrNull { it.s("id") == interpretation(entry).s("batchId") }
+            batch != null && pantry.any { it.s("id") == batch.s("pantry_item_id") }
+        }?.let { entry ->
+            openEntry(entry)
+            compose.onNodeWithTag("food-log-batch-${interpretation(entry).s("batchId")}")
+                .performScrollTo().performClick()
+            compose.waitForIdle()
+            val panels = compose.onAllNodesWithTag("kitchen-item-panel")
+            if (panels.fetchSemanticsNodes().isNotEmpty()) {
+                panels[0].performScrollTo(); shot("food-log-linked-batch")
+            }
+        }
+        entries.firstOrNull { entry -> interpretation(entry).a("components").objects().any { component ->
+            component.s("productId").isNotBlank() && pantry.any { it.s("product_id") == component.s("productId") }
+        } }?.let { entry ->
+            val component = interpretation(entry).a("components").objects().first { candidate ->
+                candidate.s("productId").isNotBlank() && pantry.any { it.s("product_id") == candidate.s("productId") }
+            }
+            openEntry(entry)
+            compose.onNodeWithTag("food-log-product-${component.s("productId")}")
+                .performScrollTo().performClick()
+            compose.waitForIdle()
+            val panels = compose.onAllNodesWithTag("kitchen-item-panel")
+            if (panels.fetchSemanticsNodes().isNotEmpty()) {
+                panels[0].performScrollTo(); shot("food-log-linked-product")
             }
         }
         resetTo(0)

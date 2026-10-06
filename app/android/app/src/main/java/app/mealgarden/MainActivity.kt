@@ -49,6 +49,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
         vm.openFridgeCheck -> "kitchen-check"
         vm.openHealth -> "health"
         vm.openFoodLog -> "food-log"
+        vm.openCapture -> "capture"
         selected != null -> "recipe:${selected.s("id")}:${selected.optInt("revision")}"
         page.isNotBlank() -> page
         else -> "tab:${vm.tab}"
@@ -62,6 +63,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
         vm.openFridgeCheck -> "Kitchen check"
         vm.openHealth -> "Eating"
         vm.openFoodLog -> "Food log"
+        vm.openCapture -> "Capture"
         selected != null -> selected.s("title")
         page == "app" -> "Your app"
         page == "activity" -> "Activity"
@@ -78,12 +80,13 @@ fun GardenApp(vm: GardenModel = viewModel()) {
             vm.openFridgeCheck -> vm.openFridgeCheck = false
             vm.openHealth -> vm.openHealth = false
             vm.openFoodLog -> vm.openFoodLog = false
+            vm.openCapture -> vm.openCapture = false
             selected != null -> vm.selectedRecipe = null
             page.isNotBlank() -> page = ""
             vm.tab == 2 -> vm.tab = 4
         }
     }
-    val nested = gallery || vm.openActivity || vm.openPreferences || vm.openSettings || vm.openHistory || vm.openFridgeCheck || vm.openHealth || vm.openFoodLog || selected != null || page.isNotBlank() || vm.tab == 2
+    val nested = gallery || vm.openActivity || vm.openPreferences || vm.openSettings || vm.openHistory || vm.openFridgeCheck || vm.openHealth || vm.openFoodLog || vm.openCapture || selected != null || page.isNotBlank() || vm.tab == 2
     BackHandler(enabled = nested && noteStage.isEmpty()) { back() }
     LaunchedEffect(key) { vm.track("screen", "key" to key) }
     fun note() { vm.captureNoteScreen(view, key, title, selected?.optInt("revision")); noteStage = "menu" }
@@ -102,14 +105,18 @@ fun GardenApp(vm: GardenModel = viewModel()) {
         },
         bottomBar = {
             if (!gallery) GardenBottomBar(
-                selected = when (vm.tab) { 0 -> 0; 3 -> 1; 1 -> 3; else -> 4 },
+                selected = if (vm.openCapture) 2 else when (vm.tab) { 0 -> 0; 3 -> 1; 1 -> 3; else -> 4 },
                 onSelect = { index ->
                     vm.openActivity = false; vm.openPreferences = false; vm.openSettings = false; vm.openHistory = false
-                    vm.openFridgeCheck = false; vm.openHealth = false; vm.openFoodLog = false
+                    vm.openFridgeCheck = false; vm.openHealth = false; vm.openFoodLog = false; vm.openCapture = false
                     vm.selectedRecipe = null; page = ""
                     vm.tab = when (index) { 0 -> 0; 1 -> 3; 3 -> 1; else -> 4 }
                 },
-                onCapture = { vm.beginTextCapture() },
+                onCapture = {
+                    vm.openActivity = false; vm.openPreferences = false; vm.openSettings = false; vm.openHistory = false
+                    vm.openFridgeCheck = false; vm.openHealth = false; vm.openFoodLog = false
+                    vm.selectedRecipe = null; page = ""; vm.openCapture = true
+                },
             )
         },
     ) { padding ->
@@ -126,6 +133,7 @@ fun GardenApp(vm: GardenModel = viewModel()) {
                         vm.openFridgeCheck -> FridgeCheckScreen(vm)
                         vm.openHealth -> HealthScreen(vm)
                         vm.openFoodLog -> FoodLogScreen(vm)
+                        vm.openCapture -> CaptureHome(vm)
                         selected != null -> RecipeScreen(vm, selected)
                         page.isNotBlank() -> ShellDetail(vm, page) { page = "" }
                         else -> when (vm.tab) {

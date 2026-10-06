@@ -32,11 +32,15 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.*
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -126,7 +130,65 @@ private val captureKinds = listOf(
 
 fun kindIcon(kind: String): ImageVector = captureKinds.find { it.first == kind }?.third ?: Icons.Outlined.RestaurantMenu
 
-/** Bottom sheet shown right after a photo (or for a text-only log). One tap saves. */
+/** Capture intent is a UI preference; interpretation remains evidence from the companion. */
+@Composable
+fun CaptureHome(vm: GardenModel) {
+    var mode by rememberSaveable { mutableStateOf(vm.prefs.getString("capture-mode", "meal") ?: "meal") }
+    fun selectMode(value: String) {
+        mode = value
+        vm.prefs.edit().putString("capture-mode", value).apply()
+    }
+    val camera = rememberCamera { vm.beginPhotoCapture(it) }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(10)) { uris -> vm.beginPhotoCapture(uris) }
+    val recent = vm.foodLog().firstNotNullOfOrNull { entry ->
+        vm.capturePhotos(entry).firstOrNull { vm.capturePhotoFile(entry, it).isFile }?.let { entry to it }
+    }
+    Column(Modifier.fillMaxSize().background(Paper)) {
+        GardenTopBar("Capture") {
+            TextButton(onClick = { vm.openFoodLog = true }) { Text("Food log", color = Forest) }
+        }
+        LazyColumn(contentPadding = PaddingValues(14.dp, 0.dp, 14.dp, 100.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            item {
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    captureKinds.forEach { (value, label, icon) -> GardenChip(label, selected = mode == value,
+                        icon = icon, onClick = { selectMode(value) }) }
+                }
+            }
+            item {
+                GardenCard {
+                    if (recent != null) {
+                        val (entry, photo) = recent
+                        LocalPhoto(vm.capturePhotoFile(entry, photo), Modifier.fillMaxWidth().height(220.dp).clip(GardenShape.Hero), 800)
+                        val title = entry.o("server").o("interpretation").s("title")
+                        if (title.isNotBlank()) Text(title, style = GardenType.Small)
+                    } else Box(Modifier.fillMaxWidth().height(185.dp).clip(GardenShape.Hero).background(Paper2), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Outlined.PhotoCamera, null, tint = Forest, modifier = Modifier.size(64.dp))
+                    }
+                    GardenPrimaryButton("Take photo", camera, modifier = Modifier.fillMaxWidth(),
+                        icon = Icons.Outlined.PhotoCamera, enabled = !vm.capturePhotoBusy)
+                }
+            }
+            item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GardenQuietButton("Choose photos", { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                        modifier = Modifier.weight(1f), icon = Icons.Outlined.PhotoLibrary, enabled = !vm.capturePhotoBusy)
+                    GardenQuietButton("No photo", { vm.beginTextCapture() }, modifier = Modifier.weight(1f),
+                        icon = Icons.Outlined.EditNote, enabled = !vm.capturePhotoBusy)
+                }
+            }
+            if (vm.capturePhotoBusy) item { LinearProgressIndicator(Modifier.fillMaxWidth(), color = Forest) }
+        }
+    }
+}
+
+/** Blank and zero mean the weight was not given. */
+fun optionalCaptureWeight(raw: String): Double? = raw.trim().replace(',', '.').toDoubleOrNull()
+    ?.takeIf { it.isFinite() && it > 0.0 }
+
+fun captureWeightIsValid(raw: String): Boolean = raw.isBlank() || raw.trim().replace(',', '.').toDoubleOrNull()
+    ?.let { it.isFinite() && it >= 0.0 } == true
+
+/** The native camera and gallery save several images into one durable draft. */
 @Composable
 fun CaptureSheet(vm: GardenModel) {
     val draft = vm.draftCapture ?: return
@@ -134,79 +196,69 @@ fun CaptureSheet(vm: GardenModel) {
     val photos = vm.capturePhotos(draft)
     val hasPhoto = photos.isNotEmpty()
     val camera = rememberCamera { vm.addCapturePhoto(it, id) }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(10)) { uris ->
-        vm.addCapturePhotos(uris, id)
-    }
-    var kind by rememberSaveable(id) { mutableStateOf("meal") }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(10)) { uris -> vm.addCapturePhotos(uris, id) }
+    var kind by rememberSaveable(id) { mutableStateOf(vm.prefs.getString("capture-mode", "meal") ?: "meal") }
     var note by rememberSaveable(id) { mutableStateOf("") }
+    val showWeight = moduleEnabled(vm, "weight", default = false)
+    var addWeight by rememberSaveable(id) { mutableStateOf(false) }
+    val weightVisible = showWeight || addWeight
+    var weight by rememberSaveable(id) { mutableStateOf("") }
+    val enteredWeight = optionalCaptureWeight(weight)
+    val weightValid = captureWeightIsValid(weight)
+    val hasWeight = weightVisible && enteredWeight != null
     val voice = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         result.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
             ?.let { note = (note + " " + it).trim() }
     }
-    val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(onDismissRequest = { vm.discardCapture() }, sheetState = sheet, containerColor = Cream) {
-        Column(Modifier.navigationBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    GardenSheet("Log food", { vm.discardCapture() }) {
+        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (hasPhoto) {
-                Text("${photos.size} ${if (photos.size == 1) "photo" else "photos"} · one entry", color = Muted)
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.fillMaxWidth().testTag("capture-photos").horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     photos.forEachIndexed { index, photo ->
-                        Box {
-                            LocalPhoto(vm.capturePhotoFile(draft, photo), Modifier.size(160.dp).clip(RoundedCornerShape(20.dp)), 480)
+                        Box(Modifier.testTag("capture-photo-${photo.s("id")}")) {
+                            LocalPhoto(vm.capturePhotoFile(draft, photo), Modifier.size(148.dp).clip(GardenShape.Card), 480)
                             IconButton(onClick = { vm.removeCapturePhoto(photo) }, enabled = !vm.capturePhotoBusy,
-                                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(36.dp).background(Cream, CircleShape)) {
-                                Icon(Icons.Outlined.Close, "Remove photo ${index + 1}", tint = Forest)
+                                modifier = Modifier.align(Alignment.TopEnd).padding(3.dp).size(48.dp).background(Paper, CircleShape)) {
+                                Icon(Icons.Outlined.Close, "Remove photo ${index + 1}", tint = Forest, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { camera() }, enabled = !vm.capturePhotoBusy && photos.size < 10) {
-                    Icon(Icons.Outlined.PhotoCamera, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Take photo")
-                }
-                OutlinedButton(onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, enabled = !vm.capturePhotoBusy && photos.size < 10) {
-                    Icon(Icons.Outlined.PhotoLibrary, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Choose photos")
-                }
+                GardenQuietButton("Take photo", camera, icon = Icons.Outlined.PhotoCamera,
+                    enabled = !vm.capturePhotoBusy && photos.size < 10)
+                GardenQuietButton("Choose photos", { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                    icon = Icons.Outlined.PhotoLibrary, enabled = !vm.capturePhotoBusy && photos.size < 10)
             }
             if (vm.capturePhotoBusy) LinearProgressIndicator(Modifier.fillMaxWidth(), color = Forest)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                captureKinds.forEach { (value, label, icon) ->
-                    FilterChip(
-                        selected = kind == value,
-                        onClick = { kind = value },
-                        label = { Text(label) },
-                        leadingIcon = { Icon(icon, null, Modifier.size(18.dp)) },
-                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Lime, selectedLabelColor = Forest, selectedLeadingIconColor = Forest),
-                    )
-                }
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                captureKinds.forEach { (value, label, icon) -> GardenChip(label, selected = kind == value,
+                    icon = icon, onClick = { kind = value }) }
             }
-            OutlinedTextField(
-                value = note,
-                onValueChange = { note = it.take(4000) },
-                placeholder = { Text(if (hasPhoto) "Anything the photo won't show? (optional)" else "What did you have?") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 1,
-                maxLines = 4,
-                trailingIcon = {
-                    IconButton(onClick = {
-                        voice.launch(android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(
-                            android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM))
-                    }) { Icon(Icons.Outlined.Mic, "Dictate", tint = Muted) }
-                },
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { vm.discardCapture() }) { Text("Discard", color = Muted) }
-                Spacer(Modifier.weight(1f))
-                Button(
-                    onClick = { vm.saveCapture(kind, note) },
-                    enabled = !vm.capturePhotoBusy && (hasPhoto || note.isNotBlank()),
-                    colors = ButtonDefaults.buttonColors(containerColor = Forest),
-                    shape = RoundedCornerShape(16.dp),
-                ) {
-                    Icon(Icons.Outlined.Check, null, Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Log it")
-                }
+            OutlinedTextField(value = note, onValueChange = { note = it.take(4000) },
+                label = { Text("Note") }, placeholder = { Text(if (hasPhoto) "Optional" else "What did you have?") },
+                modifier = Modifier.fillMaxWidth(), minLines = 1, maxLines = 4, shape = GardenShape.Button,
+                trailingIcon = { IconButton(onClick = {
+                    voice.launch(android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(
+                        android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM))
+                }) { Icon(Icons.Outlined.Mic, "Dictate", tint = Muted) } })
+            if (!weightVisible) TextButton(onClick = { addWeight = true }) { Text("Add weight") }
+            else OutlinedTextField(value = weight, onValueChange = { weight = it.take(20) },
+                label = { Text("Weight (g)") }, placeholder = { Text("Optional") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), singleLine = true,
+                modifier = Modifier.fillMaxWidth().testTag("capture-weight"), shape = GardenShape.Button, isError = !weightValid,
+                supportingText = if (!weightValid) { { Text("Enter grams or leave blank") } } else null)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                GardenQuietButton("Discard", { vm.discardCapture() })
+                GardenPrimaryButton("Log it", {
+                    val evidence = if (hasWeight) {
+                        val amount = java.math.BigDecimal.valueOf(enteredWeight!!).stripTrailingZeros().toPlainString()
+                        listOf(note.trim(), "Weight: $amount g").filter { it.isNotBlank() }.joinToString("\n")
+                    } else note
+                    vm.saveCapture(kind, evidence)
+                }, modifier = Modifier.weight(1f).testTag("capture-save"), icon = Icons.Outlined.Check,
+                    enabled = !vm.capturePhotoBusy && (!weightVisible || weightValid) && (hasPhoto || note.isNotBlank() || hasWeight))
             }
         }
     }
@@ -377,6 +429,7 @@ fun FoodLogStrip(vm: GardenModel) {
 }
 @Composable
 fun FoodLogScreen(vm: GardenModel) {
+    val showNutrition = moduleEnabled(vm, "nutrition")
     val photo = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(10)) { uris ->
         vm.beginPhotoCapture(uris)
     }
@@ -385,29 +438,24 @@ fun FoodLogScreen(vm: GardenModel) {
     val today = foodToday()
     var expanded by rememberSaveable { mutableStateOf("") }
     var detailFor by rememberSaveable { mutableStateOf("") }
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(8.dp, 8.dp, 16.dp, 0.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { vm.openFoodLog = false }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
-            Text("Food log", fontFamily = FontFamily.Serif, fontSize = 24.sp, color = Ink, modifier = Modifier.weight(1f))
-        }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { photo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
-                Icon(Icons.Outlined.PhotoLibrary, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Choose photos")
-            }
-            TextButton(onClick = { vm.beginTextCapture() }) {
-                Icon(Icons.Outlined.EditNote, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("No photo")
-            }
+    Column(Modifier.fillMaxSize().background(Paper)) {
+        GardenTopBar("Food log", onBack = { vm.openFoodLog = false })
+        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GardenQuietButton("Choose photos", { photo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                icon = Icons.Outlined.PhotoLibrary, modifier = Modifier.weight(1f))
+            GardenQuietButton("No photo", { vm.beginTextCapture() }, icon = Icons.Outlined.EditNote,
+                modifier = Modifier.weight(1f))
         }
         LazyColumn(
-            contentPadding = PaddingValues(20.dp, 8.dp, 20.dp, 120.dp),
+            contentPadding = PaddingValues(14.dp, 8.dp, 14.dp, 100.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            item { HealthEntryCard(vm, entries.filter { localDay(it.s("capturedAt")) == today }) }
+            if (showNutrition) item { HealthEntryCard(vm, entries.filter { localDay(it.s("capturedAt")) == today }) }
             if (entries.isEmpty()) item {
                 Column(Modifier.fillMaxWidth().padding(top = 60.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Outlined.PhotoCamera, null, Modifier.size(40.dp), tint = Muted)
                     Spacer(Modifier.height(10.dp))
-                    Text("Take or choose a photo of what you eat.", color = Muted)
+                    Text("No food logged", style = GardenType.Section, color = Muted)
                 }
             }
             entries.groupBy { localDay(it.s("capturedAt")) }.forEach { (day, dayEntries) ->
@@ -417,15 +465,15 @@ fun FoodLogScreen(vm: GardenModel) {
                     Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.Bottom) {
                         Text(
                             when (day) { LocalDate.MIN -> "Unknown date"; today -> "Today"; today.minusDays(1) -> "Yesterday"; else -> day.format(DateTimeFormatter.ofPattern("EEE, MMM d")) },
-                            fontFamily = FontFamily.Serif, fontSize = 20.sp, color = Ink, modifier = Modifier.weight(1f),
+                            style = GardenType.Section, modifier = Modifier.weight(1f),
                         )
-                        if (total != null) {
-                            Text("${total.text()} kcal · known food", fontSize = 12.sp, color = Muted)
+                        if (showNutrition && total != null) {
+                            Text("${total.text()} kcal", fontSize = 12.sp, color = Muted)
                         }
                     }
                 }
                 items(dayEntries, key = { it.s("id") }) { entry ->
-                    FoodLogRow(vm, entry, expanded == entry.s("id"), { expanded = if (expanded == entry.s("id")) "" else entry.s("id") }, { detailFor = entry.s("id") })
+                    FoodLogRow(vm, entry, showNutrition, expanded == entry.s("id"), { expanded = if (expanded == entry.s("id")) "" else entry.s("id") }, { detailFor = entry.s("id") })
                 }
             }
         }
@@ -435,7 +483,7 @@ fun FoodLogScreen(vm: GardenModel) {
         AlertDialog(
             onDismissRequest = { detailFor = "" },
             title = { Text("Add detail") },
-            text = { OutlinedTextField(text, { text = it.take(4000) }, placeholder = { Text("e.g. it was chicken; ate about half") }, minLines = 2) },
+            text = { OutlinedTextField(text, { text = it.take(4000) }, label = { Text("Detail") }, minLines = 2) },
             confirmButton = { TextButton(onClick = { vm.addCaptureDetail(detailFor, text) { detailFor = "" } }, enabled = text.isNotBlank()) { Text("Update") } },
             dismissButton = { TextButton(onClick = { detailFor = "" }) { Text("Cancel") } },
         )
@@ -443,7 +491,7 @@ fun FoodLogScreen(vm: GardenModel) {
 }
 
 @Composable
-private fun FoodLogRow(vm: GardenModel, entry: JSONObject, open: Boolean, toggle: () -> Unit, addDetail: () -> Unit) {
+private fun FoodLogRow(vm: GardenModel, entry: JSONObject, showNutrition: Boolean, open: Boolean, toggle: () -> Unit, addDetail: () -> Unit) {
     val id = entry.s("id")
     val server = entry.optJSONObject("server")
     val interp = server?.optJSONObject("interpretation")
@@ -452,21 +500,28 @@ private fun FoodLogRow(vm: GardenModel, entry: JSONObject, open: Boolean, toggle
         server == null -> "syncing"
         else -> server.s("status")
     }
-    val nutrition = interp?.optJSONObject("nutrition")
+    val nutrition = if (showNutrition && status == "interpreted") interp?.optJSONObject("nutrition") else null
+    fun openPantry(lot: JSONObject?) {
+        vm.selectedPantryItem = lot?.s("id").orEmpty()
+        vm.openCapture = false; vm.openFoodLog = false; vm.openHealth = false; vm.openFridgeCheck = false
+        vm.openActivity = false; vm.openPreferences = false; vm.openSettings = false; vm.openHistory = false
+        vm.selectedRecipe = null
+        vm.tab = 3
+    }
     val photos = vm.capturePhotos(entry)
     val hasPhoto = photos.isNotEmpty()
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color.White).border(1.dp, Line, RoundedCornerShape(20.dp)).clickable(onClick = toggle).padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        Modifier.fillMaxWidth().testTag("food-log-entry-$id").semantics { stateDescription = if (open) "Expanded" else "Collapsed" }.clip(GardenShape.Card).background(CardSurface).border(1.dp, Line, GardenShape.Card).clickable(onClick = toggle).padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            val thumb = Modifier.size(64.dp).clip(RoundedCornerShape(14.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            val thumb = Modifier.size(58.dp).clip(GardenShape.Button)
             if (hasPhoto) LocalPhoto(vm.capturePhotoFile(entry, photos.first()), thumb, 200)
             else Box(thumb.background(Mist), contentAlignment = Alignment.Center) { Icon(kindIcon(entry.s("kind")), null, tint = Forest) }
             Column(Modifier.weight(1f)) {
                 Text(
                     interp?.s("title")?.ifBlank { null } ?: entry.s("note").ifBlank { entry.s("kind").replaceFirstChar { it.uppercase() } },
-                    fontSize = 16.sp, color = Ink, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    fontSize = 15.sp, color = Ink, maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(localTime(entry.s("capturedAt")), fontSize = 12.sp, color = Muted)
@@ -482,8 +537,8 @@ private fun FoodLogRow(vm: GardenModel, entry: JSONObject, open: Boolean, toggle
             }
         }
         if (!open) {
-            interp?.optJSONArray("questions")?.strings()?.firstOrNull()?.let { q ->
-                Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Lime.copy(alpha = .5f)).clickable(onClick = addDetail).padding(10.dp, 8.dp),
+            interp?.takeIf { status == "interpreted" }?.optJSONArray("questions")?.strings()?.firstOrNull { it.isNotBlank() }?.let { q ->
+                Row(Modifier.testTag("food-log-question-$id").clip(GardenShape.Button).background(Mist).clickable(onClick = addDetail).padding(10.dp, 8.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.HelpOutline, null, Modifier.size(16.dp), tint = Forest)
                     Spacer(Modifier.width(8.dp))
@@ -493,27 +548,41 @@ private fun FoodLogRow(vm: GardenModel, entry: JSONObject, open: Boolean, toggle
             return@Column
         }
         if (hasPhoto) Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            photos.forEach { photo -> LocalPhoto(vm.capturePhotoFile(entry, photo), Modifier.size(240.dp).clip(RoundedCornerShape(16.dp)), 1000) }
+            photos.forEach { photo -> LocalPhoto(vm.capturePhotoFile(entry, photo), Modifier.size(200.dp).clip(GardenShape.Card), 1000) }
         }
         if (interp != null) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 val batchId = interp.s("batchId")
                 if (batchId.isNotBlank()) {
                     val batch = vm.snapshot.a("batches").objects().firstOrNull { it.s("id") == batchId }
-                    AssistChip(onClick = { vm.track("food_log_batch", "batchId" to batchId); vm.openFridgeCheck = true },
-                        label = { Text(batch?.s("title") ?: "Linked batch", fontSize = 12.sp) }, leadingIcon = { Icon(Icons.Outlined.SoupKitchen, null, Modifier.size(16.dp)) })
-                } else interp.a("components").objects().distinctBy { it.s("productId") }.forEach { component ->
+                    GardenChip(batch?.s("title")?.ifBlank { "Linked batch" } ?: "Linked batch", icon = Icons.Outlined.SoupKitchen,
+                        modifier = Modifier.testTag("food-log-batch-$batchId"), onClick = {
+                            val lot = vm.graphPantry().firstOrNull { it.s("id") == batch?.s("pantry_item_id") }
+                            vm.track("food_log_batch", "batchId" to batchId, "itemId" to lot?.s("id").orEmpty())
+                            openPantry(lot)
+                        })
+                }
+                interp.a("components").objects().filter { it.s("productId").isNotBlank() }
+                    .distinctBy { it.s("productId") }.forEach { component ->
                     val productId = component.s("productId")
-                    val product = vm.snapshot.a("pantry").objects().firstOrNull { it.s("product_id") == productId }
-                    AssistChip(onClick = { vm.track("food_log_product", "productId" to productId); vm.openFridgeCheck = true },
-                        label = { Text(product?.s("name") ?: component.s("name", "Linked product"), fontSize = 12.sp) }, leadingIcon = { Icon(Icons.Outlined.Link, null, Modifier.size(16.dp)) })
+                    val lots = vm.graphPantry().filter { it.s("product_id") == productId }
+                    val product = lots.firstOrNull()
+                    GardenChip(product?.s("name")?.ifBlank { component.s("name", "Linked product") }
+                        ?: component.s("name", "Linked product"), icon = Icons.Outlined.Link,
+                        modifier = Modifier.testTag("food-log-product-$productId"), onClick = {
+                            val currentLots = vm.graphPantry().filter { it.s("product_id") == productId }
+                            val referencedId = component.s("pantryItemId", component.s("pantry_item_id"))
+                            val lot = currentLots.firstOrNull { it.s("id") == referencedId }
+                                ?: currentLots.firstOrNull { it.optDouble("balance", Double.NaN) != 0.0 }
+                                ?: currentLots.firstOrNull()
+                            vm.track("food_log_product", "productId" to productId, "itemId" to lot?.s("id").orEmpty())
+                            openPantry(lot)
+                        })
                 }
                 if (interp.s("method").isNotBlank()) {
                     val computed = interp.s("method") == "computed"
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(6.dp)) {
-                        Icon(if (computed) Icons.Outlined.Calculate else Icons.Outlined.AutoAwesome, null, Modifier.size(16.dp), tint = Forest)
-                        Spacer(Modifier.width(4.dp)); Text(if (computed) "Computed" else "Estimated", fontSize = 12.sp)
-                    }
+                    GardenChip(if (computed) "Computed" else "Estimated",
+                        icon = if (computed) Icons.Outlined.Calculate else Icons.Outlined.AutoAwesome)
                 }
             }
             if (interp.s("intakeId").isNotBlank() && status == "interpreted") {
@@ -526,8 +595,8 @@ private fun FoodLogRow(vm: GardenModel, entry: JSONObject, open: Boolean, toggle
                 }, enabled = !saved) { Text(if (saved) "Rating saved" else "Save rating") }
             }
         }
-        if (interp != null && status == "interpreted") FoodHealthBreakdown(interp)
-        else if (interp != null) Text("Updating interpretation · excluded from current totals", fontSize = 12.sp, color = Muted)
+        if (showNutrition && interp != null && status == "interpreted") FoodHealthBreakdown(interp)
+        else if (interp != null && status != "interpreted") Text("Updating interpretation · excluded from current totals", fontSize = 12.sp, color = Muted)
         if (nutrition != null) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("protein_g" to "protein", "carbs_g" to "carbs", "fat_g" to "fat", "fiber_g" to "fiber").forEach { (key, label) ->
@@ -541,15 +610,19 @@ private fun FoodLogRow(vm: GardenModel, entry: JSONObject, open: Boolean, toggle
                 if (item.s("portion").isNotBlank()) Text(item.s("portion"), fontSize = 12.sp, color = Muted)
             }
         }
-        interp?.optJSONArray("questions")?.strings()?.forEach { q ->
-            Text("? $q", fontSize = 13.sp, color = Forest)
+        interp?.takeIf { status == "interpreted" }?.optJSONArray("questions")?.strings()?.firstOrNull { it.isNotBlank() }?.let { q ->
+            Row(Modifier.fillMaxWidth().testTag("food-log-question-$id").clip(GardenShape.Button).background(Mist).clickable(onClick = addDetail).padding(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.HelpOutline, null, tint = Forest, modifier = Modifier.size(17.dp))
+                Text(q, style = GardenType.Body, color = Forest)
+            }
         }
         entry.s("note").takeIf { it.isNotBlank() }?.let { Text("“$it”", fontSize = 13.sp, color = Muted) }
-        server?.optJSONArray("details")?.objects()?.forEach { Text("+ ${it.s("text")}", fontSize = 13.sp, color = Muted) }
+        server?.optJSONArray("details")?.objects()?.forEach { Text(it.s("text"), style = GardenType.Small) }
         if (status == "failed") Text(server?.s("error") ?: "", fontSize = 12.sp, color = Clay)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (entry.optBoolean("synced", false)) OutlinedButton(onClick = addDetail) { Text("Add detail") }
-            if (status == "failed") OutlinedButton(onClick = { vm.retryInterpretation(id) }) { Text("Try again") }
+            if (entry.optBoolean("synced", false)) GardenQuietButton("Add detail", addDetail, icon = Icons.Outlined.EditNote)
+            if (status == "failed") GardenQuietButton("Try again", { vm.retryInterpretation(id) }, icon = Icons.Outlined.Refresh)
         }
     }
 }
@@ -557,12 +630,19 @@ private fun FoodLogRow(vm: GardenModel, entry: JSONObject, open: Boolean, toggle
 @Composable
 private fun StatusDot(status: String) {
     val (color, label) = when (status) {
-        "interpreted" -> Forest to ""
-        "interpreting", "pending" -> Lime to "reading"
-        "failed" -> Clay to "couldn't read"
-        "syncing" -> Muted to "sending"
-        else -> Muted to "on phone"
+        "interpreted" -> Forest to "Read"
+        "interpreting", "pending" -> Forest to "Reading"
+        "failed" -> Clay to "Couldn't read"
+        "syncing" -> Muted to "Sending"
+        else -> Muted to "On phone"
     }
-    Box(Modifier.size(7.dp).clip(CircleShape).background(color))
-    if (label.isNotEmpty()) Text(label, fontSize = 11.sp, color = Muted)
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        Icon(when (status) {
+            "interpreted" -> Icons.Outlined.Check
+            "failed" -> Icons.Outlined.ErrorOutline
+            "syncing" -> Icons.Outlined.CloudUpload
+            else -> Icons.Outlined.Schedule
+        }, null, Modifier.size(13.dp), tint = color)
+        Text(label, fontSize = 11.sp, color = color)
+    }
 }

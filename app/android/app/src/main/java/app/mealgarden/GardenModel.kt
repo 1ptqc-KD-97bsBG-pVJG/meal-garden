@@ -150,6 +150,7 @@ class GardenModel(app: Application) : AndroidViewModel(app) {
     var openHistory by mutableStateOf(false)
     var openFridgeCheck by mutableStateOf(false)
     var openFoodLog by mutableStateOf(false)
+    var openCapture by mutableStateOf(false)
     var openHealth by mutableStateOf(false)
     var openActivity by mutableStateOf(false)
     var selectedPantryItem by mutableStateOf("")
