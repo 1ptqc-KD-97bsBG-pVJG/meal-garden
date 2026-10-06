@@ -125,6 +125,14 @@ internal fun taskMessageTitle(vm: GardenModel, message: JSONObject): String? {
     }
 }
 
+private fun compactAnswerText(raw: String): String = raw
+    .replace(Regex("^\\s*(?:#{1,6}\\s+|[-+*]\\s+|>\\s+)"), "")
+    .replace(Regex("!?\\[([^\\]]+)\\]\\([^\\s)]+(?:\\s+\"[^\"]*\")?\\)")) { it.groupValues[1] }
+    .replace(Regex("(\\*\\*|__|~~)(.+?)\\1")) { it.groupValues[2] }
+    .replace(Regex("(`+)(.+?)\\1")) { it.groupValues[2] }
+    .replace(Regex("(?<!\\w)([*_])([^*_\\n]+)\\1(?!\\w)")) { it.groupValues[2] }
+    .trim()
+
 @Composable
 internal fun ChatMessage(vm: GardenModel, message: JSONObject) {
     val taskTitle = taskMessageTitle(vm, message)
@@ -146,8 +154,8 @@ internal fun ChatMessage(vm: GardenModel, message: JSONObject) {
         var expanded by rememberSaveable(message.s("id")) { mutableStateOf(false) }
         val text = message.s("text")
         GardenCard(modifier = Modifier.testTag("chat-answer:${message.s("id")}")) {
-            val summary = panels.firstOrNull()?.s("title")?.takeIf { it.isNotBlank() }
-                ?: text.trim().lineSequence().firstOrNull { it.isNotBlank() }.orEmpty().replace(Regex("^[#*\\s]+"), "")
+            val summary = compactAnswerText(panels.firstOrNull()?.s("title")?.takeIf { it.isNotBlank() }
+                ?: text.trim().lineSequence().firstOrNull { it.isNotBlank() }.orEmpty())
             Text(summary, style = GardenType.Body, maxLines = 3, overflow = TextOverflow.Ellipsis)
             // Actions stay next to the recommendation rather than below the full transcript.
             panels.flatMap { it.a("actions").objects() }.forEach { action ->

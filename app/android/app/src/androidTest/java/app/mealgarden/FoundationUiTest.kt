@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -155,6 +156,29 @@ class FoundationUiTest {
         compose.onNodeWithText("Remove").performClick()
         compose.onNodeWithText("1 photo").assertDoesNotExist()
         compose.runOnIdle { assertEquals("", vm.attachment); assertTrue(vm.outbox.isEmpty()) }
+    }
+
+    @Test fun compactAnswerShowsReadableMarkdownAndKeepsLinkedEvidenceInDetails() {
+        val summary = "Warm the aurora dish with Reference."
+        val evidence = "The observation keeps its original attribution."
+        val message = j("id" to "formatted-answer", "role" to "assistant",
+            "text" to "### Warm **the aurora dish** with [Reference](https://example.com/reference).\n\n$evidence",
+            "panels" to JSONArray().put(j("actions" to JSONArray().put(
+                j("type" to "recipe", "value" to "aurora", "label" to "Cook Aurora")))))
+        compose.runOnUiThread { compose.activity.setContent { GardenTheme { ChatMessage(vm, message) } } }
+        compose.onNodeWithText(summary).assertIsDisplayed()
+        compose.onNodeWithText("**", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("[Reference]", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("https://example.com/reference", substring = true).assertDoesNotExist()
+        compose.onNodeWithText(evidence, substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Cook Aurora").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals("aurora", vm.selectedRecipe) }
+        compose.onNodeWithTag("chat-answer-details:formatted-answer").performClick()
+        val fullAnswer = compose.onNodeWithText("$summary\n\n$evidence").assertIsDisplayed().fetchSemanticsNode()
+            .config[SemanticsProperties.Text].single()
+        assertTrue("Details preserves the original source link", fullAnswer.getLinkAnnotations(0, fullAnswer.length)
+            .any { (it.item as? LinkAnnotation.Url)?.url == "https://example.com/reference" })
+        compose.onNodeWithText("Cook Aurora").assertIsDisplayed()
     }
 
     @Test fun healthyConnectionStaysQuietAndOfflineWarningOpensConnection() {
