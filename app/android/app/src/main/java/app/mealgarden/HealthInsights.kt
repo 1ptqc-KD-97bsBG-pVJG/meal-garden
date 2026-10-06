@@ -191,7 +191,7 @@ fun HealthScreen(vm: GardenModel) {
                 }
             }
             item { SectionLabel("Ideas from your recipes") }
-            val recommendations = vm.snapshot.a("recipes").objects().filter { it.s("readiness") == "ready" && it.a("ingredients").length() > 0 && it.a("steps").length() > 0 }.sortedByDescending { r ->
+            val recommendations = vm.snapshot.a("recipes").objects().filter { recipeReady(it) }.sortedByDescending { r ->
                 val evidence = recipeEvidence(r)
                 evidence.keys.count { !day.evidence.containsKey(it) } * 3 + if (evidence.containsKey("plant_protein")) 1 else 0
             }.take(3)

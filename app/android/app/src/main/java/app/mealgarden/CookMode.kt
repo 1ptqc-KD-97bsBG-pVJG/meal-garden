@@ -16,6 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.platform.*
@@ -26,6 +28,8 @@ import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.delay
 import org.json.JSONObject
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 fun cookStep(s: JSONObject) = CookStep(
     if (s.has("minutes")) s.optDouble("minutes") else null,
@@ -33,7 +37,7 @@ fun cookStep(s: JSONObject) = CookStep(
     if (s.has("start_minute")) s.optDouble("start_minute") else null,
     s.s("equipment"), s.s("text"), if (s.has("timer_minutes")) s.optDouble("timer_minutes") else null,
 )
-fun cookDay() = LocalDate.now().toString()
+fun cookDay(vm: GardenModel) = LocalDate.now(runCatching { ZoneId.of(vm.snapshot.o("household").s("timezone", "UTC")) }.getOrDefault(ZoneOffset.UTC)).toString()
 /** Scale only ingredient measures and explicit portion counts; never appliance settings or times. */
 fun scaledCookStep(r: JSONObject, step: JSONObject, portions: Int): JSONObject {
     val factor = portions.toDouble() / basePortions(r)
@@ -86,6 +90,11 @@ fun stepActivity(s: JSONObject): Pair<String, ImageVector> {
 fun ingredientIcon(a: JSONObject, fallback: ImageVector? = null): ImageVector {
     val name = a.s("name").lowercase()
     val matches = listOf(
+        "almondmilk" to R.drawable.mg_food_milk,
+        "almond milk" to R.drawable.mg_food_milk,
+        "oatmilk" to R.drawable.mg_food_milk,
+        "oat milk" to R.drawable.mg_food_milk,
+        "soymilk" to R.drawable.mg_food_soy_milk,
         "prego tomato sauce with olive oil and garlic" to R.drawable.mg_food_tomato_sauce,
         "prego pasta sauce garlic and black pepper" to R.drawable.mg_food_tomato_sauce,
         "roasted garlic ginger soy stir fry sauce" to R.drawable.mg_food_stir_fry_sauce,
@@ -265,56 +274,78 @@ fun defaultCookPortions(r: JSONObject) = basePortions(r).coerceIn(4, 5).coerceAt
 fun basePortions(r: JSONObject): Int {
     for (key in listOf("portions", "servings", "yield_portions")) if (r.optInt(key) > 0) return r.optInt(key)
     val yield = r.s("yield_notes").lowercase()
-    val number = Regex("\\b([0-9]+|one|two|three|four|five|six|seven|eight)\\s+(?:[a-z-]+\\s+){0,3}(?:servings?|portions?|bowls?|meals?|breakfasts?|dinners?|sides?)\\b").find(yield)?.groupValues?.get(1) ?: return 4
+    val nutritionWords = setOf("g", "mg", "gram", "grams", "protein", "calories", "kcal", "per")
+    val number = Regex("\\b([0-9]+|one|two|three|four|five|six|seven|eight)\\s+((?:[a-z-]+\\s+){0,5})(?:servings?|portions?|bowls?|meals?|breakfasts?|dinners?|sides?)\\b")
+        .findAll(yield).firstOrNull { match -> match.groupValues[2].trim().split(Regex("\\s+")).none { it in nutritionWords } }
+        ?.groupValues?.get(1) ?: return 4
     return number.toIntOrNull() ?: listOf("one", "two", "three", "four", "five", "six", "seven", "eight").indexOf(number) + 1
 }
 fun ingredientAmount(prefs: SharedPreferences, r: JSONObject, a: JSONObject, portions: Int, mode: String): String {
     val multiplier = portions.toDouble() / basePortions(r)
     val raw = a.s("amount")
     val exact = "${amountText(raw.toDoubleOrNull()?.times(multiplier)?.let { String.format(java.util.Locale.US, "%.3f", it).trimEnd('0').trimEnd('.') } ?: raw)} ${a.s("unit")}".trim()
-    val flavorCritical = Regex("salt|sauce|oil|spice|ginger|honey|vinegar|baking", RegexOption.IGNORE_CASE).containsMatchIn(a.s("name"))
+    val flavorCritical = flavorCriticalIngredient(a)
     val defaultExact = mode == "Exact" || (mode == "Mixed" && flavorCritical)
     val natural = !prefs.getBoolean("amount-exact:${r.s("id")}:${a.s("id", a.s("name"))}", defaultExact)
-    // Legacy detail often describes preparation. Keep exact quantities when scaling it cannot be validly scaled.
-    return if (natural && multiplier == 1.0 && a.s("detail").isNotBlank()) a.s("detail") else exact
+    val naturalAmount = a.s("natural_amount", a.s("naturalAmount")).ifBlank {
+        a.s("detail").takeIf { Regex("^(?:all (?:of )?(?:it|the)|the (?:whole|full)|half (?:the|a)|a (?:whole|full)|about [0-9¼½¾⅓⅔⅛]|[0-9¼½¾⅓⅔⅛]+\\s*(?:heads?|crowns?|cans?|blocks?|bunches?|cups?|tbsp|tsp|tablespoons?|teaspoons?|grams?|g|ounces?|oz)\\b)", RegexOption.IGNORE_CASE).containsMatchIn(it.trim()) }.orEmpty()
+    }
+    // Preparation notes are not amounts; an unscalable natural amount stays exact after scaling.
+    return if (natural && multiplier == 1.0 && naturalAmount.isNotBlank()) naturalAmount else exact
+}
+
+private fun flavorCriticalIngredient(ingredient: JSONObject) = Regex("salt|sauce|oil|spice|ginger|honey|vinegar|baking|cumin|cinnamon|pepper|paprika|turmeric|nutmeg|cloves", RegexOption.IGNORE_CASE).containsMatchIn(ingredient.s("name"))
+
+fun flipIngredientAmount(prefs: SharedPreferences, recipe: JSONObject, ingredient: JSONObject, mode: String) {
+    val key = "amount-exact:${recipe.s("id")}:${ingredient.s("id", ingredient.s("name"))}"
+    val defaultExact = mode == "Exact" || (mode == "Mixed" && flavorCriticalIngredient(ingredient))
+    prefs.edit().putBoolean(key, !prefs.getBoolean(key, defaultExact)).apply()
 }
 
 @Composable
 fun CookIngredientRow(vm: GardenModel, r: JSONObject, index: Int, portions: Int, mode: String,
                       amountRevision: Int, onFlip: () -> Unit, substitution: String = "") {
-    val a = r.a("ingredients").getJSONObject(index)
-    val amount = ingredientAmount(vm.prefs, r, a, portions, mode)
-    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(ingredientIcon(a), null, Modifier.size(24.dp), tint = Color.Unspecified)
-        Spacer(Modifier.width(10.dp))
+    val ingredient = r.a("ingredients").getJSONObject(index)
+    val amount = remember(r.s("id"), amountRevision, portions, mode, ingredient.toString()) { ingredientAmount(vm.prefs, r, ingredient, portions, mode) }
+    Row(Modifier.fillMaxWidth().clip(GardenShape.Button).background(CardSurface)
+        .clickable { flipIngredientAmount(vm.prefs, r, ingredient, mode); onFlip() }.heightIn(min = 48.dp).padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Icon(ingredientIcon(ingredient), null, Modifier.size(26.dp), tint = Color.Unspecified)
         Column(Modifier.weight(1f)) {
-            Text(a.s("name"), fontSize = 15.sp)
-            if (substitution.isNotBlank()) Text("→ $substitution", fontSize = 13.sp, color = Forest)
+            Text(ingredient.s("name"), fontSize = 12.sp, lineHeight = 16.sp, color = Muted)
+            Text(amount, fontSize = 13.sp, color = Forest, fontWeight = FontWeight.Medium)
+            if (substitution.isNotBlank()) Text("→ $substitution", fontSize = 12.sp, color = Forest)
         }
-        TextButton(onClick = {
-            val key = "amount-exact:${r.s("id")}:${a.s("id", a.s("name"))}"
-            val exact = vm.prefs.getBoolean(key, mode == "Exact" || (mode == "Mixed" && Regex("salt|sauce|oil|spice|ginger|honey|vinegar|baking", RegexOption.IGNORE_CASE).containsMatchIn(a.s("name"))))
-            vm.prefs.edit().putBoolean(key, !exact).apply(); onFlip()
-        }, modifier = Modifier.widthIn(max = 180.dp)) { Text(amount, fontSize = 13.sp) }
     }
 }
 
 @Composable
 fun PortionDestinationRows(total: Int, counts: JSONObject, onChange: (String, Int) -> Unit) {
     val assigned = listOf("fridge", "freezer", "eatenNow").sumOf { counts.optInt(it) }
-    Box(Modifier.fillMaxWidth().height(110.dp), contentAlignment = Alignment.Center) {
-        repeat((total - assigned).coerceIn(0, 5)) { i ->
-            GardenBowl(Modifier.size(110.dp).offset(y = (i * 8 - 16).dp), seed = total)
-        }
-        if (total == assigned) Icon(Icons.Outlined.CheckCircle, "All portions placed", Modifier.size(50.dp), tint = Forest)
+    val remaining = (total - assigned).coerceAtLeast(0)
+    Box(Modifier.fillMaxWidth().height(106.dp), contentAlignment = Alignment.Center) {
+        if (remaining > 0) GardenStack(remaining)
+        else Icon(Icons.Outlined.CheckCircle, "All portions placed", Modifier.size(48.dp), tint = Forest)
     }
-    Text("${total - assigned} to place", color = Forest)
-    listOf("fridge" to "Fridge", "freezer" to "Freezer", "eatenNow" to "Eaten now").forEach { (key, label) ->
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(label, Modifier.weight(1f))
-            IconButton(onClick = { onChange(key, counts.optInt(key) - 1) }, enabled = counts.optInt(key) > 0) { Icon(Icons.Outlined.Remove, "Remove one from $label") }
-            Text("${counts.optInt(key)}", fontSize = 22.sp)
-            IconButton(onClick = { onChange(key, counts.optInt(key) + 1) }, enabled = assigned < total) { Icon(Icons.Outlined.Add, "Add one to $label") }
+    Text("$remaining to place", style = GardenType.Small, color = Forest)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        listOf("fridge" to "Fridge", "freezer" to "Freezer", "eatenNow" to "Eaten now").forEach { (key, label) ->
+            val count = counts.optInt(key)
+            Column(Modifier.weight(1f).clip(GardenShape.Card).background(CardSurface)
+                .border(1.dp, if (count > 0) Forest else Line, GardenShape.Card)
+                .clickable(enabled = assigned < total, role = androidx.compose.ui.semantics.Role.Button) { onChange(key, count + 1) }
+                .semantics { contentDescription = "Add one to $label" }
+                .padding(horizontal = 5.dp, vertical = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Icon(when (key) { "fridge" -> Icons.Outlined.Kitchen; "freezer" -> Icons.Outlined.AcUnit; else -> Icons.Outlined.Restaurant },
+                    null, Modifier.size(28.dp), tint = Forest)
+                Text(label, style = GardenType.Small)
+                Text(count.toString(), style = GardenType.Title)
+                IconButton(onClick = { onChange(key, count - 1) }, enabled = count > 0,
+                    modifier = Modifier.size(48.dp).clip(GardenShape.Button).background(Paper2)) {
+                    Icon(Icons.Outlined.Remove, "Remove one from $label", Modifier.size(18.dp), tint = if (count > 0) Forest else Faint)
+                }
+            }
         }
     }
 }
@@ -323,6 +354,8 @@ fun PortionDestinationRows(total: Int, counts: JSONObject, onChange: (String, In
 fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: String, amountRevision: Int,
              onFlip: () -> Unit, subs: JSONObject, counts: JSONObject, onCount: (String, Int) -> Unit,
              onSubstitute: (Int) -> Unit, onReport: () -> Unit, onLeave: () -> Unit, askNotification: () -> Unit) {
+    val showLanes = moduleEnabled(vm, "lanes", default = false)
+    val showCookQuestions = moduleEnabled(vm, "cookQuestions")
     val context = LocalContext.current
     val steps = r.a("steps").objects()
     val recipeSteps = remember(r.toString()) { steps.map(::cookStep) }
@@ -333,7 +366,6 @@ fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: St
     var pickSub by remember { mutableStateOf(false) }
     var question by remember { mutableStateOf(false) }
     var questionText by remember { mutableStateOf("") }
-    var full by remember { mutableStateOf(false) }
     fun progress(): List<CookProgress> = steps.indices.map { i -> data.optJSONObject("$i")?.let { o ->
         CookProgress(if (o.has("startedAt")) o.optLong("startedAt") else null, if (o.has("doneAt")) o.optLong("doneAt") else null)
     } ?: CookProgress() }
@@ -347,9 +379,9 @@ fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: St
             if (finish) state.put("doneAt", time)
             put("$i", state)
         }
-        vm.prefs.edit().putString(storage, data.toString()).putString("cook-day:$sk", cookDay()).apply()
+        vm.prefs.edit().putString(storage, data.toString()).putString("cook-day:$sk", cookDay(vm)).apply()
         vm.track(name, "recipeId" to r.s("id"), "session" to sk, "step" to i)
-        tick = time; full = false
+        tick = time
     }
     fun stop(i: Int) {
         val timerKey = "$sk:$i"
@@ -377,8 +409,12 @@ fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: St
     val current = review ?: sequence.now
     val step = current?.let { scaledCookStep(r, steps[it], portions) }
     val used = step?.let { stepIngredients(r, it) }.orEmpty()
+    fun askStep(prompt: String) {
+        vm.askInBackground("Cooking ${r.s("title")} (${r.s("id")}), step ${current?.plus(1) ?: "waiting"}: ${step?.s("text").orEmpty()}. Setting: ${step?.let(::stepSetting).orEmpty()}. Substitutions: $subs. Question: $prompt", "cook_question")
+    }
+
     val stepScroll = rememberScrollState()
-    LaunchedEffect(current, complete) { stepScroll.scrollTo(0); full = false }
+    LaunchedEffect(current, complete) { stepScroll.scrollTo(0) }
     BackHandler { onLeave() }
     Dialog(onDismissRequest = onLeave, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Surface(Modifier.fillMaxSize(), color = Cream) {
@@ -386,29 +422,38 @@ fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: St
                 Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = onLeave) { Icon(Icons.Outlined.Close, "Leave cooking") }
                     Text(r.s("title"), Modifier.weight(1f), fontSize = 14.sp, maxLines = 2)
+                    IconButton(onClick = { vm.noteRequests++ }) { Icon(Icons.Outlined.EditNote, "Leave an app note", tint = Muted) }
                 }
                 TimerDock(vm)
-                Column(Modifier.weight(1f).verticalScroll(stepScroll).padding(horizontal = 24.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f).verticalScroll(stepScroll).padding(horizontal = GardenSpace.Page, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (complete && review == null) {
-                        Heading("$portions portions")
+                        Text("$portions portions", style = GardenType.Title)
                         PortionDestinationRows(portions, counts, onCount)
                         Button(onClick = onReport, enabled = listOf("fridge", "freezer", "eatenNow").sumOf { counts.optInt(it) } == portions,
-                            modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Cooking report") }
+                            modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Cooking report", color = LocalContentColor.current) }
                         TextButton(onClick = { review = steps.lastIndex }) { Text("Back to the last step") }
                     } else {
                         if (step != null) {
                             Eyebrow("STEP ${current + 1} OF ${steps.size}")
-                            Text(stepSentence(step), fontFamily = FontFamily.Serif, fontSize = 28.sp, lineHeight = 35.sp)
-                            used.forEach { i -> CookIngredientRow(vm, r, i, portions, mode, amountRevision, onFlip, subs.optString("$i")) }
+                            val direction = step.s("text").trim()
+                            val firstSentence = stepSentence(step)
+                            Text(firstSentence, style = GardenType.Title.copy(fontSize = 21.sp, lineHeight = 26.sp))
+                            direction.removePrefix(firstSentence).trim().takeIf { it.isNotBlank() }?.let {
+                                Text(it, style = GardenType.Body)
+                            }
+                            used.chunked(2).forEach { row ->
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    row.forEach { i -> Box(Modifier.weight(1f)) { CookIngredientRow(vm, r, i, portions, mode, amountRevision, onFlip, subs.optString("$i")) } }
+                                    if (row.size == 1) Spacer(Modifier.weight(1f))
+                                }
+                            }
                             stepSetting(step).takeIf { it.isNotBlank() }?.let { Text(it, fontWeight = FontWeight.SemiBold, color = Forest) }
                             stepDoneness(step).takeIf { it.isNotBlank() }?.let { Text("Done when: $it", color = Forest) }
-                            TextButton(onClick = { full = !full }) { Text(if (full) "Hide full step" else "Full step") }
-                            if (full) Text(step.s("text"), lineHeight = 24.sp)
                             val started = progress[current].startedAt != null
                             val finished = progress[current].doneAt != null
                             val passive = CookSequencer.passiveMillis(recipeSteps[current]) > 0
                             Button(onClick = {
-                                if (review != null) { review = null; full = false }
+                                if (review != null) { review = null }
                                 else if (!started) {
                                     record(current, "step_start")
                                     val minutes = if (passive) ceilMinutes(CookSequencer.passiveMillis(recipeSteps[current])) else step.optInt("timer_minutes")
@@ -425,27 +470,55 @@ fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: St
                                         scheduleTimer(context, key, step.s("title"), deadline, stepSetting(step))
                                     }
                                 } else { record(current, "step_finish", true); stop(current) }
-                            }, Modifier.fillMaxWidth().height(56.dp)) {
-                                Text(if (review != null) "Return to cooking" else if (finished) "Continue" else if (started) "Finish step" else if (passive) "Start ${ceilMinutes(CookSequencer.passiveMillis(recipeSteps[current]))} min timer" else "Start step")
+                            }, Modifier.fillMaxWidth().height(58.dp), shape = GardenShape.Button) {
+                                Icon(if (!started && passive) Icons.Outlined.Timer else Icons.Outlined.Check, null, Modifier.size(20.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(if (review != null) "Return to cooking" else if (finished) "Continue" else if (started) "Finish step" else if (passive) "Start ${ceilMinutes(CookSequencer.passiveMillis(recipeSteps[current]))} min timer" else "Start step", color = LocalContentColor.current)
                             }
                         } else {
                             Heading("Waiting")
                             sequence.waitingOn?.let { Text(steps[it.step].s("title"), fontSize = 20.sp) }
-                            Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Timer running") }
+                            Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Timer running", color = LocalContentColor.current) }
                         }
+                        // Keep a running station visible while a hands-on step has no appliance.
+                        val stationStep = listOfNotNull(current, sequence.waitingOn?.step)
+                            .firstOrNull { steps[it].s("equipment").isNotBlank() }
+                            ?: sequence.running.firstOrNull { steps[it.step].s("equipment").isNotBlank() }?.step
+                            ?: timerSteps.firstOrNull { steps[it].s("equipment").isNotBlank() }
+                        val stationEquipment = stationStep?.let { steps[it].s("equipment") }.orEmpty()
+                        KitchenDrawing(vm, Modifier.fillMaxWidth().height(140.dp).testTag("cook-kitchen"), activeEquipment = stationEquipment.ifBlank { "none" })
+                        val stationTimer = stationStep?.let { vm.timers["$sk:$it"] }
+                            ?: current?.let { vm.timers["$sk:$it"] }
+                            ?: sequence.waitingOn?.let { vm.timers["$sk:${it.step}"] }
+                        if (stationTimer != null) {
+                            val seconds = ((stationTimer.optLong("deadline") - tick).coerceAtLeast(0) / 1000).toInt()
+                            GardenChip(stationEquipment.takeIf { it.isNotBlank() }?.let { "$it · " }.orEmpty() + if (seconds > 0) "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}" else "Check", tint = if (seconds > 0) Mist else AmberLight, icon = Icons.Outlined.Timer)
+                        }
+                        if (showLanes) CookApplianceLanes(steps, recipeSteps, progress, sequence, tick)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             val prior = (current ?: steps.size) - 1
-                            TextButton(onClick = { review = prior; full = false; vm.track("step_back", "recipeId" to r.s("id"), "step" to prior) }, enabled = prior >= 0) { Text("Back") }
+                            TextButton(onClick = { review = prior; vm.track("step_back", "recipeId" to r.s("id"), "step" to prior) }, enabled = prior >= 0) { Text("Back") }
                             TextButton(onClick = {
                                 if (review != null) review = null else current?.let { record(it, "step_finish", true); stop(it) }
                             }, enabled = current != null) { Text("Next") }
-                            TextButton(onClick = { sequence.waitingOn?.let { record(it.step, "step_skip", true); stop(it.step) } }, enabled = sequence.waitingOn != null) { Text("Skip the wait") }
+                            if (sequence.waitingOn != null) TextButton(onClick = { sequence.waitingOn?.let { record(it.step, "step_skip", true); stop(it.step) } }) { Text("Skip the wait") }
                             TextButton(onClick = { pickSub = true }, enabled = used.isNotEmpty()) { Text("I substituted") }
-                            TextButton(onClick = { (current?.takeIf { it in timerSteps } ?: sequence.waitingOn?.step ?: sequence.running.firstOrNull()?.step)?.let { record(it, "step_done_early", true); stop(it) } }, enabled = timerSteps.isNotEmpty() || sequence.running.isNotEmpty()) { Text("Done early") }
+                            if (timerSteps.isNotEmpty() || sequence.running.isNotEmpty() || sequence.waitingOn != null) TextButton(onClick = { (current?.takeIf { it in timerSteps } ?: sequence.waitingOn?.step ?: sequence.running.firstOrNull()?.step)?.let { record(it, "step_done_early", true); stop(it) } }) { Text("Done early") }
                             IconButton(onClick = { question = true }) { Icon(Icons.Outlined.HelpOutline, "Ask a question") }
                         }
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(4.dp))
                         sequence.next?.let { i -> Text("Next · ${stepSentence(scaledCookStep(r, steps[i], portions))}", color = Muted, fontSize = 13.sp) }
+                        if (showCookQuestions && step != null) FlowRow(Modifier.testTag("cook-question-suggestions"),
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            val heatStep = Regex("heat|oven|stove|microwave|boil|simmer|roast|bake|induction", RegexOption.IGNORE_CASE)
+                                .containsMatchIn(stepSetting(step) + " " + step.s("text"))
+                            listOf("How do I tell it's done?", if (heatStep) "Can I change the heat?" else "Can I do this ahead?").forEach { prompt ->
+                                GardenChip(prompt, icon = Icons.Outlined.HelpOutline, onClick = {
+                                    vm.track("cook_question_suggestion", "recipeId" to r.s("id"), "step" to current, "question" to prompt)
+                                    askStep(prompt)
+                                })
+                            }
+                        }
                     }
                 }
             }
@@ -457,8 +530,48 @@ fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: St
     if (question) AlertDialog(onDismissRequest = { question = false }, title = { Text("Question") }, text = {
         OutlinedTextField(questionText, { questionText = it }, label = { Text("Ask about this step") })
     }, confirmButton = { TextButton(enabled = questionText.isNotBlank(), onClick = {
-        vm.askInBackground("Cooking ${r.s("title")} (${r.s("id")}), step ${current?.plus(1) ?: "waiting"}: ${step?.s("text").orEmpty()}. Substitutions: $subs. Question: $questionText", "cook_question")
+        askStep(questionText)
         question = false; questionText = ""
     }) { Text("Ask") } }, dismissButton = { TextButton(onClick = { question = false }) { Text("Cancel") } })
 }
 private fun ceilMinutes(ms: Long) = kotlin.math.ceil(ms / 60000.0).toInt()
+
+
+/** A view of the same deterministic sequence that drives the primary action. */
+@Composable
+private fun CookApplianceLanes(steps: List<JSONObject>, recipeSteps: List<CookStep>,
+    states: List<CookProgress>, sequence: CookSequence, time: Long) {
+    val lanes = steps.indices.groupBy { index ->
+        CookSequencer.appliance(recipeSteps[index])
+            ?: recipeSteps[index].equipment.substringBefore('·').trim().ifBlank { "Counter" }
+    }
+    GardenCard(modifier = Modifier.testTag("cook-lanes")) {
+        SectionLabel("Appliance lanes")
+        lanes.forEach { (name, indices) ->
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(name, style = GardenType.Small, modifier = Modifier.width(86.dp), maxLines = 2)
+                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    indices.forEach { index ->
+                        val resolved = states[index].doneAt != null ||
+                            (CookSequencer.passiveMillis(recipeSteps[index]) > 0 &&
+                                CookSequencer.end(recipeSteps[index], states[index])?.let { it <= time } == true)
+                        val running = sequence.running.any { it.step == index }
+                        val active = sequence.now == index
+                        val label = when { resolved -> "Done"; running -> "Timer"; active -> "Now"; else -> "Next" }
+                        val color = when { resolved -> Mist; running -> AmberLight; active -> Forest; else -> Paper2 }
+                        Box(Modifier.weight(1f).height(25.dp).clip(RoundedCornerShape(5.dp)).background(color)
+                            .semantics { contentDescription = "Step ${index + 1}: $label" }, contentAlignment = Alignment.Center) {
+                            Text("${index + 1}", fontSize = 11.sp, color = if (active && !resolved && !running) Paper else Muted)
+                        }
+                    }
+                }
+            }
+        }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            GardenChip("Now", selected = true)
+            GardenChip("Timer", tint = AmberLight, icon = Icons.Outlined.Timer)
+            GardenChip("Done", tint = Mist, icon = Icons.Outlined.Check)
+            GardenChip("Next")
+        }
+    }
+}

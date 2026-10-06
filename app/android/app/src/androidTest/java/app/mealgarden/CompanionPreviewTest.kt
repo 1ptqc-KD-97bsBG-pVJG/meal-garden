@@ -73,6 +73,9 @@ class CompanionPreviewTest {
     @Test fun walkCopiedCompanionInterface() {
         val arguments = InstrumentationRegistry.getArguments()
         assumeTrue("This preview requires explicit copiedCompanion=true", arguments.getString("copiedCompanion") == "true")
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val notificationPermission = instrumentation.uiAutomation.executeShellCommand("pm grant ${instrumentation.targetContext.packageName} android.permission.POST_NOTIFICATIONS")
+        android.os.ParcelFileDescriptor.AutoCloseInputStream(notificationPermission).use { it.readBytes() }
         phase = arguments.getString("phase")?.toIntOrNull() ?: error("Pass phase=1 through 8")
         require(phase in 1..8)
         val endpoint = arguments.getString("endpoint", "http://127.0.0.1:14783").trimEnd('/')
@@ -218,19 +221,33 @@ class CompanionPreviewTest {
 
     private fun recipesAndCooking() {
         resetTo(1); shot("recipes")
-        val ready = vm.snapshot.a("recipes").objects().firstOrNull { it.s("readiness") == "ready" && it.a("ingredients").length() > 0 && it.a("steps").length() > 0 }
+        val ready = vm.snapshot.a("recipes").objects().firstOrNull(::recipeReady)
         assumeTrue("The copied collection has no ready recipe", ready != null)
         compose.runOnUiThread { vm.selectedRecipe = ready!!.s("id") }
         shot("recipe")
+        if (hasTextNode("Mixed")) { click("Mixed"); shot("recipe-amounts"); click("Close") }
+        compose.onNodeWithTag("recipe-scroll").performScrollToNode(hasText("I cooked this"))
+        click("I cooked this"); shot("recipe-report"); click("Later")
         compose.onNodeWithTag("recipe-scroll").performScrollToNode(hasText("Start cooking"))
         shot("recipe-start-and-steps")
         click("Start cooking"); shot("cook-initial-step")
+        val substitutions = compose.onAllNodes(hasText("I substituted") and hasClickAction() and isEnabled())
+        if (substitutions.fetchSemanticsNodes().isNotEmpty()) { substitutions[0].performScrollTo().performClick(); shot("cook-substitute-picker"); click("Cancel") }
+        compose.onNodeWithContentDescription("Ask a question").performScrollTo().performClick(); shot("cook-question"); click("Cancel")
         val start = compose.onAllNodes(hasText("Start step") and hasClickAction())
         val timer = compose.onAllNodes(hasText("Start ", substring = true) and hasText("min timer", substring = true) and hasClickAction())
         if (start.fetchSemanticsNodes().isNotEmpty()) { start[0].performScrollTo().performClick(); shot("cook-started-step") }
         else if (timer.fetchSemanticsNodes().isNotEmpty()) { timer[0].performScrollTo().performClick(); shot("cook-timer-next-step") }
         compose.onNodeWithContentDescription("Leave cooking").performClick()
         resetTo(1)
+        val variant = vm.snapshot.a("recipes").objects().firstOrNull { recipeReady(it) && it.s("parent_recipe_id").isNotBlank() }
+        if (variant != null) { compose.runOnUiThread { vm.selectedRecipe = variant.s("id") }; compose.onNodeWithTag("recipe-scroll").performScrollToNode(hasText("Changed for this cook")); shot("recipe-variant-changes"); resetTo(1) }
+        val candidate = vm.snapshot.a("recipes").objects().firstOrNull { !recipeReady(it) }
+        if (candidate != null) {
+            compose.onNodeWithTag("recipes-scroll").performScrollToNode(hasTestTag("recipes-not-ready"))
+            compose.onNodeWithTag("recipes-not-ready").performClick(); shot("recipes-archive")
+        }
+        if (candidate != null) { compose.runOnUiThread { vm.selectedRecipe = candidate.s("id") }; shot("recipe-candidate"); resetTo(1) }
     }
 
     private fun captureAndLog() {

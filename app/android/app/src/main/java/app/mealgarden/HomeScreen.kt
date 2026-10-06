@@ -31,7 +31,7 @@ fun TodayScreen(vm: GardenModel) {
     val entries = vm.foodLog()
     val dayEntries = entries.filter { localDay(it.s("capturedAt")) == today }
     val day = dayHealth(dayEntries)
-    val ready = vm.snapshot.a("recipes").objects().filter { it.s("readiness") == "ready" && it.a("ingredients").length() > 0 && it.a("steps").length() > 0 }
+    val ready = vm.snapshot.a("recipes").objects().filter { recipeReady(it) }
     val intent = vm.snapshot.o("activePlan").a("meals").objects().filter { it.s("date") == today.toString() }
     val suggestion = ready.firstOrNull { recipe -> intent.any { it.s("recipe_id") == recipe.s("id") } } ?: ready.firstOrNull()
     val showTimeline = moduleEnabled(vm,"timeline")

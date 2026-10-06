@@ -51,7 +51,7 @@ class RecipeCookModeTest {
             vm = GardenModel(compose.activity.application)
             assertFalse("Never test writes against a paired laptop", vm.paired)
             vm.prefs.edit().clear().commit()
-            compose.activity.setContent { MaterialTheme(colorScheme = lightColorScheme(primary = Forest, surface = Cream, background = Cream)) { GardenApp(vm) } }
+            compose.activity.setContent { GardenTheme { GardenApp(vm) } }
         }
         open("lentil-tomato-pot")
         shot("recipe-view")
@@ -62,11 +62,11 @@ class RecipeCookModeTest {
         click("Exact")
         compose.runOnIdle { assertEquals("Exact", vm.prefs.getString("ingredientAmounts", "")) }
         click("Start cooking")
-        click("I substituted"); compose.onNode(hasText("Carrots") and hasClickAction()).performClick()
+        click("I substituted"); compose.onNode(hasText("Carrots") and SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Button)).performClick()
         compose.onNodeWithText("e.g. frozen jasmine rice").performTextInput("Parsnips")
         compose.onNodeWithText("Why? (optional)").performTextInput("Used what I had")
         click("Save")
-        compose.onNodeWithText("→ Parsnips").assertExists()
+        compose.onNode(hasText("→ Parsnips") and hasClickAction()).assertExists()
         click("Start step"); click("Finish step")
         compose.onNodeWithContentDescription("Leave cooking").performClick()
         click("Start cooking")
@@ -91,6 +91,7 @@ class RecipeCookModeTest {
         open("apple-seed-oats")
         click("Start cooking")
         repeat(3) { click("Start step"); click("Finish step") }
+        shot("cook-long-directions")
         click("Start 360 min timer"); click("Done early")
         compose.onNode(hasText("4 portions") and hasAnyAncestor(isDialog())).assertIsDisplayed()
         repeat(4) { compose.onNodeWithContentDescription("Add one to Fridge").performClick() }
@@ -109,7 +110,7 @@ class RecipeCookModeTest {
             val recipe = JSONObject("""{"id":"sequencer-ui-fixture","revision":1,"title":"Cook test","readiness":"ready","ingredients":[{"id":"tofu","name":"Tofu","amount":1,"unit":"block"}],"steps":[{"title":"Preheat","text":"Preheat the Ninja to 400°F.","equipment":"Ninja","start_minute":0,"minutes":5,"passive_minutes":4},{"title":"Cube","text":"Cube the tofu.","start_minute":1,"minutes":2}]}""")
             vm.snapshot.put("recipes", JSONArray().put(recipe))
             vm.selectedRecipe = recipe.getString("id")
-            compose.activity.setContent { MaterialTheme(colorScheme = lightColorScheme(primary = Forest, surface = Cream, background = Cream)) { GardenApp(vm) } }
+            compose.activity.setContent { GardenTheme { GardenApp(vm) } }
         }
         click("Start cooking")
         compose.onNodeWithText("I substituted").performScrollTo().assertIsNotEnabled()

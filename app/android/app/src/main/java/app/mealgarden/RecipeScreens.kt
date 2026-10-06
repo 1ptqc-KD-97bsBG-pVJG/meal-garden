@@ -29,96 +29,103 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import kotlin.math.*
 import org.json.JSONObject
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 
+/** Display grouping uses declared meal types first, then a legacy title fallback. */
+private fun recipeMealGroup(recipe: JSONObject): Int {
+    val declared = (recipe.s("meal_type") + " " + recipe.a("meal_types").strings().joinToString(" ") + " " + recipe.a("tags").strings().joinToString(" ")).lowercase()
+    if (Regex("breakfast|brunch").containsMatchIn(declared)) return 0
+    if (Regex("soup|side").containsMatchIn(declared)) return 2
+    if (declared.isNotBlank()) return 1
+    val title = recipe.s("title").lowercase()
+    return when {
+        Regex("oats|yogurt|muffin|pancake|breakfast|granola").containsMatchIn(title) -> 0
+        Regex("soup|broth").containsMatchIn(title) -> 2
+        else -> 1
+    }
+}
+
 @Composable
 fun RecipesScreen(vm: GardenModel) {
     var query by rememberSaveable { mutableStateOf("") }
-    var filter by rememberSaveable { mutableStateOf("Ready") }
+    var showAll by rememberSaveable { mutableStateOf(false) }
+    var savedOnly by rememberSaveable { mutableStateOf(false) }
     val all = vm.snapshot.a("recipes").objects()
-    val recipes =
-        all.filter { r ->
-            (filter == "All" ||
-                (filter == "Ready" && r.s("readiness") == "ready") ||
-                (filter == "Saved" && vm.prefs.getBoolean("favorite:${r.s("id")}", false))) &&
-                (r.toString().contains(query, ignoreCase = true))
-        }
+    val notReady = all.count { !recipeReady(it) }
+    val visible = all.filter { r ->
+        (showAll || savedOnly || recipeReady(r) && (r.s("parent_recipe_id").isBlank() || all.none { it.s("id") == r.s("parent_recipe_id") && recipeReady(it) })) &&
+            (!savedOnly || vm.prefs.getBoolean("favorite:${r.s("id")}", false)) &&
+            (query.isBlank() || r.toString().contains(query, ignoreCase = true))
+    }
+    val groups = visible.groupBy(::recipeMealGroup).toSortedMap().values
     LazyColumn(
-        Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(24.dp, 8.dp, 24.dp, 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        Modifier.fillMaxSize().testTag("recipes-scroll"),
+        contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { Heading("Recipes") }
         item {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = { Text("Find a dish or ingredient") },
-                leadingIcon = { Icon(Icons.Outlined.Search, null) },
-                singleLine = true,
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Heading(if (showAll) "All recipes" else "Recipes", action = {
+                IconButton(onClick = { vm.ask("Help me find a recipe to cook from my collection, or develop something new.", origin = "recipes") }) {
+                    Icon(Icons.Outlined.HelpOutline, "Ask about recipes", tint = Forest)
+                }
+            })
+        }
+        item {
+            OutlinedTextField(query, { query = it }, placeholder = { Text("Find a dish or ingredient") },
+                leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true,
+                shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth())
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("Ready", "Saved", "All").forEach { f ->
-                    FilterChip(
-                        selected = filter == f,
-                        onClick = { filter = f },
-                        label = { Text(f) },
-                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Lime),
-                    )
-                }
+                FilterChip(selected = !showAll && !savedOnly, onClick = { showAll = false; savedOnly = false }, label = { Text("Ready") })
+                FilterChip(selected = savedOnly, onClick = { savedOnly = !savedOnly }, label = { Text("Saved") })
             }
         }
-        item {
-            Eyebrow(
-                "${recipes.size} recipes · ${all.count{it.s("readiness")=="ready"}} ready to cook"
-            )
-        }
-        items(recipes, key = { it.s("id") }) { r ->
-            RecipeTile(r) { vm.selectedRecipe = r.s("id") }
-        }
-        if (recipes.isEmpty())
+        groups.forEachIndexed { index, group ->
+            if (index > 0) item { HorizontalDivider(color = Line, thickness = 2.dp, modifier = Modifier.padding(vertical = 4.dp)) }
             item {
-                Note(
-                    "Nothing on this shelf yet. Try another search or save a recipe with the heart button."
-                )
-            }
-        item {
-            CardBox(color = Mist) {
-                Eyebrow("TRY SOMETHING NEW")
-                Text(
-                    "A craving is a good place to start.",
-                    fontFamily = FontFamily.Serif,
-                    fontSize = 23.sp,
-                )
-                Text(
-                    "Develop a new recipe around an ingredient, a favorite flavor, or your equipment.",
-                    fontSize = 13.sp,
-                    color = Muted,
-                )
-                TextButton(
-                    onClick = {
-                        vm.ask(
-                            "I'd like to discover a new recipe that fits my health and cost priorities. Start with my existing collection, then help me explore."
-                        )
+                GardenCard {
+                    group.sortedWith(compareBy<JSONObject> { !recipeReady(it) }.thenBy { it.s("title") }).forEachIndexed { row, recipe ->
+                        if (row > 0) HorizontalDivider(color = Line)
+                        val children = all.filter { it.s("parent_recipe_id") == recipe.s("id") && recipeReady(it) }
+                        RecipeShelfRow(recipe, children.size) { vm.selectedRecipe = recipe.s("id") }
                     }
-                ) {
-                    Text("Explore with your assistant")
-                    Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, Modifier.size(17.dp))
                 }
+            }
+        }
+        if (visible.isEmpty()) item { Text("No recipes found", color = Muted, modifier = Modifier.padding(vertical = 24.dp)) }
+        if (!showAll && notReady > 0) item {
+            TextButton(onClick = { showAll = true; savedOnly = false }, modifier = Modifier.testTag("recipes-not-ready")) {
+                Text("$notReady more not ready to cook")
+                Icon(Icons.Outlined.ChevronRight, null, Modifier.size(18.dp))
             }
         }
     }
 }
 
 @Composable
+private fun RecipeShelfRow(recipe: JSONObject, variants: Int, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        GardenBowl(Modifier.size(52.dp), seed = recipe.s("id").hashCode())
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(recipe.s("title"), fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium)
+            if (!recipeReady(recipe)) GardenChip("Not ready", tint = AmberLight)
+            else if (variants > 0) GardenChip("$variants variant${if (variants == 1) "" else "s"}")
+        }
+        if (recipe.optInt("total_minutes") > 0) Text("${recipe.optInt("total_minutes")} min", color = Muted, fontSize = 12.sp)
+        Icon(Icons.Outlined.ChevronRight, null, Modifier.size(16.dp), tint = Muted)
+    }
+}
+
+@Composable
 fun RecipeScreen(vm: GardenModel, r: JSONObject) {
+    val showNutrition = moduleEnabled(vm, "nutrition")
     val context = LocalContext.current
     val rid = r.s("id")
     val key = "$rid:${r.optInt("revision")}"
@@ -131,7 +138,7 @@ fun RecipeScreen(vm: GardenModel, r: JSONObject) {
     var amountSettings by remember { mutableStateOf(false) }
     LaunchedEffect(key) {
         val previous = vm.prefs.getString("cook-day:$sk", null)
-        if (previous != null && previous != cookDay()) {
+        if (previous != null && previous != cookDay(vm)) {
             r.a("steps").objects().indices.forEach { cancelTimer(context, "$sk:$it"); vm.stopTimer("$sk:$it") }
             session++; vm.prefs.edit().putInt("session:$key", session).apply()
         }
@@ -146,23 +153,28 @@ fun RecipeScreen(vm: GardenModel, r: JSONObject) {
     var reportSaved by remember(sk) { mutableStateOf(vm.prefs.getBoolean("report-saved:$sk", false)) }
     var adjust by remember { mutableStateOf(false) }
     var adjustText by rememberSaveable(rid) { mutableStateOf("") }
-    val ready = r.s("readiness") == "ready"
+    val ready = recipeReady(r)
     val steps = r.a("steps").objects()
     val notif = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
     // Substitutions for this cook session: ingredient index -> what was used instead.
     var subs by remember(sk) { mutableStateOf(runCatching { org.json.JSONObject(vm.prefs.getString("subs:$sk", "{}")!!) }.getOrDefault(org.json.JSONObject())) }
+    var disabledSubs by remember(sk) { mutableStateOf(runCatching { JSONObject(vm.prefs.getString("subs-disabled:$sk", "{}")!!) }.getOrDefault(JSONObject())) }
+    val appliedSubs = JSONObject(subs.toString()).apply {
+        r.a("ingredients").objects().indices.filter { disabledSubs.optBoolean("$it") }.forEach { remove("$it"); remove("reason:$it") }
+    }
     var subFor by remember { mutableStateOf(-1) }
     fun saveSub(i: Int, text: String, reason: String? = null) {
         subs = org.json.JSONObject(subs.toString()).apply {
             if (text.isBlank()) { remove("$i"); remove("reason:$i") }
             else { put("$i", text.trim()); if (reason != null) { if (reason.isBlank()) remove("reason:$i") else put("reason:$i", reason.trim()) } }
         }
-        vm.prefs.edit().putString("subs:$sk", subs.toString()).apply()
+        disabledSubs = JSONObject(disabledSubs.toString()).apply { remove("$i") }
+        vm.prefs.edit().putString("subs:$sk", subs.toString()).putString("subs-disabled:$sk", disabledSubs.toString()).apply()
         vm.track("cook_substitution", "recipeId" to rid, "ingredient" to i, "substitution" to text)
     }
     fun subsSummary(): String = r.a("ingredients").objects().withIndex()
-        .filter { subs.has("${it.index}") }
-        .joinToString("; ") { "${it.value.s("name")} → ${subs.getString("${it.index}")}${subs.optString("reason:${it.index}").takeIf { it.isNotBlank() }?.let { reason -> " ($reason)" }.orEmpty()}" }
+        .filter { appliedSubs.has("${it.index}") }
+        .joinToString("; ") { "${it.value.s("name")} → ${appliedSubs.getString("${it.index}")}${appliedSubs.optString("reason:${it.index}").takeIf { it.isNotBlank() }?.let { reason -> " ($reason)" }.orEmpty()}" }
     DisposableEffect(focus) {
         val window = (context as? Activity)?.window
         if (focus) window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -195,7 +207,7 @@ fun RecipeScreen(vm: GardenModel, r: JSONObject) {
                     enabled = !reportSaved && (batchWeight.isBlank() || batchWeight.toDoubleOrNull()?.let { it.isFinite() && it >= 0 } == true) && listOf("fridge", "freezer", "eatenNow").sumOf { portionCounts.optInt(it) } == portions,
                     onClick = {
                         vm.cooked(r, reportText + batchWeight.toDoubleOrNull()?.takeIf { it > 0 }?.let { "\nWhole batch: $it g." }.orEmpty() + "\n\nPortions: fridge ${portionCounts.optInt("fridge")}, freezer ${portionCounts.optInt("freezer")}, eaten now ${portionCounts.optInt("eatenNow")}." + subsSummary().takeIf { it.isNotBlank() }?.let { "\n\nSubstitutions: $it" }.orEmpty(),
-                            portions, portionCounts, batchWeight.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }, subs, sk, cookRating, cookAspects) {
+                            portions, portionCounts, batchWeight.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0 }, appliedSubs, sk, cookRating, cookAspects) {
                             reportSaved = true
                             vm.prefs.edit().putBoolean("report-saved:$sk", true).apply()
                             report = false
@@ -238,10 +250,6 @@ fun RecipeScreen(vm: GardenModel, r: JSONObject) {
             title = { Text("Adjust this cook", fontFamily = FontFamily.Serif) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        "Tell your assistant what changed. Your saved recipe stays intact.",
-                        fontSize = 14.sp,
-                    )
                     OutlinedTextField(
                         value = adjustText,
                         onValueChange = { adjustText = it },
@@ -250,11 +258,6 @@ fun RecipeScreen(vm: GardenModel, r: JSONObject) {
                             Text("Different container, fewer portions, missing ingredient, guest…")
                         },
                         minLines = 4,
-                    )
-                    Text(
-                        "The assistant will decide whether the recipe needs to change and return only the useful next steps.",
-                        fontSize = 12.sp,
-                        color = Muted,
                     )
                 }
             },
@@ -282,7 +285,7 @@ Keep the saved recipe unchanged. First decide whether any adjustment is actually
             dismissButton = { TextButton(onClick = { adjust = false }) { Text("Cancel") } },
         )
     if (focus) {
-        CookMode(vm, r, sk, portions, amountsMode, amountRevision, { amountRevision++ }, subs, portionCounts,
+        CookMode(vm, r, sk, portions, amountsMode, amountRevision, { amountRevision++ }, appliedSubs, portionCounts,
             { destination, count ->
                 portionCounts = JSONObject(portionCounts.toString()).put(destination, count)
                 vm.prefs.edit().putString("cook-portions:$sk", portionCounts.toString()).apply()
@@ -292,8 +295,11 @@ Keep the saved recipe unchanged. First decide whether any adjustment is actually
     }
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { vm.selectedRecipe = null }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
-            Text("Recipes", Modifier.weight(1f), fontSize = 14.sp)
+            TextButton(onClick = { vm.selectedRecipe = null }) {
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp)); Text("Recipes")
+            }
+            Spacer(Modifier.weight(1f))
             IconButton(onClick = { adjust = true }) { Icon(Icons.Outlined.HelpOutline, "Ask or adjust this cook") }
             IconButton(onClick = {
                 saved = !saved
@@ -301,87 +307,103 @@ Keep the saved recipe unchanged. First decide whether any adjustment is actually
                 vm.track("recipe_favorite", "recipeId" to rid, "saved" to saved)
             }) { Icon(if (saved) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder, "Save recipe", tint = if (saved) Clay else Forest) }
         }
-        LazyColumn(Modifier.weight(1f).testTag("recipe-scroll"), contentPadding = PaddingValues(24.dp, 8.dp, 24.dp, 160.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        LazyColumn(Modifier.weight(1f).testTag("recipe-scroll"), contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             item {
-                Heading(r.s("title"))
                 val photo = vm.foodLog().firstNotNullOfOrNull { capture ->
                     val linked = capture.o("server").o("interpretation").s("matchedRecipeId") == rid || capture.o("interpretation").s("matchedRecipeId") == rid || capture.s("recipeId", capture.s("recipe_id")) == rid ||
                         capture.o("interpretation").a("items").objects().any { it.s("recipe_id", it.s("recipeId")) == rid || it.o("recipe").s("id") == rid }
                     if (linked) vm.capturePhotos(capture).firstOrNull()?.let { vm.capturePhotoFile(capture, it) }?.takeIf { it.exists() } else null
                 }
                 if (photo != null) LocalPhoto(photo, Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(22.dp)))
-                else GardenBowl(Modifier.fillMaxWidth().height(130.dp), seed = rid.hashCode())
+                else GardenBowl(Modifier.fillMaxWidth().height(144.dp), seed = rid.hashCode())
+                Heading(r.s("title"))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { portions--; vm.prefs.edit().putInt("cook-yield:$sk", portions).remove("cook-portions:$sk").apply(); portionCounts = JSONObject() }, enabled = portions > 1) { Icon(Icons.Outlined.Remove, "Fewer portions") }
                     Text("$portions portions", fontWeight = FontWeight.SemiBold)
                     IconButton(onClick = { portions++; vm.prefs.edit().putInt("cook-yield:$sk", portions).remove("cook-portions:$sk").apply(); portionCounts = JSONObject() }, enabled = portions < maxCookPortions(r)) { Icon(Icons.Outlined.Add, "More portions") }
                     Spacer(Modifier.weight(1f))
-                    Icon(Icons.Outlined.Schedule, null, Modifier.size(18.dp))
-                    Text(" ${r.optInt("total_minutes")} min", fontSize = 13.sp)
+                    if (r.optInt("total_minutes") > 0) {
+                        Icon(Icons.Outlined.Schedule, null, Modifier.size(18.dp))
+                        Text(" ${r.optInt("total_minutes")} min", fontSize = 13.sp)
+                    }
                 }
             }
             if (r.s("portion_limit_reason").isNotBlank()) item { Text(r.s("portion_limit_reason"), fontSize = 13.sp, color = Muted) }
             if (!ready) item {
-                Note("This archive entry needs ingredient and method review before cooking or shopping.")
+                GardenChip("Not ready to cook", tint = AmberLight)
                 ActionButton("Develop this recipe", Icons.Outlined.AutoAwesome) { vm.ask("Please review and normalize the candidate recipe ${r.s("title")} ($rid). Use its original source as evidence, adapt it for my current kitchen and preferences, and make a complete ready recipe.") }
             }
             else {
                 val parent = vm.recipe(r.s("parent_recipe_id"))
-                if (r.s("parent_recipe_id").isNotBlank() || subs.length() > 0) item {
-                    SectionLabel("Changed for this cook")
-                    if (parent != null) {
-                        val prior = parent.a("ingredients").objects().associateBy { it.s("id") }
-                        r.a("ingredients").objects().forEach { a ->
-                            val original = prior[a.s("id")]
-                            if (original == null || original.s("amount") != a.s("amount") || original.s("unit") != a.s("unit") || original.s("detail") != a.s("detail")) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (a.optBoolean("app_made") || r.optBoolean("app_made") || r.s("changed_by") in listOf("app", "assistant") || r.s("source_method").contains("agent") || r.o("source").s("type").contains("agent")) Icon(Icons.Outlined.AutoAwesome, "App change", Modifier.size(18.dp))
-                                    Text("${a.s("name")} · ${amountText(a.s("amount"))} ${a.s("unit")}\n${a.s("change_reason", r.s("variant_reason", r.o("source").s("note", "Saved recipe variant")))}", fontSize = 13.sp)
+                val children = vm.snapshot.a("recipes").objects().filter { it.s("parent_recipe_id") == rid && recipeReady(it) }
+                val variantCanChange = !focus && runCatching {
+                    val progress = JSONObject(vm.prefs.getString("cook-progress:$sk", "{}")!!)
+                    progress.keys().asSequence().none { progress.optJSONObject(it)?.has("startedAt") == true }
+                }.getOrDefault(false) && vm.timers.keys.none { it.startsWith("$sk:") }
+                if (parent != null || children.isNotEmpty()) item {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (parent != null) AssistChip(onClick = { vm.selectedRecipe = parent.s("id") }, label = { Text("From ${parent.s("title")}", maxLines = 2) })
+                        if (parent != null && recipeReady(parent)) RecipeVariantSwitch(r, true, variantCanChange) { vm.selectedRecipe = parent.s("id") }
+                        children.forEach { child -> RecipeVariantSwitch(child, false, variantCanChange) { vm.selectedRecipe = child.s("id") } }
+                    }
+                }
+                val changes = recipeChanges(r, parent)
+                if (changes.isNotEmpty() || subs.length() > 0) item {
+                    GardenCard {
+                        SectionLabel("Changed for this cook")
+                        changes.forEach { change -> RecipeChangeRow(change) }
+                        r.a("ingredients").objects().forEachIndexed { i, ingredient -> if (subs.has("$i")) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Icon(ingredientIcon(ingredient), null, Modifier.size(30.dp), tint = Color.Unspecified)
+                                Column(Modifier.weight(1f)) {
+                                    Text("${ingredient.s("name")} → ${subs.getString("$i")}", fontSize = 14.sp)
+                                    subs.optString("reason:$i").takeIf { it.isNotBlank() }?.let { Text(it, fontSize = 12.sp, color = Muted) }
                                 }
+                                Switch(modifier = Modifier.semantics { contentDescription = "Use ${subs.optString("$i")}" }, checked = !disabledSubs.optBoolean("$i"), onCheckedChange = { enabled ->
+                                    disabledSubs = JSONObject(disabledSubs.toString()).put("$i", !enabled)
+                                    vm.prefs.edit().putString("subs-disabled:$sk", disabledSubs.toString()).apply()
+                                    vm.track("cook_substitution_toggle", "recipeId" to rid, "ingredient" to i, "enabled" to enabled)
+                                })
                             }
-                        }
-                        prior.values.filter { old -> r.a("ingredients").objects().none { it.s("id") == old.s("id") } }.forEach { old -> Text("${old.s("name")} removed · ${r.s("variant_reason", "Saved recipe variant")}", fontSize = 13.sp) }
-                        steps.forEachIndexed { i, step ->
-                            val old = parent.a("steps").optJSONObject(i)
-                            if (old == null || old.s("text") != step.s("text") || old.s("equipment") != step.s("equipment")) {
-                                Text("Step ${i + 1} · ${stepSentence(step)}\n${step.s("change_reason", r.s("variant_reason", r.o("source").s("note", "Reason not recorded")))}", fontSize = 13.sp)
-                            }
-                        }
-                    } else if (r.s("parent_recipe_id").isNotBlank()) Text(r.s("variant_reason", r.o("source").s("note", "Saved recipe variant")), fontSize = 13.sp)
-                    r.a("ingredients").objects().forEachIndexed { i, a -> if (subs.has("$i")) {
-                        Text("${a.s("name")} → ${subs.getString("$i")}\n${subs.optString("reason:$i", "Reason not recorded")}", fontSize = 13.sp)
-                    } }
-                }
-                item {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Ingredients", Modifier.weight(1f), fontSize = 19.sp, fontFamily = FontFamily.Serif, fontWeight = FontWeight.Medium)
-                        TextButton(onClick = { amountSettings = true }) { Text(amountsMode); Icon(Icons.Outlined.Tune, null, Modifier.size(16.dp)) }
-                    }
-                }
-                items(r.a("ingredients").objects().withIndex().toList(), key = { "ingredient${it.index}" }) { (i, _) ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.weight(1f)) { CookIngredientRow(vm, r, i, portions, amountsMode, amountRevision, { amountRevision++ }, subs.optString("$i")) }
-                        IconButton(onClick = { subFor = i }) { Icon(Icons.Outlined.SwapHoriz, "I substituted this", Modifier.size(18.dp), tint = Muted) }
+                        } }
                     }
                 }
                 item {
-                    Button(onClick = { focus = true; vm.track("cook_open", "recipeId" to rid, "session" to sk) }, modifier = Modifier.fillMaxWidth().height(60.dp), shape = RoundedCornerShape(18.dp)) { Text("Start cooking", fontSize = 18.sp) }
+                    GardenCard {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Ingredients", Modifier.weight(1f), fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                            TextButton(onClick = { amountSettings = true }) { Text(amountsMode); Icon(Icons.Outlined.Tune, null, Modifier.size(16.dp)) }
+                        }
+                        r.a("ingredients").objects().indices.toList().chunked(2).forEach { row ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                row.forEach { i ->
+                                    Box(Modifier.weight(1f)) {
+                                        RecipeIngredientTile(vm, r, i, portions, amountsMode, amountRevision, { amountRevision++ }, appliedSubs.optString("$i"), { subFor = i })
+                                    }
+                                }
+                                if (row.size == 1) Spacer(Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+                item {
+                    GardenPrimaryButton("Start cooking", onClick = { focus = true; vm.track("cook_open", "recipeId" to rid, "session" to sk) }, modifier = Modifier.fillMaxWidth().height(60.dp), icon = Icons.Outlined.RestaurantMenu)
                 }
                 items(steps.withIndex().toList(), key = { "step${it.index}" }) { (i, originalStep) ->
                     val step = scaledCookStep(r, originalStep, portions)
-                    CardBox {
+                    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         val activity = stepActivity(step)
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text("${i + 1}", color = Forest, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                            Text(stepSentence(step), Modifier.weight(1f), fontFamily = FontFamily.Serif, fontSize = 21.sp, lineHeight = 28.sp)
+                            Text(stepSentence(step), Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.Medium, lineHeight = 23.sp)
                             Icon(activity.second, activity.first, Modifier.size(22.dp), tint = Color.Unspecified)
                         }
-                        if (step.s("text") != stepSentence(step)) Text(step.s("text").removePrefix(stepSentence(step)).trim(), fontSize = 14.sp, lineHeight = 23.sp)
+                        if (step.s("text") != stepSentence(step)) Text(step.s("text").removePrefix(stepSentence(step)).trim(), fontSize = 14.sp, lineHeight = 21.sp, color = Muted)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             stepIngredients(r, step).forEach { index ->
                                 val ingredient = r.a("ingredients").getJSONObject(index)
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(ingredientIcon(ingredient), null, Modifier.size(16.dp), tint = Color.Unspecified)
+                                    Icon(ingredientIcon(ingredient), null, Modifier.size(24.dp), tint = Color.Unspecified)
                                     Text(ingredient.s("name"), fontSize = 11.sp, color = Muted)
                                 }
                             }
@@ -390,7 +412,7 @@ Keep the saved recipe unchanged. First decide whether any adjustment is actually
                         stepDoneness(step).takeIf { it.isNotBlank() }?.let { Text("Done when: $it", color = Forest, fontSize = 13.sp) }
                     }
                 }
-                item { RecipeHealthCard(vm, r) }
+                if (showNutrition) item { RecipeHealthCard(vm, r) }
                 item {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         TextButton(onClick = {
@@ -421,6 +443,81 @@ Keep the saved recipe unchanged. First decide whether any adjustment is actually
 }
 
 
+
+/** A saved variant is an executable whole; its quantities and instructions change together. */
+@Composable
+private fun RecipeVariantSwitch(variant: JSONObject, applied: Boolean, enabled: Boolean, onChange: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(if (applied) "Use saved variant" else variant.s("title"), modifier = Modifier.weight(1f), style = GardenType.Body)
+        Switch(checked = applied, enabled = enabled, onCheckedChange = { onChange() },
+            modifier = Modifier.testTag("recipe-variant:${variant.s("id")}").semantics { contentDescription = "Use variant ${variant.s("title")}" })
+    }
+}
+
+private data class RecipeChange(val what: String, val reason: String, val ingredient: JSONObject? = null, val appMade: Boolean = false)
+
+/** Compare canonical variants, without pretending they can be individually reverted. */
+private fun recipeChanges(recipe: JSONObject, parent: JSONObject?): List<RecipeChange> {
+    if (parent == null) return emptyList()
+    val appMade = recipe.optBoolean("app_made") || recipe.s("changed_by") in listOf("app", "assistant") || recipe.s("source_method").contains("agent") || recipe.o("source").s("type").contains("agent")
+    val reason = recipe.s("variant_reason", recipe.o("source").s("note"))
+    fun identity(ingredient: JSONObject) = ingredient.s("id", ingredient.s("name"))
+    val prior = parent.a("ingredients").objects().associateBy(::identity)
+    val ingredients = recipe.a("ingredients").objects()
+    val result = ingredients.mapNotNull { ingredient ->
+        val old = prior[identity(ingredient)]
+        val changed = old == null || listOf("name", "amount", "unit", "detail").any { old.s(it) != ingredient.s(it) }
+        if (!changed) null else RecipeChange(
+            if (old == null) "${ingredient.s("name")} added" else "${ingredient.s("name")} · ${amountText(ingredient.s("amount"))} ${ingredient.s("unit")}".trim(),
+            ingredient.s("change_reason", reason), ingredient, appMade || ingredient.optBoolean("app_made"))
+    }.toMutableList()
+    prior.values.filter { old -> ingredients.none { identity(it) == identity(old) } }.forEach { old ->
+        result += RecipeChange("${old.s("name")} removed", reason, old, appMade)
+    }
+    recipe.a("steps").objects().forEachIndexed { i, step ->
+        val old = parent.a("steps").optJSONObject(i)
+        if (old == null || listOf("text", "equipment", "setting", "settings", "minutes", "passive_minutes", "timer_minutes").any { old.s(it) != step.s(it) }) {
+            result += RecipeChange("Step ${i + 1} · ${stepSentence(step)}", step.s("change_reason", reason), appMade = appMade || step.optBoolean("app_made"))
+        }
+    }
+    return result
+}
+
+@Composable
+private fun RecipeChangeRow(change: RecipeChange) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        change.ingredient?.let { Icon(ingredientIcon(it), null, Modifier.size(30.dp), tint = Color.Unspecified) }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (change.appMade) SparkleMark()
+                Text(change.what, fontSize = 14.sp, lineHeight = 19.sp)
+            }
+            if (change.reason.isNotBlank()) Text(change.reason, fontSize = 12.sp, color = Muted)
+        }
+    }
+}
+
+@Composable
+private fun RecipeIngredientTile(vm: GardenModel, recipe: JSONObject, index: Int, portions: Int, mode: String,
+                                 amountRevision: Int, onFlip: () -> Unit, substitution: String, onSubstitute: () -> Unit) {
+    val ingredient = recipe.a("ingredients").getJSONObject(index)
+    // Reading the revision makes per-ingredient preference changes immediately visible.
+    val amount = remember(recipe.s("id"), amountRevision, portions, mode, ingredient.toString()) { ingredientAmount(vm.prefs, recipe, ingredient, portions, mode) }
+    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.Top) {
+        Icon(ingredientIcon(ingredient), null, Modifier.size(30.dp), tint = Color.Unspecified)
+        Column(Modifier.weight(1f)) {
+            Text(ingredient.s("name"), fontSize = 13.sp, fontWeight = FontWeight.Medium, lineHeight = 17.sp)
+            if (substitution.isNotBlank()) Text("→ $substitution", fontSize = 12.sp, color = Forest)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(amount, fontSize = 12.sp, color = Forest,
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(6.dp)).clickable { flipIngredientAmount(vm.prefs, recipe, ingredient, mode); onFlip() }.heightIn(min = 48.dp).padding(vertical = 6.dp))
+                IconButton(onClick = onSubstitute, modifier = Modifier.size(48.dp)) {
+                    Icon(Icons.Outlined.SwapHoriz, "Substitute ${ingredient.s("name")}", Modifier.size(16.dp), tint = Muted)
+                }
+            }
+        }
+    }
+}
 
 /** 0.333 -> "⅓", 1.5 -> "1½"; falls back to the original text for anything unusual. */
 fun amountText(raw: String): String {

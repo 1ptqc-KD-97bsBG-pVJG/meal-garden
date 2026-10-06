@@ -232,14 +232,16 @@ fun KitchenDrawing(vm: GardenModel, modifier: Modifier = Modifier, activeEquipme
                 "counteroven" -> KitchenBox(207f, 143f, 57f, 49f)
                 else -> KitchenBox(132f + index * 56, 145f, 50f, 47f)
             }
-            val highlight = compact && (active.contains(appliance.name.lowercase()) || appliance.name.lowercase().contains(active) || when (appliance.kind) {
-                "counteroven" -> "ninja" in active || "air fry" in active || "toaster" in active
-                "hob" -> "duxtop" in active || "induction" in active
-                "microwave" -> "microwave" in active
-                "stove" -> "stove" in active || "cooktop" in active
-                "oven" -> "oven" in active && "ninja" !in active && "toaster" !in active
-                else -> false
-            })
+            val activeKind = when {
+                "microwave" in active -> "microwave"
+                "ninja" in active || "air fry" in active || "toaster" in active || "countertop oven" in active -> "counteroven"
+                "duxtop" in active || "induction" in active || "hob" in active || "hot plate" in active -> "hob"
+                "stove" in active || "cooktop" in active -> "stove"
+                "oven" in active -> "oven"
+                else -> null
+            }
+            val highlight = compact && if (activeKind != null) appliance.kind == activeKind
+                else active != "none" && active.contains(appliance.name.lowercase())
             val opacity by animateFloatAsState(if (compact && !highlight) .35f else 1f, label = "appliance-highlight")
             Canvas(position(box).alpha(opacity).clickable { vm.track("kitchen_appliance", "name" to appliance.name); onAppliance(appliance.name) }
                 .semantics { contentDescription = appliance.name + if (highlight) ", in use" else "" }) {

@@ -316,7 +316,7 @@ fun KitchenReceipt(vm: GardenModel, item: JSONObject, onClose: () -> Unit) {
 private fun KitchenPlanning(vm: GardenModel, onBack: () -> Unit) {
     var choice by rememberSaveable { mutableStateOf("") }
     val foods = vm.graphPantry().filter { it.optDouble("balance", Double.NaN) != 0.0 }.map { it.s("name").lowercase() }
-    val recipes = vm.snapshot.a("recipes").objects().filter { it.s("readiness") == "ready" && it.a("ingredients").length() > 0 && it.a("steps").length() > 0 }
+    val recipes = vm.snapshot.a("recipes").objects().filter { recipeReady(it) }
         .sortedByDescending { recipe -> recipe.a("ingredients").objects().count { ingredient -> foods.any { food -> food.contains(ingredient.s("name").lowercase()) || ingredient.s("name").lowercase().contains(food) } } }.take(3)
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { GardenTopBar("What to cook?", onBack = onBack) }
