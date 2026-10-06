@@ -1,5 +1,6 @@
 package app.mealgarden
 
+import android.view.KeyEvent
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -49,7 +50,8 @@ class LiveConnectionTest {
  @Test fun pairAndChatThroughCopiedCompanion() {
   val html=URL("http://127.0.0.1:14783/setup").readText()
   val code=Regex("<strong>([0-9]+)</strong>").find(html)!!.groupValues[1]
-  compose.onNodeWithContentDescription("Settings").performClick()
+  compose.onNodeWithTag("nav:More").performClick()
+  compose.onNodeWithText("Connection").performClick()
   compose.onNodeWithText("Laptop address").performScrollTo().performTextClearance()
   compose.onNodeWithText("Laptop address").performTextInput(temporaryEndpoint)
   compose.onNodeWithText("8-digit pairing code").performScrollTo().performTextInput(code)
@@ -59,8 +61,7 @@ class LiveConnectionTest {
   compose.runOnIdle { org.junit.Assert.assertEquals("", model.error) }
   compose.onNodeWithTag("nav:More").performClick()
   compose.onNodeWithText("Ask").performClick()
-  compose.onNodeWithText("Full chat").performClick()
-  compose.onNodeWithTag("chat-history").assertIsDisplayed()
+  compose.onNodeWithTag("ask-answers").assertIsDisplayed()
   compose.onNodeWithTag("chat-input").performTextInput("Say Kitchen connected.")
   compose.runOnIdle {
    val input = compose.activity.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
@@ -72,7 +73,10 @@ class LiveConnectionTest {
   compose.waitUntil(20000){model.error.isNotBlank() || compose.onAllNodesWithText("Kitchen connected.").fetchSemanticsNodes().isNotEmpty()}
   compose.runOnIdle { org.junit.Assert.assertEquals("", model.error) }
   compose.onNodeWithText("Kitchen connected.").assertIsDisplayed()
-  compose.onNodeWithContentDescription("Settings").performClick()
+  InstrumentationRegistry.getInstrumentation().sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+  compose.waitForIdle()
+  compose.onNodeWithTag("nav:More").performClick()
+  compose.onNodeWithText("Connection").performClick()
   compose.onNodeWithText(model.kitchenName).assertIsDisplayed()
   compose.runOnIdle { org.junit.Assert.assertEquals(temporaryEndpoint, model.vault.endpoint); org.junit.Assert.assertTrue(model.paired) }
  }
