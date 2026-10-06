@@ -32,28 +32,12 @@ import kotlin.math.*
 import org.json.JSONObject
 
 @Composable
-fun TopBrand(vm: GardenModel) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = GardenSpace.Page, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Outlined.Spa, null, tint = Forest, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(7.dp))
-        Text("meal garden", fontFamily = FontFamily.Serif, fontSize = 21.sp, color = Forest)
-        Spacer(Modifier.weight(1f))
-        GardenChip(if (vm.online) "Connected" else if (vm.paired) "Offline" else "Connect",
-            tint = if (vm.online) Mist else Paper2, onClick = { vm.openSettings = true })
-        IconButton(onClick = { vm.openSettings = true }) {
-            Icon(Icons.Outlined.Tune, "Settings", tint = Forest, modifier = Modifier.size(21.dp))
-        }
-    }
-}
-
-@Composable
 fun Eyebrow(text: String, color: Color = Faint) {
     Text(text.uppercase(), style = GardenType.Label, color = color)
 }
 
 @Composable
-fun Heading(title: String, subtitle: String = "", action: (@Composable () -> Unit)? = null) {
+fun Heading(title: String, action: (@Composable () -> Unit)? = null) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(title, style = GardenType.Title, modifier = Modifier.weight(1f))
         action?.invoke()
@@ -80,15 +64,6 @@ fun SectionLabel(title: String, action: String = "", onClick: () -> Unit = {}) {
         if (action.isNotEmpty()) TextButton(onClick = onClick) {
             Text(action, style = GardenType.Small, color = Forest)
         }
-    }
-}
-
-@Composable
-fun Note(text: String, icon: ImageVector = Icons.Outlined.Info) {
-    Row(Modifier.fillMaxWidth().clip(GardenShape.Button).background(Paper2).padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = Forest, modifier = Modifier.size(18.dp))
-        Text(text, color = Muted, fontSize = 13.sp, lineHeight = 18.sp)
     }
 }
 
@@ -136,31 +111,6 @@ fun GardenBowl(modifier: Modifier = Modifier, seed: Int = 0) {
         drawArc(Color.White.copy(alpha = .6f), 195f, 65f, false,
             c - Offset(r * .92f, r * .92f), Size(r * 1.84f, r * 1.84f),
             style = androidx.compose.ui.graphics.drawscope.Stroke(r * .04f))
-    }
-}
-
-@Composable
-fun QuickTile(title: String, sub: String, icon: ImageVector,
-    modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Column(modifier.clip(GardenShape.Card).background(CardSurface)
-        .border(1.dp, Line, GardenShape.Card).clickable(onClick = onClick).padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Icon(icon, null, tint = Forest, modifier = Modifier.size(23.dp))
-        Text(title, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-    }
-}
-
-@Composable
-fun RecipeTile(r: JSONObject, onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clip(GardenShape.Card).background(CardSurface)
-        .border(1.dp, Line, GardenShape.Card).clickable(onClick = onClick).padding(10.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        GardenBowl(Modifier.size(65.dp), r.s("id").hashCode() % 12)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text(r.s("title"), style = GardenType.Section, maxLines = 3, overflow = TextOverflow.Ellipsis)
-            if (r.s("readiness") == "ready") Text("${r.optInt("total_minutes")} min", style = GardenType.Small)
-        }
-        Icon(Icons.Outlined.ChevronRight, null, tint = Muted, modifier = Modifier.size(18.dp))
     }
 }
 

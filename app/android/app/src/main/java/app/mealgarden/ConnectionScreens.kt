@@ -77,7 +77,7 @@ fun HistoryScreen(vm: GardenModel) {
                     Icon(Icons.Outlined.ChatBubbleOutline, null, Modifier.size(23.dp), tint = Forest)
                     Column(Modifier.weight(1f)) {
                         Text(conversation.s("title").ifBlank { "Conversation" }, style = GardenType.Body, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        Text(conversation.s("updated", conversation.s("created")).take(10), style = GardenType.Small)
+                        Text(activityDate(conversation.s("updated", conversation.s("created"))), style = GardenType.Small)
                     }
                     Icon(Icons.Outlined.ChevronRight, null, Modifier.size(18.dp), tint = Muted)
                 }

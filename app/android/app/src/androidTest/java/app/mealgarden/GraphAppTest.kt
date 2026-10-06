@@ -1,7 +1,10 @@
 package app.mealgarden
 
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -241,7 +244,7 @@ class GraphAppTest {
             vm.snapshot.put("assumptions", JSONArray())
             vm.snapshot.put("pantry", JSONArray().put(j("id" to "batch-lot", "product_id" to "homemade-soup", "name" to "Soup leftovers", "kind" to "homemade", "base_unit" to "g", "location" to "fridge", "balance" to 400, "basis" to "assumed", "typicalDays" to 4, "ageDays" to 1)))
             vm.snapshot.put("batches", JSONArray().put(j("id" to "batch", "pantry_item_id" to "batch-lot", "title" to "Soup leftovers", "yield_g" to 800, "portions_made" to 4)))
-            compose.activity.setContent { GardenTheme { KitchenContent(vm) } }
+            compose.activity.setContent { GardenTheme { Box(Modifier.systemBarsPadding()) { KitchenContent(vm) } } }
         }
         compose.onNode(hasContentDescription("Soup leftovers", substring = true) and hasClickAction()).performClick()
         panel("2 portions left").performScrollTo().assertExists()

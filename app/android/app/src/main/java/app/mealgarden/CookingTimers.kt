@@ -7,7 +7,6 @@ package app.mealgarden
 
 import android.app.*
 import android.content.*
-import android.provider.Settings
 import androidx.activity.compose.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -28,63 +27,6 @@ import androidx.compose.ui.unit.*
 import androidx.core.app.NotificationCompat
 import kotlin.math.*
 import kotlinx.coroutines.delay
-
-@Composable
-fun TimerControl(
-    vm: GardenModel,
-    key: String,
-    title: String,
-    minutes: Int,
-    detail: String = "",
-    askNotification: () -> Unit,
-) {
-    val context = LocalContext.current
-    val deadline = vm.timers[key]?.optLong("deadline") ?: 0L
-    var tick by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    LaunchedEffect(deadline) {
-        while (deadline > 0) {
-            tick = System.currentTimeMillis()
-            delay(1000)
-        }
-    }
-    val remaining = ((deadline - tick + 999) / 1000).coerceAtLeast(0)
-    val running = deadline > 0 && remaining > 0
-    val finished = deadline > 0 && !running
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        OutlinedButton(
-            onClick = {
-                if (running || finished) {
-                    cancelTimer(context, key)
-                    vm.stopTimer(key)
-                } else {
-                    askNotification()
-                    scheduleTimer(context, key, title, vm.startTimer(key, title, minutes, detail), detail)
-                }
-            },
-            shape = RoundedCornerShape(12.dp),
-        ) {
-            Icon(Icons.Outlined.Timer, null, Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(
-                if (running) "${remaining/60}:${(remaining%60).toString().padStart(2,'0')} · Cancel"
-                else if (finished) "Timer done · Reset" else "Start $minutes min timer"
-            )
-        }
-    }
-    // A full-screen alarm over other apps needs two one-time permissions; offer whichever is missing.
-    val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    val needsFullScreen = android.os.Build.VERSION.SDK_INT >= 34 && !nm.canUseFullScreenIntent()
-    val needsOverlay = !Settings.canDrawOverlays(context)
-    if (deadline > 0 && (needsFullScreen || needsOverlay))
-        TextButton(
-            onClick = {
-                val action = if (needsOverlay) Settings.ACTION_MANAGE_OVERLAY_PERMISSION else Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT
-                try { context.startActivity(Intent(action, android.net.Uri.parse("package:${context.packageName}"))) } catch (_: Exception) {}
-            }
-        ) {
-            Text(if (needsOverlay) "Let timers show over other apps" else "Let timers show on the lock screen", fontSize = 12.sp)
-        }
-}
 
 fun timerIntent(context: Context, key: String, title: String = "", deadline: Long = 0L, detail: String = ""): PendingIntent =
     PendingIntent.getBroadcast(
@@ -184,14 +126,14 @@ fun TimerDock(vm: GardenModel) {
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis(); vm.reloadTimers(); delay(500) } }
     Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         vm.timers.entries.sortedBy { it.value.optLong("deadline") }.forEach { (key, t) ->
             val remaining = ((t.optLong("deadline") - now + 999) / 1000).coerceAtLeast(0)
             val done = remaining == 0L
             Row(
-                Modifier.clip(RoundedCornerShape(50)).background(if (done) Clay else Forest)
+                Modifier.heightIn(min = 48.dp).clip(GardenShape.Button).background(if (done) AmberLight else Mist)
                     .clickable {
                         if (done) {
                             cancelTimer(context, key); vm.stopTimer(key)
@@ -201,13 +143,13 @@ fun TimerDock(vm: GardenModel) {
                     .padding(horizontal = 14.dp, vertical = 9.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(if (done) Icons.Outlined.NotificationsActive else Icons.Outlined.Timer, null, Modifier.size(18.dp), tint = Color.White)
+                Icon(Icons.Outlined.Timer, null, Modifier.size(16.dp), tint = Forest)
                 Spacer(Modifier.width(8.dp))
                 Text(
                     if (done) "${t.s("title")} · done" else "${remaining / 60}:${(remaining % 60).toString().padStart(2, '0')}  ${t.s("title")}",
-                    color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
+                    color = Forest, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
                 )
-                if (done) { Spacer(Modifier.width(8.dp)); Icon(Icons.Outlined.Close, "Clear", Modifier.size(16.dp), tint = Color.White) }
+                if (done) { Spacer(Modifier.width(8.dp)); Icon(Icons.Outlined.Close, "Clear", Modifier.size(15.dp), tint = Forest) }
             }
         }
     }

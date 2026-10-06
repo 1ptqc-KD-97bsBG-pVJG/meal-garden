@@ -45,7 +45,7 @@ fun ShellDetail(vm: GardenModel, page: String, onBack: () -> Unit) {
         "app" -> YourAppScreen(vm, onBack)
         "activity" -> ActivityScreen(vm, onBack)
         "receipts" -> ReceiptsScreen(vm, onBack)
-        "shopping" -> Column { GardenTopBar("Shopping", onBack); MarketScreen(vm) }
+        "shopping" -> Column { GardenTopBar("Shopping", onBack); MarketScreen(vm, showTitle = false) }
         else -> YourAppScreen(vm, onBack)
     }
 }
@@ -187,7 +187,7 @@ fun activityJobTitle(vm: GardenModel, job: JSONObject): String {
     return capture?.o("server")?.o("interpretation")?.s("title")?.takeIf { it.isNotBlank() } ?: activityJobLabel(job.s("kind"))
 }
 
-private fun activityDate(value: String): String = runCatching {
+internal fun activityDate(value: String): String = runCatching {
     java.time.OffsetDateTime.parse(value).atZoneSameInstant(householdZone).toLocalDate().toString()
 }.getOrElse { Regex("^\\d{4}-\\d{2}-\\d{2}").find(value)?.value ?: "Date unknown" }
 
@@ -214,7 +214,7 @@ fun ReceiptsScreen(vm: GardenModel, onBack: () -> Unit) {
     val receipts = vm.snapshot.a("receipts").objects().sortedByDescending { it.s("date") }
     val receipt = receipts.firstOrNull { it.s("id") == selected }
     BackHandler(enabled = shopping || receipt != null) { if (shopping) shopping = false else selected = "" }
-    if (shopping) { Column { GardenTopBar("Shopping", onBack = { shopping = false }); MarketScreen(vm) }; return }
+    if (shopping) { Column { GardenTopBar("Shopping", onBack = { shopping = false }); MarketScreen(vm, showTitle = false) }; return }
     LazyColumn(Modifier.fillMaxSize().testTag("garden-receipts"), contentPadding = PaddingValues(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item {
             GardenTopBar(if (receipt != null) "Receipt" else "Receipts", onBack = if (receipt != null) ({ selected = "" }) else onBack) {

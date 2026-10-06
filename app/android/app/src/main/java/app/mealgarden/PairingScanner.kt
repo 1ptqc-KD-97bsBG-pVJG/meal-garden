@@ -11,7 +11,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.FlashlightOn
@@ -23,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -78,13 +76,9 @@ fun PairingScanner(onBack: () -> Unit, onPairedCode: (PairingDetails) -> Unit) {
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
-    Column(Modifier.fillMaxSize().background(Color(0xFF14291F)).padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back to connection", tint = Color.White) }
-            Text("A little closer to your kitchen.", color = Color.White, fontSize = 15.sp)
-        }
-        Text("Point. Pair.\nStart cooking.", color = Color.White, fontFamily = FontFamily.Serif, fontSize = 38.sp, lineHeight = 43.sp)
-        Text("Open localhost:4783/setup on your laptop. Place its Meal Garden QR code inside the frame.", color = Color(0xFFD6E3D5), fontSize = 15.sp)
+    Column(Modifier.fillMaxSize().background(Paper).padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        GardenTopBar("Scan pairing code", onBack)
+        Text("localhost:4783/setup", style = GardenType.Small, color = Forest)
         if (allowed) {
             val camera = remember(context) {
                 DecoratedBarcodeView(context).apply {
@@ -122,27 +116,24 @@ fun PairingScanner(onBack: () -> Unit, onPairedCode: (PairingDetails) -> Unit) {
                 if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) camera.resume()
                 onDispose { lifecycle.removeObserver(observer); camera.pause() }
             }
-            AndroidView(factory = { camera }, modifier = Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(28.dp)), update = { if (torch) it.setTorchOn() else it.setTorchOff() })
-            if (scanError.isNotEmpty()) Text(scanError, color = Color(0xFFFFD6A1), fontSize = 13.sp)
+            AndroidView(factory = { camera }, modifier = Modifier.fillMaxWidth().weight(1f).clip(GardenShape.Hero), update = { if (torch) it.setTorchOn() else it.setTorchOff() })
+            if (scanError.isNotEmpty()) Text(scanError, color = Clay, style = GardenType.Small)
             if(context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
-                OutlinedButton(onClick = { torch = !torch }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                    Icon(Icons.Outlined.FlashlightOn, null, tint = Color.White)
-                    Text(if (torch) "Light off" else "Need more light?", color = Color.White)
-                }
+                GardenQuietButton(if (torch) "Light off" else "Light on", { torch = !torch },
+                    modifier = Modifier.align(Alignment.CenterHorizontally), icon = Icons.Outlined.FlashlightOn)
             }
         } else {
-            Surface(Modifier.fillMaxWidth().weight(1f), shape = RoundedCornerShape(28.dp), color = Color(0xFF263E30)) {
-                Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Outlined.QrCodeScanner, null, Modifier.size(64.dp), tint = Color.White)
+            Surface(Modifier.fillMaxWidth().weight(1f), shape = GardenShape.Hero, color = Paper2) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Outlined.QrCodeScanner, null, Modifier.size(56.dp), tint = Forest)
                     Spacer(Modifier.height(20.dp))
-                    Text("Use your camera to pair", color = Color.White, fontSize = 20.sp)
-                    Text("Camera frames stay on your phone.", color = Color(0xFFD6E3D5))
+                    Text("Camera access", style = GardenType.Section)
                     Spacer(Modifier.height(20.dp))
-                    Button(onClick = { permission.launch(Manifest.permission.CAMERA) }) { Text("Allow camera") }
-                    if (denied) TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) }) { Text("Open camera permission settings", color = Color.White) }
+                    GardenPrimaryButton("Allow camera", { permission.launch(Manifest.permission.CAMERA) })
+                    if (denied) TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) }) { Text("Camera settings", color = Forest) }
                 }
             }
         }
-        TextButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("Enter address and code manually", color = Color.White) }
+        TextButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("Enter code manually", color = Forest) }
     }
 }

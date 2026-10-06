@@ -96,7 +96,15 @@ fun KitchenContent(vm: GardenModel, checking: Boolean = false) {
             }
         } }
         item {
-            KitchenDrawing(vm, Modifier.fillMaxWidth().height(if (checking || zone.isNotBlank()) 270.dp else 340.dp), zone = zone, selectedId = selectedId, onItem = ::open, onAppliance = { appliance = it; selectedId = "" })
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (pantry.isEmpty() && vm.snapshot.o("inventory").s("status") == "not_inventoried") {
+                    Row(Modifier.testTag("kitchen-stock-unknown"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Icon(Icons.Outlined.HelpOutline, null, Modifier.size(17.dp), tint = Muted)
+                        Text("Food on hand unknown", style = GardenType.Small)
+                    }
+                }
+                KitchenDrawing(vm, Modifier.fillMaxWidth().height(if (checking || zone.isNotBlank()) 270.dp else 340.dp), zone = zone, selectedId = selectedId, onItem = ::open, onAppliance = { appliance = it; selectedId = "" })
+            }
         }
         item {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -210,7 +218,7 @@ fun KitchenItemPanel(vm: GardenModel, food: JSONObject, lots: List<JSONObject> =
             Text(when {
                 amount == null -> "How much left?"
                 amount < 0 -> "Amount needs checking"
-                portions != null -> "${kitchenNumber(portions)} portions left"
+                portions != null -> "${kitchenNumber(portions)} ${if (kotlin.math.abs(portions - 1.0) < .001) "portion" else "portions"} left"
                 counted -> "${kitchenNumber(amount / packageSize)} ${if (food.s("kind") == "packaged") (if (abs(amount / packageSize - 1.0) < .001) "package" else "packages") else "left"}"
                 else -> "${kitchenNumber(amount)} ${food.s("base_unit")} left"
             }, style = GardenType.Small)

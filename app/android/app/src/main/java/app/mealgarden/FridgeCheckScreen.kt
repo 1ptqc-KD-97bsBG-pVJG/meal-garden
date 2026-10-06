@@ -151,19 +151,24 @@ fun ReactionControl(vm: GardenModel, key: String, rating: Int?, aspects: JSONObj
 @Composable
 fun PreferencesScreen(vm: GardenModel) {
     var editing by remember { mutableStateOf<JSONObject?>(null) }
-    Column(Modifier.fillMaxSize()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { vm.track("preferences_back"); vm.openPreferences = false }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
-            Text("Preferences", style = GardenType.Title)
-        }
-        LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            vm.graphPreferences().filter { !(it.s("stance") == "neutral" && it.s("statement").startsWith("No current preference about ")) }.groupBy { it.s("kind") }.forEach { (kind, preferences) ->
-                item { Text(kind.replaceFirstChar { it.uppercase() }, style = GardenType.Section) }
-                items(preferences, key = { it.s("kind") + it.s("subject") }) { preference ->
-                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(CardSurface).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        if (preference.s("source") == "imported" && vm.graphAssumptions().any { preference.s("id") in it.a("evidence").strings() }) Icon(Icons.Outlined.AutoAwesome, "Unconfirmed", Modifier.size(18.dp), tint = Forest)
-                        Text(preference.s("statement"), fontSize = 14.sp, modifier = Modifier.weight(1f).padding(horizontal = 8.dp))
-                        IconButton(onClick = { vm.track("preference_open", "subject" to preference.s("subject")); editing = preference }) { Icon(Icons.Outlined.Edit, "Change preference") }
+    val preferences = vm.graphPreferences().filter {
+        !(it.s("stance") == "neutral" && it.s("statement").startsWith("No current preference about "))
+    }
+    Column(Modifier.fillMaxSize().background(Paper)) {
+        GardenTopBar("Preferences", onBack = { vm.track("preferences_back"); vm.openPreferences = false })
+        LazyColumn(contentPadding = PaddingValues(14.dp, 0.dp, 14.dp, 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            preferences.groupBy { it.s("kind") }.forEach { (kind, rows) ->
+                item { SectionLabel(kind.replaceFirstChar { it.uppercase() }) }
+                items(rows, key = { it.s("kind") + it.s("subject") }) { preference ->
+                    GardenCard {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (preference.s("source") == "imported" && vm.graphAssumptions().any { preference.s("id") in it.a("evidence").strings() })
+                                Icon(Icons.Outlined.AutoAwesome, "Unconfirmed", Modifier.size(18.dp), tint = Forest)
+                            Text(preference.s("statement"), style = GardenType.Body, modifier = Modifier.weight(1f))
+                            IconButton(onClick = { vm.track("preference_open", "subject" to preference.s("subject")); editing = preference }) {
+                                Icon(Icons.Outlined.Edit, "Change preference", tint = Muted, modifier = Modifier.size(19.dp))
+                            }
+                        }
                     }
                 }
             }
@@ -171,16 +176,25 @@ fun PreferencesScreen(vm: GardenModel) {
     }
     editing?.let { preference ->
         var statement by remember(preference) { mutableStateOf(preference.s("statement")) }
-        AlertDialog(onDismissRequest = { vm.track("preference_cancel"); editing = null }, title = { Text("Preference") }, text = {
-            Column {
-                OutlinedTextField(statement, { statement = it.take(3000) }, label = { Text("Statement") })
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("never", "avoid", "neutral", "like", "love").forEach { stance -> TextButton(onClick = {
-                        vm.changePreference(preference, when (stance) { "never" -> "Never choose"; "avoid" -> "Avoid"; "neutral" -> "No strong preference about"; "like" -> "Like"; else -> "Love" } + " ${preference.s("subject")}", stance); editing = null
-                    }) { Text(stance.replaceFirstChar { it.uppercase() }) } }
+        AlertDialog(onDismissRequest = { vm.track("preference_cancel"); editing = null },
+            title = { Text("Preference", style = GardenType.Section) }, shape = GardenShape.Panel, containerColor = Paper,
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(statement, { statement = it.take(3000) }, label = { Text("Statement") },
+                        shape = GardenShape.Button, modifier = Modifier.fillMaxWidth())
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        listOf("never", "avoid", "neutral", "like", "love").forEach { stance ->
+                            GardenChip(stance.replaceFirstChar { it.uppercase() }, selected = preference.s("stance") == stance, onClick = {
+                                vm.changePreference(preference, when (stance) { "never" -> "Never choose"; "avoid" -> "Avoid"; "neutral" -> "No strong preference about"; "like" -> "Like"; else -> "Love" } + " ${preference.s("subject")}", stance)
+                                editing = null
+                            })
+                        }
+                    }
                 }
-            }
-        }, confirmButton = { TextButton(enabled = statement.isNotBlank(), onClick = { vm.changePreference(preference, statement.trim(), preference.s("stance").ifEmpty { null }); editing = null }) { Text("Save") } },
-            dismissButton = { TextButton(onClick = { vm.changePreference(preference, null, null); editing = null }) { Text("Remove") } })
+            },
+            confirmButton = { TextButton(enabled = statement.isNotBlank(), onClick = {
+                vm.changePreference(preference, statement.trim(), preference.s("stance").ifEmpty { null }); editing = null
+            }) { Text("Save") } },
+            dismissButton = { TextButton(onClick = { vm.changePreference(preference, null, null); editing = null }) { Text("Remove", color = Clay) } })
     }
 }

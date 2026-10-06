@@ -134,8 +134,7 @@ private fun ChatMessage(vm: GardenModel, message: JSONObject) {
                 Text(taskTitle, style = GardenType.Body, modifier = Modifier.weight(1f))
                 TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("chat-task-details:${message.s("id")}")) { Text(if (expanded) "Less" else "Details") }
             }
-            val date = localDay(message.s("created"))
-            if (date != java.time.LocalDate.MIN) Text(date.toString(), style = GardenType.Small)
+            if (message.s("created").isNotBlank()) Text(activityDate(message.s("created")), style = GardenType.Small)
             if (expanded) RichText(message.s("text"))
         }
     } else if (message.s("role") == "user") Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {

@@ -15,7 +15,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -24,9 +23,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,18 +35,6 @@ import org.json.JSONObject
 
 /** A finished cooking timer: what it was for, so several at once stay distinguishable. */
 data class FiredTimer(val key: String, val title: String, val detail: String)
-
-/** Icon for the appliance a timer belongs to, guessed from its step title and equipment label. */
-fun timerIcon(text: String): ImageVector {
-    val t = text.lowercase()
-    return when {
-        "microwave" in t -> Icons.Outlined.Microwave
-        "ninja" in t || "oven" in t || "roast" in t || "bake" in t || "air fry" in t || "air-fry" in t -> Icons.Outlined.LocalFireDepartment
-        "duxtop" in t || "stove" in t || "boil" in t || "simmer" in t || "rice" in t || "pasta" in t -> Icons.Outlined.SoupKitchen
-        "press" in t || "rest" in t || "soak" in t || "chill" in t -> Icons.Outlined.HourglassBottom
-        else -> Icons.Outlined.Timer
-    }
-}
 
 /**
  * Full-screen timer alarm. Shown over the lock screen, over other apps (when "display over other apps" is allowed),
@@ -75,44 +59,36 @@ class TimerAlarmActivity : ComponentActivity() {
                     delay(3000)
                 }
             }
-            MaterialTheme(colorScheme = lightColorScheme(primary = Forest, background = Forest, surface = Forest)) {
+            GardenTheme {
                 Column(
-                    Modifier.fillMaxSize().background(Forest).systemBarsPadding().padding(24.dp).verticalScroll(rememberScrollState()),
+                    Modifier.fillMaxSize().background(Paper).systemBarsPadding().padding(14.dp).verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
+                    verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
                 ) {
                     fired.toList().forEach { timer ->
                         Column(
-                            Modifier.fillMaxWidth().clip(RoundedCornerShape(32.dp)).background(Color.White.copy(alpha = .08f)).padding(24.dp),
+                            Modifier.fillMaxWidth().clip(GardenShape.Card).background(CardSurface).padding(14.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            Box(Modifier.size(84.dp).clip(CircleShape).background(Lime), contentAlignment = Alignment.Center) {
-                                Icon(timerIcon(timer.title + " " + timer.detail), null, Modifier.size(44.dp), tint = Forest)
+                            Box(Modifier.size(62.dp).clip(CircleShape).background(AmberLight), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Outlined.Timer, "Timer done", Modifier.size(31.dp), tint = Forest)
                             }
-                            Text(timer.title, color = Color.White, fontFamily = FontFamily.Serif, fontSize = 34.sp, lineHeight = 40.sp, textAlign = TextAlign.Center)
-                            if (timer.detail.isNotBlank()) Text(timer.detail, color = Color.White.copy(alpha = .75f), fontSize = 15.sp, textAlign = TextAlign.Center)
-                            Button(
-                                onClick = { finish(timer, 0) },
-                                modifier = Modifier.fillMaxWidth().height(64.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Lime, contentColor = Forest),
-                                shape = RoundedCornerShape(20.dp),
-                            ) { Icon(Icons.Outlined.Check, null); Spacer(Modifier.width(10.dp)); Text("Done", fontSize = 20.sp) }
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(timer.title, style = GardenType.Title, textAlign = TextAlign.Center)
+                            if (timer.detail.isNotBlank()) Text(timer.detail, style = GardenType.Body, color = Muted, textAlign = TextAlign.Center)
+                            GardenPrimaryButton("Done", { finish(timer, 0) },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), icon = Icons.Outlined.Check)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 listOf(1, 5).forEach { minutes ->
-                                    OutlinedButton(
-                                        onClick = { finish(timer, minutes) },
-                                        modifier = Modifier.weight(1f).height(54.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                                        shape = RoundedCornerShape(18.dp),
-                                    ) { Text("+$minutes min", fontSize = 17.sp) }
+                                    GardenQuietButton("+$minutes min", { finish(timer, minutes) },
+                                        modifier = Modifier.weight(1f), icon = Icons.Outlined.Timer)
                                 }
                             }
                         }
                     }
                     TextButton(onClick = {
                         startActivity(Intent(this@TimerAlarmActivity, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
-                    }) { Text("Open Meal Garden", color = Color.White.copy(alpha = .8f)) }
+                    }) { Text("Open Meal Garden", color = Forest) }
                 }
             }
         }

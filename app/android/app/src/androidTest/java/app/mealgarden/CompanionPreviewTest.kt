@@ -408,7 +408,7 @@ class CompanionPreviewTest {
             val conversation = compose.onAllNodes(hasText("Open conversation") and hasClickAction())
             if (job.s("conversation_id").isNotBlank() && conversation.fetchSemanticsNodes().isNotEmpty()) {
                 conversation[0].performScrollTo().performClick()
-                compose.waitUntil(10_000) { vm.messages.isNotEmpty() }
+                waitForConversation(job.s("conversation_id"))
                 shot("activity-conversation")
             }
         }
@@ -469,6 +469,7 @@ class CompanionPreviewTest {
             val title = conversation.s("title").ifBlank { "Conversation" }
             val matcher = hasText(title) and hasClickAction() and hasAnyAncestor(hasTestTag("conversation-history"))
             previewMoreNode("conversation-history", matcher)
+            waitForConversation(conversation.s("id"))
             shot("conversation-open")
         }
 
@@ -484,12 +485,38 @@ class CompanionPreviewTest {
         resetTo(4); gallery()
     }
 
+    private fun waitForConversation(id: String) {
+        val cache = File(compose.activity.filesDir, "cache/messages-$id.json")
+        compose.waitUntil(10_000) {
+            vm.conversation == id && runCatching {
+                JSONArray(cache.readText()).objects().map { it.s("id") } == vm.messages.map { it.s("id") }
+            }.getOrDefault(false)
+        }
+    }
+
     private fun notesAndGallery() {
         resetTo(0)
         compose.onNodeWithContentDescription("Leave an app note").performClick(); shot("note-menu")
         click("Note this screen"); shot("note-draft")
         click("Cancel")
-        if (vm.timers.isNotEmpty()) shot("timer-strip")
+        compose.onNodeWithContentDescription("Leave an app note").performClick()
+        click("Ask a question"); shot("note-quick-ask"); click("Cancel")
+        compose.onNodeWithContentDescription("Leave an app note").performClick()
+        click("Point to something"); shot("note-point"); back()
+        compose.onNodeWithContentDescription("Leave an app note").performClick()
+        compose.onNode(hasText("Review", substring = true) and hasClickAction()).performClick()
+        shot("note-list"); click("Done")
+        val step = vm.snapshot.a("recipes").objects().filter(::recipeReady).flatMap { it.a("steps").objects() }
+            .firstOrNull { it.optInt("timer_minutes", it.optInt("minutes")) > 0 }
+        if (step != null) {
+            val key = "interface-preview:timer-strip"
+            compose.runOnUiThread { vm.startTimer(key, step.s("title").ifBlank { step.s("text").substringBefore('.').take(80) },
+                step.optInt("timer_minutes", step.optInt("minutes"))) }
+            shot("timer-strip")
+            resetTo(4); shot("timer-strip-more")
+            compose.runOnUiThread { vm.stopTimer(key) }
+        }
         gallery()
+        more()
     }
 }

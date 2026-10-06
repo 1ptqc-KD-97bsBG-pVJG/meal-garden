@@ -3,6 +3,7 @@ package app.mealgarden
 import android.graphics.Bitmap
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -89,7 +90,7 @@ class FoundationUiTest {
     @Test fun eachDisabledModuleRemovesItsTodaySurface() {
         compose.runOnUiThread {
             vm.prefs.edit().apply { moduleIds.forEach { putBoolean("module:$it", false) } }.commit()
-            compose.activity.setContent { GardenTheme { TodayScreen(vm) } }
+            compose.activity.setContent { GardenTheme { Box(Modifier.systemBarsPadding()) { TodayScreen(vm) } } }
         }
         val surfaces = listOf(
             "timeline" to hasContentDescription("Log another meal"),
