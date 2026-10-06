@@ -106,6 +106,7 @@ class KitchenUiTest {
         compose.onNodeWithTag("kitchen-drawing").assertExists()
         compose.onNode(hasText("How much left?") and hasAnyAncestor(hasTestTag("kitchen-item-panel"))).assertExists()
         assertTrue(vm.outbox.isEmpty())
+        compose.onNodeWithTag("graph-kitchen").performScrollToIndex(0)
         compose.onNodeWithContentDescription("Beans, 2 left").performClick()
         compose.waitForIdle()
         compose.onNode(hasText("Beans") and hasAnyAncestor(hasTestTag("kitchen-item-panel"))).assertExists()
@@ -114,6 +115,29 @@ class KitchenUiTest {
         assertTrue("Switching a panel does not assert pantry facts", vm.outbox.isEmpty())
         compose.onNodeWithTag("kitchen-item-panel").performScrollTo()
         shot("phase4-kitchen-item-panel")
+    }
+
+    @Test fun focusedZoneIsFullWidthAndFreezingQueuesOneTransferWithoutCountingUnknownFood() {
+        compose.runOnUiThread {
+            kitchenFixture().let { fixture -> fixture.keys().forEach { vm.snapshot.put(it, fixture.get(it)) } }
+            compose.activity.setContent { GardenTheme { KitchenContent(vm) } }
+        }
+        val allFridge = compose.onNodeWithTag("kitchen-zone:fridge").fetchSemanticsNode().boundsInRoot.width
+        compose.onNodeWithText("?").assertDoesNotExist()
+        compose.onNode(hasText("Fridge") and hasAnyAncestor(hasTestTag("kitchen-zone:fridge"))).performClick()
+        val focusedFridge = compose.onNodeWithTag("kitchen-zone:fridge").fetchSemanticsNode().boundsInRoot.width
+        assertTrue("Selecting a zone makes the food area substantially wider", focusedFridge > allFridge * 1.7f)
+        compose.onNodeWithText("Spinach").assertExists()
+        compose.onNodeWithContentDescription("Spinach, amount unknown").performClick()
+        compose.onNodeWithTag("kitchen-freeze:greens-lot").performScrollTo().performClick()
+        compose.runOnIdle {
+            val transfer = vm.outbox.single()
+            assertEquals("/api/pantry/transfer", transfer.s("route"))
+            assertEquals("greens-lot", transfer.o("payload").s("itemId"))
+            assertTrue(transfer.o("payload").isNull("amount"))
+            assertEquals("freezer", vm.graphPantry().first { it.s("id") == "greens-lot" }.s("location"))
+            assertTrue(vm.graphPantry().first { it.s("id") == "greens-lot" }.isNull("balance"))
+        }
     }
 
 }

@@ -29,9 +29,9 @@ import org.json.JSONObject
 fun MoreScreen(open: (String) -> Unit) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item { GardenTopBar("More") }
-        listOf("app" to "Your app", "activity" to "Activity", "receipts" to "Receipts", "preferences" to "Preferences", "ask" to "Ask", "connection" to "Connection").forEach { (route, label) ->
+        listOf("app" to "Your app", "activity" to "Activity", "receipts" to "Receipts", "shopping" to "Shopping", "preferences" to "Preferences", "ask" to "Ask", "connection" to "Connection").let { if (BuildConfig.DEBUG) it + ("components" to "Components") else it }.forEach { (route, label) ->
             item { GardenCard(onClick = { open(route) }) { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Icon(when (route) { "app" -> Icons.Outlined.Tune; "activity" -> Icons.Outlined.History; "receipts" -> Icons.Outlined.ReceiptLong; "preferences" -> Icons.Outlined.FavoriteBorder; "ask" -> Icons.Outlined.HelpOutline; else -> Icons.Outlined.Link }, null, tint = Forest, modifier = Modifier.size(24.dp))
+                Icon(when (route) { "app" -> Icons.Outlined.Tune; "activity" -> Icons.Outlined.History; "receipts" -> Icons.Outlined.ReceiptLong; "shopping" -> Icons.Outlined.ShoppingBasket; "preferences" -> Icons.Outlined.FavoriteBorder; "ask" -> Icons.Outlined.HelpOutline; "components" -> Icons.Outlined.Widgets; else -> Icons.Outlined.Link }, null, tint = Forest, modifier = Modifier.size(24.dp))
                 Text(label, style = GardenType.Body, modifier = Modifier.weight(1f))
                 Icon(Icons.Outlined.ChevronRight, null, tint = Muted, modifier = Modifier.size(18.dp))
             } } }
@@ -121,28 +121,46 @@ private fun ModulePreview(vm: GardenModel, id: String) {
 
 @Composable
 fun ActivityScreen(vm: GardenModel, onBack: () -> Unit) {
+    var otherEvidence by rememberSaveable { mutableStateOf(false) }
     var expanded by rememberSaveable { mutableStateOf("") }
     val assumptions = vm.graphAssumptions()
+    val allGroups = assumptionGroups(vm.snapshot, assumptions)
+    val unlinkedGroups = allGroups.filter { group -> group.all { it.unlinkedFood } }
+    val groups = allGroups - unlinkedGroups.toSet() + if (otherEvidence) unlinkedGroups else emptyList()
     val jobs = vm.activity.a("jobs").objects()
     LazyColumn(Modifier.fillMaxSize().testTag("garden-activity"), contentPadding = PaddingValues(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item { GardenTopBar("Activity", onBack) }
         if (assumptions.isNotEmpty()) item { Text("Assumed", style = GardenType.Section) }
-        items(assumptions, key = { "assumption:${it.s("id")}" }) { assumption ->
-            val assumptionKey = "assumption:${assumption.s("id")}"
-            val isExpanded = expanded == assumptionKey
-            GardenCard(modifier = Modifier.testTag("activity-assumption:${assumption.s("id")}").semantics { stateDescription = if (isExpanded) "Expanded" else "Collapsed" }, onClick = { expanded = if (isExpanded) "" else assumptionKey }) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SparkleMark()
-                    Text(assumption.s("statement").removePrefix("Confirm imported preference: "), style = GardenType.Body, modifier = Modifier.weight(1f), maxLines = if (isExpanded) Int.MAX_VALUE else 2, overflow = TextOverflow.Ellipsis)
-                    Icon(if (isExpanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null, Modifier.size(16.dp), tint = Muted)
-                    TextButton(onClick = {
-                        val preferences = vm.graphPreferences().filter { it.s("id") in assumption.a("evidence").strings() }
-                        if (preferences.isEmpty()) vm.resolveAssumptions(listOf(assumption.s("id")), "corrected")
-                        else preferences.forEach { vm.changePreference(it, null, null) }
-                    }, modifier = Modifier.testTag("activity-undo:${assumption.s("id")}")) { Text("Undo") }
-                }
-                Text(activityDate(assumption.s("created_at")), style = GardenType.Small)
+        groups.forEach { group ->
+            if (otherEvidence && group == unlinkedGroups.firstOrNull()) item {
+                GardenQuietButton("Other evidence · ${unlinkedGroups.sumOf { it.size }}", onClick = { otherEvidence = false },
+                    modifier = Modifier.fillMaxWidth().testTag("activity-other-evidence"), icon = Icons.Outlined.ExpandLess)
             }
+            item {
+                GardenCard {
+                    Text(group.first().sourceTitle, style = GardenType.Section)
+                    group.forEach { row ->
+                        val assumption = row.record
+                        val assumptionKey = "assumption:${assumption.s("id")}"
+                        val isExpanded = expanded == assumptionKey
+                        AssumptionFoodRow(row, "activity-assumption:${assumption.s("id")}", isExpanded) {
+                            expanded = if (isExpanded) "" else assumptionKey
+                        }
+                        if (isExpanded) {
+                            AssumptionEvidence(assumption)
+                            TextButton(onClick = {
+                                val preferences = vm.graphPreferences().filter { it.s("id") in assumption.a("evidence").strings() }
+                                if (preferences.isEmpty()) vm.resolveAssumptions(listOf(assumption.s("id")), "corrected")
+                                else preferences.forEach { vm.changePreference(it, null, null) }
+                            }, modifier = Modifier.testTag("activity-undo:${assumption.s("id")}")) { Text("Undo") }
+                        }
+                    }
+                }
+            }
+        }
+        if (unlinkedGroups.isNotEmpty() && !otherEvidence) item {
+            GardenQuietButton("Other evidence · ${unlinkedGroups.sumOf { it.size }}", onClick = { otherEvidence = !otherEvidence },
+                modifier = Modifier.fillMaxWidth().testTag("activity-other-evidence"), icon = if (otherEvidence) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore)
         }
         if (vm.outbox.isNotEmpty()) item { Text("Waiting to sync", style = GardenType.Section) }
         items(vm.outbox, key = { "outbox:${it.o("payload").s("idempotencyKey")}" }) { write ->
@@ -187,9 +205,7 @@ fun activityJobTitle(vm: GardenModel, job: JSONObject): String {
     return capture?.o("server")?.o("interpretation")?.s("title")?.takeIf { it.isNotBlank() } ?: activityJobLabel(job.s("kind"))
 }
 
-internal fun activityDate(value: String): String = runCatching {
-    java.time.OffsetDateTime.parse(value).atZoneSameInstant(householdZone).toLocalDate().toString()
-}.getOrElse { Regex("^\\d{4}-\\d{2}-\\d{2}").find(value)?.value ?: "Date unknown" }
+internal fun activityDate(value: String): String = humanDate(value)
 
 private fun activityWriteLabel(route: String) = when (route) {
     "/api/pantry/count" -> "Amount"; "/api/pantry/toss" -> "Tossed"; "/api/pantry/condition" -> "Condition"; "/api/pantry/transfer" -> "Moved"; "/api/pantry/add" -> "Added food"; "/api/assumptions/resolve" -> "Assumption"; "/api/preferences" -> "Preference"; "/api/reactions" -> "Rating"; "/api/batches" -> "Cooked"; else -> "Saved change"
@@ -233,14 +249,14 @@ fun ReceiptsScreen(vm: GardenModel, onBack: () -> Unit) {
                 GardenCard(onClick = { vm.track("receipt_open", "id" to record.s("id")); selected = record.s("id") }) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Icon(Icons.Outlined.ReceiptLong, null, Modifier.size(26.dp), tint = Forest)
-                        Column(Modifier.weight(1f)) { Text(record.s("store"), style = GardenType.Body); Text(record.s("date").take(10), style = GardenType.Small) }
+                        Column(Modifier.weight(1f)) { Text(record.s("store"), style = GardenType.Body); Text(humanDate(record.s("date")), style = GardenType.Small) }
                         if (!record.isNull("total")) Text(receiptMoney(record.optDouble("total")), style = GardenType.Body)
                         Icon(Icons.Outlined.ChevronRight, null, Modifier.size(18.dp), tint = Muted)
                     }
                 }
             }
         } else {
-            item { GardenCard { Text(receipt.s("store"), style = GardenType.Section); Text(receipt.s("date").take(10), style = GardenType.Small) } }
+            item { GardenCard { Text(receipt.s("store"), style = GardenType.Section); Text(humanDate(receipt.s("date")), style = GardenType.Small) } }
             items(receipt.a("items").objects()) { line ->
                 GardenCard {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

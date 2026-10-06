@@ -6,6 +6,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,33 +33,47 @@ import androidx.compose.ui.text.input.KeyboardType
 @Composable
 fun FridgeCheckScreen(vm: GardenModel) {
     var reviewing by rememberSaveable { mutableStateOf(true) }
-    var expanded by rememberSaveable { mutableStateOf(false) }
     var correctingId by rememberSaveable { mutableStateOf("") }
+    var otherEvidence by rememberSaveable { mutableStateOf(false) }
     var selectedItem by rememberSaveable { mutableStateOf("") }
     var receiptItem by remember { mutableStateOf<JSONObject?>(null) }
     val assumptions = vm.graphAssumptions()
+    val allGroups = assumptionGroups(vm.snapshot, assumptions)
+    val unlinkedGroups = allGroups.filter { group -> group.all { it.unlinkedFood } }
+    val groups = allGroups - unlinkedGroups.toSet() + if (otherEvidence) unlinkedGroups else emptyList()
+    val listState = rememberLazyListState()
+    LaunchedEffect(correctingId) {
+        if (correctingId.isNotBlank()) listState.animateScrollToItem(1 + groups.size + if (unlinkedGroups.isNotEmpty()) 1 else 0)
+    }
     val pantry = vm.graphPantry()
     if (!reviewing) { KitchenContent(vm, checking = true); return }
-    LazyColumn(Modifier.fillMaxSize().testTag("graph-kitchen"), contentPadding = PaddingValues(14.dp, 0.dp, 14.dp, 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(Modifier.fillMaxSize().testTag("graph-kitchen"), state = listState, contentPadding = PaddingValues(14.dp, 0.dp, 14.dp, 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { GardenTopBar("Here's what I assumed", onBack = { vm.openFridgeCheck = false }) }
-        if (assumptions.isNotEmpty()) item {
-            GardenCard {
-                (if (expanded) assumptions else assumptions.take(3)).forEach { assumption ->
-                    Row(Modifier.fillMaxWidth().clickable { vm.track("assumption_open", "id" to assumption.s("id")); correctingId = assumption.s("id") }.padding(vertical = 7.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        SparkleMark()
-                        Text(assumption.s("statement").removePrefix("Confirm imported preference: "), modifier = Modifier.weight(1f), style = GardenType.Body, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        Icon(Icons.Outlined.Edit, "Correct", Modifier.size(18.dp), tint = Muted)
+        groups.forEach { group ->
+            if (otherEvidence && group == unlinkedGroups.firstOrNull()) item {
+                GardenQuietButton("Other evidence · ${unlinkedGroups.sumOf { it.size }}", onClick = { otherEvidence = false },
+                    modifier = Modifier.fillMaxWidth().testTag("check-other-evidence"), icon = Icons.Outlined.ExpandLess)
+            }
+            item {
+                GardenCard {
+                    Text(group.first().sourceTitle, style = GardenType.Section)
+                    group.forEach { row ->
+                        AssumptionFoodRow(row, "check-assumption:${row.record.s("id")}", onClick = {
+                            vm.track("assumption_open", "id" to row.record.s("id")); correctingId = row.record.s("id")
+                        })
                     }
                 }
-                if (assumptions.size > 3) TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Less" else "Show all") }
             }
-        } else item { GardenCard { Text("No open assumptions", style = GardenType.Body) } }
+        }
+        if (unlinkedGroups.isNotEmpty() && !otherEvidence) item {
+            GardenQuietButton("Other evidence · ${unlinkedGroups.sumOf { it.size }}", onClick = { otherEvidence = !otherEvidence },
+                modifier = Modifier.fillMaxWidth().testTag("check-other-evidence"), icon = if (otherEvidence) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore)
+        }
+        if (assumptions.isEmpty()) item { GardenCard { Text("No open assumptions", style = GardenType.Body) } }
         val correction = assumptions.firstOrNull { it.s("id") == correctingId }
         if (correction != null) item {
             GardenPanel("Correct assumption", onClose = { correctingId = "" }, modifier = Modifier.testTag("assumption-detail")) {
-                var fullEvidence by rememberSaveable(correctingId) { mutableStateOf(false) }
-                Text(correction.s("statement"), style = GardenType.Body, maxLines = if (fullEvidence) Int.MAX_VALUE else 3, overflow = TextOverflow.Ellipsis)
-                TextButton(onClick = { fullEvidence = !fullEvidence }) { Text(if (fullEvidence) "Less" else "Details") }
+                AssumptionEvidence(correction)
                 val evidence = correction.a("evidence").strings()
                 val linked = pantry.filter { it.s("product_id") == correction.s("productId").ifBlank { correction.s("product_id") } || it.s("id") in evidence }
                 linked.forEach { lot ->
@@ -151,6 +166,7 @@ fun ReactionControl(vm: GardenModel, key: String, rating: Int?, aspects: JSONObj
 @Composable
 fun PreferencesScreen(vm: GardenModel) {
     var editing by remember { mutableStateOf<JSONObject?>(null) }
+    var expandedPreference by rememberSaveable { mutableStateOf("") }
     val preferences = vm.graphPreferences().filter {
         !(it.s("stance") == "neutral" && it.s("statement").startsWith("No current preference about "))
     }
@@ -158,15 +174,33 @@ fun PreferencesScreen(vm: GardenModel) {
         GardenTopBar("Preferences", onBack = { vm.track("preferences_back"); vm.openPreferences = false })
         LazyColumn(contentPadding = PaddingValues(14.dp, 0.dp, 14.dp, 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             preferences.groupBy { it.s("kind") }.forEach { (kind, rows) ->
-                item { SectionLabel(kind.replaceFirstChar { it.uppercase() }) }
+                item { SectionLabel(kind.replace('_', ' ').replaceFirstChar { it.uppercase() }) }
                 items(rows, key = { it.s("kind") + it.s("subject") }) { preference ->
-                    GardenCard {
+                    val preferenceKey = preference.s("kind") + ":" + preference.s("subject")
+                    val expanded = expandedPreference == preferenceKey
+                    GardenCard(onClick = { expandedPreference = if (expanded) "" else preferenceKey }, modifier = Modifier.testTag("preference:$preferenceKey")) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (preference.s("source") == "imported" && vm.graphAssumptions().any { preference.s("id") in it.a("evidence").strings() })
-                                Icon(Icons.Outlined.AutoAwesome, "Unconfirmed", Modifier.size(18.dp), tint = Forest)
-                            Text(preference.s("statement"), style = GardenType.Body, modifier = Modifier.weight(1f))
+                            if (preference.s("confidence") == "unknown") UnknownAmountMark(label = "Preference unconfirmed")
+                            else if (preference.s("confidence") == "assumed" || vm.graphAssumptions().any { preference.s("id") in it.a("evidence").strings() }) SparkleMark()
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text(preferenceSubject(preference), style = GardenType.Body)
+                                preferenceSummary(preference).takeIf { it.isNotBlank() }?.let { Text(it, style = GardenType.Small) }
+                            }
                             IconButton(onClick = { vm.track("preference_open", "subject" to preference.s("subject")); editing = preference }) {
                                 Icon(Icons.Outlined.Edit, "Change preference", tint = Muted, modifier = Modifier.size(19.dp))
+                            }
+                            Icon(if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, "History and details", tint = Muted, modifier = Modifier.size(18.dp))
+                        }
+                        if (expanded) {
+                            Text(humanDatesInText(preference.s("statement")), style = GardenType.Body)
+                            Text(listOf(preference.s("source").replace('_', ' '), preference.s("confidence"), humanDate(preference.s("created_at"))).filter { it.isNotBlank() }.joinToString(" · "), style = GardenType.Small)
+                            if (preference.opt("value") is JSONObject) Text(humanDatesInText(preference.o("value").toString()), style = GardenType.Small)
+                            preference.a("evidence").strings().forEach { Text(humanDatesInText(it), style = GardenType.Small) }
+                            preference.a("history").objects().forEach { prior ->
+                                HorizontalDivider(color = Line)
+                                Text(humanDatesInText(prior.s("statement")), style = GardenType.Body)
+                                Text(listOf(prior.s("source"), prior.s("confidence"), humanDate(prior.s("created_at"))).joinToString(" · "), style = GardenType.Small)
+                                prior.a("evidence").strings().forEach { Text(humanDatesInText(it), style = GardenType.Small) }
                             }
                         }
                     }
@@ -197,4 +231,35 @@ fun PreferencesScreen(vm: GardenModel) {
             }) { Text("Save") } },
             dismissButton = { TextButton(onClick = { vm.changePreference(preference, null, null); editing = null }) { Text("Remove", color = Clay) } })
     }
+}
+
+
+fun preferenceSubject(preference: JSONObject): String = preference.s("subject").replace('_', ' ').replaceFirstChar { it.uppercase() }
+fun preferenceSummary(preference: JSONObject): String {
+    val stance = when (preference.s("stance")) {
+        "never" -> "Never"; "avoid" -> "Avoid"; "neutral" -> "No strong preference"; "like" -> "Like"; "love" -> "Love"; else -> ""
+    }
+    val value = preference.opt("value")
+    val simple = when (value) {
+        is String -> humanDatesInText(value.replace('_', ' '))
+        is Number, is Boolean -> value.toString()
+        is org.json.JSONArray -> value.strings().joinToString(" · ") { it.replace('_', ' ') }
+        is JSONObject -> compactPreferenceValue(value)
+        else -> ""
+    }
+    return listOf(stance, simple).filter { it.isNotBlank() }.joinToString(" · ")
+}
+
+
+fun compactPreferenceValue(value: JSONObject): String {
+    fun plain(text: String) = humanDatesInText(text.replace('_', ' '))
+    return value.keys().asSequence().mapNotNull { key ->
+        when (val entry = value.opt(key)) {
+            is String -> plain(entry)
+            is Number, is Boolean -> "${plain(key)}: $entry"
+            is org.json.JSONArray -> entry.strings().joinToString(" · ") { plain(it) }.takeIf { it.isNotBlank() }
+            is JSONObject -> compactPreferenceValue(entry).takeIf { it.isNotBlank() }
+            else -> null
+        }
+    }.take(3).joinToString(" · ")
 }

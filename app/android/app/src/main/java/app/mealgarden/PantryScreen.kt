@@ -51,7 +51,7 @@ fun KitchenContent(vm: GardenModel, checking: Boolean = false) {
     val visible = active.filter { zone.isBlank() || kitchenZone(it) == zone }
     val filtered = kitchenGroups(visible) + if (showSettled) kitchenGroups(settled.filter { zone.isBlank() || kitchenZone(it) == zone }) else emptyList()
     val selected = pantry.firstOrNull { it.s("id") == selectedId }
-    fun open(food: JSONObject) { selectedId = food.s("id"); selectedLots = food.a("_lotIds").strings().ifEmpty { listOf(selectedId) }; appliance = "" }
+    fun open(food: JSONObject) { selectedId = food.s("id"); selectedLots = food.a("_lotIds").strings().ifEmpty { listOf(selectedId) }; appliance = ""; panelRequest++ }
     LaunchedEffect(vm.selectedPantryItem) {
         val requested = vm.selectedPantryItem
         if (requested.isNotBlank()) {
@@ -92,20 +92,9 @@ fun KitchenContent(vm: GardenModel, checking: Boolean = false) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) { Box(Modifier.size(17.dp, 3.dp).background(Amber)); Text("Use soon", style = GardenType.Small) }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) { Box(Modifier.size(17.dp, 3.dp).background(Clay)); Text("Check freshness", style = GardenType.Small) }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) { Text("?", style = GardenType.Small); Text("Unknown", style = GardenType.Small) }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) { UnknownAmountMark(); Text("Amount unknown", style = GardenType.Small) }
             }
         } }
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (pantry.isEmpty() && vm.snapshot.o("inventory").s("status") == "not_inventoried") {
-                    Row(Modifier.testTag("kitchen-stock-unknown"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(Icons.Outlined.HelpOutline, null, Modifier.size(17.dp), tint = Muted)
-                        Text("Food on hand unknown", style = GardenType.Small)
-                    }
-                }
-                KitchenDrawing(vm, Modifier.fillMaxWidth().height(if (checking || zone.isNotBlank()) 270.dp else 340.dp), zone = zone, selectedId = selectedId, onItem = ::open, onAppliance = { appliance = it; selectedId = "" })
-            }
-        }
         item {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 if (!checking) GardenChip("All", selected = zone.isBlank(), onClick = { zone = "" })
@@ -116,6 +105,17 @@ fun KitchenContent(vm: GardenModel, checking: Boolean = false) {
                 }
             }
         }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (pantry.isEmpty() && vm.snapshot.o("inventory").s("status") == "not_inventoried") {
+                    Row(Modifier.testTag("kitchen-stock-unknown"), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Icon(Icons.Outlined.HelpOutline, null, Modifier.size(17.dp), tint = Muted)
+                        Text("Food on hand unknown", style = GardenType.Small)
+                    }
+                }
+                KitchenDrawing(vm, Modifier.fillMaxWidth(), zone = zone, selectedId = selectedId, onItem = ::open, onAppliance = { appliance = it; selectedId = "" }, onZone = { zone = it })
+            }
+        }
         if (appliance.isNotBlank()) item { GardenPanel(appliance, onClose = { appliance = "" }) {} }
         if (selected != null) item(key = "selected-pantry-panel") {
             AnimatedContent(targetState = selectedId, label = "kitchen-item-panel") { current ->
@@ -124,8 +124,8 @@ fun KitchenContent(vm: GardenModel, checking: Boolean = false) {
                 }
             }
         }
-        if (zone.isNotBlank() || checking || showSettled) {
-            items(filtered, key = { it.s("product_id").ifBlank { it.s("id") } + ":" + kitchenZone(it) + ":" + (it.optDouble("_total", Double.NaN) == 0.0) }) { food ->
+        if (showSettled) {
+            items(filtered.filter { it.optDouble("_total", Double.NaN) == 0.0 }, key = { it.s("product_id").ifBlank { it.s("id") } + ":" + kitchenZone(it) + ":" + (it.optDouble("_total", Double.NaN) == 0.0) }) { food ->
                 GardenCard(onClick = { open(food) }) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Image(ingredientIcon(food), null, Modifier.size(36.dp))
@@ -134,7 +134,7 @@ fun KitchenContent(vm: GardenModel, checking: Boolean = false) {
                         if (amount.isFinite() && amount >= 0) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                             if (food.s("basis") == "assumed") SparkleMark(Modifier.size(12.dp))
                             Text("${kitchenNumber(amount)} ${food.s("base_unit")}", style = GardenType.Small)
-                        } else Text(if (amount < 0) "Check amount" else "?", style = GardenType.Small)
+                        } else UnknownAmountMark()
                         kitchenState(vm, food)?.let { StateMark(it, showLabel = false) }
                     }
                 }
@@ -189,9 +189,13 @@ fun KitchenItemPanel(vm: GardenModel, food: JSONObject, lots: List<JSONObject> =
             Image(ingredientIcon(food), null, Modifier.size(32.dp))
             Text(food.s("name"), style = GardenType.Body, modifier = Modifier.weight(1f))
         }
+        if (kitchenZone(food) != "freezer" && amount != 0.0) GardenQuietButton("Move to freezer", icon = Icons.Outlined.AcUnit,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("kitchen-freeze:$id"), onClick = {
+                vm.graphWrite("/api/pantry/transfer", j("itemId" to id, "amount" to null, "toLocation" to "freezer"), "pantry_freeze")
+            })
         if (lots.size > 1) FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) { lots.forEachIndexed { index, lot ->
-            val date = lot.s("purchased_on").take(10).ifBlank { lot.s("created_at").take(10) }
-            GardenChip(if (date.isBlank()) "Item ${index + 1}" else "bought $date", selected = lot.s("id") == id, onClick = { onLot(lot) })
+            val date = lot.s("purchased_on").ifBlank { lot.s("created_at") }
+            GardenChip(if (date.isBlank()) "Item ${index + 1}" else "Bought ${humanDate(date)}", selected = lot.s("id") == id, onClick = { onLot(lot) })
         } }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             listOf("Have it" to listOf(PantryStateMark.Fine, PantryStateMark.UseSoon), "Don't" to listOf(PantryStateMark.UsedUp, PantryStateMark.Tossed)).forEach { (label, choices) ->
@@ -244,11 +248,8 @@ fun KitchenItemPanel(vm: GardenModel, food: JSONObject, lots: List<JSONObject> =
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (food.s("location") != "freezer" && amount != 0.0) GardenChip("Move to freezer", tint = IceLight, icon = Icons.Outlined.AcUnit, onClick = {
-                vm.graphWrite("/api/pantry/transfer", j("itemId" to id, "amount" to null, "toLocation" to "freezer"), "pantry_freeze")
-            })
             val purchased = food.s("purchased_on").take(10)
-            if (purchased.isNotBlank()) TextButton(onClick = { vm.track("pantry_receipt", "date" to purchased); onReceipt() }, modifier = Modifier.testTag("kitchen-receipt:$id")) { Text("bought $purchased", fontSize = 12.sp) }
+            if (purchased.isNotBlank()) TextButton(onClick = { vm.track("pantry_receipt", "date" to purchased); onReceipt() }, modifier = Modifier.testTag("kitchen-receipt:$id")) { Text("Bought ${humanDate(purchased)}", fontSize = 12.sp) }
         }
     }
 }
@@ -294,7 +295,7 @@ fun KitchenReceipt(vm: GardenModel, item: JSONObject, onClose: () -> Unit) {
     val receipts = kitchenReceipts(vm.snapshot, item)
     var choice by rememberSaveable(item.s("id")) { mutableStateOf("") }
     val selected = if (receipts.size == 1) receipts.first() else receipts.firstOrNull { it.s("id") == choice }
-    AlertDialog(onDismissRequest = onClose, title = { Text("Bought $date", style = GardenType.Section) }, text = {
+    AlertDialog(onDismissRequest = onClose, title = { Text("Bought ${humanDate(date)}", style = GardenType.Section) }, text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (receipts.isEmpty()) Text("Receipt unavailable", style = GardenType.Small)
             if (selected == null && receipts.size > 1) receipts.forEach { receipt ->

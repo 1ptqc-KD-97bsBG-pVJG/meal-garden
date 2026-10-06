@@ -27,7 +27,7 @@ class GraphAppTest {
         {"id":"pasta-lot","product_id":"pasta","name":"Whole wheat pasta","base_unit":"g","kind":"packaged","location":"pantry","balance":907.18474,"basis":"known","purchased_on":"2026-10-01","urgency":"stable"},
         {"id":"spinach-lot","product_id":"spinach","name":"Spinach","base_unit":"g","kind":"generic","location":"fridge","balance":null,"basis":"unknown","purchased_on":"2026-10-01","ageDays":3,"typicalDays":5,"urgency":"soon"}
       ],
-      "assumptions":[{"id":"a1","statement":"Half the spinach went into soup.","evidence":[]},{"id":"a2","statement":"You like ginger.","evidence":["pref1"]}],
+      "assumptions":[{"id":"a1","statement":"Half the spinach went into soup.","productId":"spinach","source":{"id":"cook-soup","kind":"recipe","title":"Soup"},"evidence":[]},{"id":"a2","statement":"You like ginger.","evidence":["pref1"]}],
       "receipts":[{"id":"receipt","date":"2026-10-01","store":"Test store","items":[{"name":"Whole wheat pasta","quantity":"2 × 16 oz"},{"name":"Spinach","quantity":"1 × 300 g"}]}],
       "preferences":[{"id":"pref1","kind":"taste","subject":"ginger","statement":"Like ginger.","stance":"like","source":"imported","confidence":"assumed"}],"batches":[]
     }""")
@@ -69,7 +69,9 @@ class GraphAppTest {
         setup()
         compose.onNodeWithText("Here's what I assumed").assertIsDisplayed()
         shot("kitchen-assumptions")
-        compose.onNodeWithText("Half the spinach went into soup.").performClick()
+        compose.onNodeWithText("Half the spinach went into soup.").assertDoesNotExist()
+        compose.onNodeWithTag("check-assumption:a1").assertExists().performClick()
+        compose.onNodeWithText("Half the spinach went into soup.").assertIsDisplayed()
         compose.onNodeWithText("Mark corrected").performScrollTo().performClick()
         compose.runOnIdle { assertEquals("corrected", vm.outbox.first().o("payload").s("status")) }
         compose.onNodeWithText("Looks right").performScrollTo().performClick()
@@ -89,7 +91,7 @@ class GraphAppTest {
             assertEquals("known", write.o("payload").s("confidence"))
         }
         shot("kitchen-amount-control")
-        panel("bought 2026-10-01").performScrollTo().performClick()
+        panel("Bought ${humanDate("2026-10-01")}").performScrollTo().performClick()
         compose.onNodeWithText("Test store").assertIsDisplayed()
         shot("kitchen-receipt")
         compose.onNodeWithText("Close").performClick()
@@ -140,7 +142,7 @@ class GraphAppTest {
     }
     @Test fun preferencesUseSupersedingGraphRoute() {
         setup("preferences")
-        compose.onNodeWithContentDescription("Unconfirmed").assertExists()
+        compose.onNodeWithContentDescription("Assumed").assertExists()
         compose.onNodeWithContentDescription("Change preference").performClick()
         compose.onNodeWithText("Remove").performClick()
         compose.runOnIdle {

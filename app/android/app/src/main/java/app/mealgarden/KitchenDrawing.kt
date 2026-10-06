@@ -9,6 +9,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Kitchen
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -131,7 +134,11 @@ private fun kitchenAppliances(snapshot: JSONObject): List<KitchenAppliance> {
 
 /** Full kitchen and a compact cook-mode drawing share the same data and geometry. */
 @Composable
-fun KitchenDrawing(vm: GardenModel, modifier: Modifier = Modifier, activeEquipment: String = "", onItem: (JSONObject) -> Unit = {}, zone: String = "", selectedId: String = "", onAppliance: (String) -> Unit = {}) {
+fun KitchenDrawing(vm: GardenModel, modifier: Modifier = Modifier, activeEquipment: String = "", onItem: (JSONObject) -> Unit = {}, zone: String = "", selectedId: String = "", onAppliance: (String) -> Unit = {}, onZone: (String) -> Unit = {}) {
+    if (activeEquipment.isBlank()) {
+        FoodKitchenDrawing(vm, modifier, zone, selectedId, onItem, onAppliance, onZone)
+        return
+    }
     val below = kitchenFreezerPosition(vm.snapshot, vm.graphPreferences()) == "below"
     val pantry = vm.graphPantry()
     val groups = kitchenGroups(pantry.filter { it.optDouble("balance", Double.NaN) != 0.0 })
@@ -264,3 +271,119 @@ fun KitchenDrawing(vm: GardenModel, modifier: Modifier = Modifier, activeEquipme
 }
 
 fun kitchenNumber(value: Double): String = if (value == value.toInt().toDouble()) value.toInt().toString() else "%.1f".format(java.util.Locale.US, value)
+
+
+/** A hollow mark stays quiet on a food tile; the Kitchen key supplies its meaning. */
+@Composable
+fun UnknownAmountMark(modifier: Modifier = Modifier, label: String = "Amount unknown") {
+    Canvas(modifier.size(9.dp).semantics { contentDescription = label }) {
+        drawCircle(Faint, radius = size.minDimension / 2 - 1.dp.toPx(), style = Stroke(1.dp.toPx()))
+    }
+}
+
+@Composable
+private fun FoodKitchenDrawing(vm: GardenModel, modifier: Modifier, zone: String, selectedId: String,
+    onItem: (JSONObject) -> Unit, onAppliance: (String) -> Unit, onZone: (String) -> Unit) {
+    val groups = kitchenGroups(vm.graphPantry().filter { it.optDouble("balance", Double.NaN) != 0.0 })
+    val freezerBelow = kitchenFreezerPosition(vm.snapshot, vm.graphPreferences()) == "below"
+    val cold = if (freezerBelow) listOf("fridge", "drawers", "freezer") else listOf("freezer", "fridge", "drawers")
+    val dry = listOf("pantry", "counter") + if (groups.any { kitchenZone(it) == "unknown" }) listOf("unknown") else emptyList()
+    val labels = (KitchenZones + ("unknown" to "Unplaced")).toMap()
+    @Composable fun ZoneFoods(id: String, focused: Boolean, modifier: Modifier = Modifier) {
+        val foods = groups.filter { kitchenZone(it) == id }
+        val shown = if (focused) foods else foods.take(4)
+        val columns = if (focused) 3 else 2
+        Column(modifier.fillMaxWidth().background(when (id) {
+            "freezer" -> IceLight.copy(alpha = .35f)
+            "drawers" -> Color(0xFFDCEBD9).copy(alpha = .35f)
+            else -> Paper2.copy(alpha = .55f)
+        }, RoundedCornerShape(12.dp)).testTag("kitchen-zone:$id").padding(6.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(Modifier.fillMaxWidth().heightIn(min = 32.dp).then(if (!focused) Modifier.clickable { onZone(id) } else Modifier), verticalAlignment = Alignment.CenterVertically) {
+                Text(labels[id].orEmpty(), style = GardenType.Small, color = Muted, modifier = Modifier.weight(1f))
+                if (foods.isNotEmpty()) Text(foods.size.toString(), style = GardenType.Small, color = Muted)
+            }
+            shown.chunked(columns).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    row.forEach { food ->
+                        KitchenFoodTile(food, selectedId in food.a("_lotIds").strings(), Modifier.weight(1f), focused) {
+                            vm.track("pantry_item_open", "itemId" to food.s("id")); onItem(food)
+                        }
+                    }
+                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+            if (!focused && foods.size > shown.size) Text("+${foods.size - shown.size} more", style = GardenType.Small, color = Forest,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp).clickable { onZone(id) }.padding(vertical = 10.dp))
+            if (focused && foods.isEmpty()) Text("No recorded food", style = GardenType.Small, color = Muted, modifier = Modifier.padding(vertical = 8.dp))
+        }
+    }
+    Column(modifier.fillMaxWidth().testTag("kitchen-drawing").semantics { contentDescription = "Kitchen drawing" }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (zone.isNotBlank()) ZoneFoods(zone, true)
+        else {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) { cold.forEach { ZoneFoods(it, false) } }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) { dry.forEach { ZoneFoods(it, false) } }
+            }
+            val appliances = kitchenAppliances(vm.snapshot)
+            if (appliances.isNotEmpty()) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                appliances.forEach { appliance ->
+                    Icon(Icons.Outlined.Kitchen, appliance.name, tint = Muted.copy(alpha = .3f),
+                        modifier = Modifier.size(40.dp).clickable { vm.track("kitchen_appliance", "name" to appliance.name); onAppliance(appliance.name) }.padding(10.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun KitchenFoodTile(food: JSONObject, selected: Boolean, modifier: Modifier, focused: Boolean, onClick: () -> Unit) {
+    val amount = food.optDouble("_total", Double.NaN)
+    val unknown = !amount.isFinite() || amount < 0
+    val amountLabel = if (!unknown) kitchenDisplayAmount(amount, food.s("base_unit")) else ""
+    val freshness = when {
+        food.s("condition") == "use_soon" || food.s("urgency") == "soon" -> Amber
+        food.s("urgency") == "past" -> Clay
+        else -> Forest.copy(alpha = .35f)
+    }
+    Column(modifier.heightIn(min = if (focused) 128.dp else 106.dp)
+        .background(if (selected) Lime.copy(alpha = .5f) else CardSurface, RoundedCornerShape(9.dp)).clickable(onClick = onClick)
+        .semantics { contentDescription = food.s("name") + when {
+            !amount.isFinite() -> ", amount unknown"
+            amount < 0 -> ", amount needs checking"
+            food.s("base_unit") == "count" -> ", ${kitchenNumber(amount)} left"
+            else -> ", $amountLabel left"
+        } }.padding(5.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Box(Modifier.fillMaxWidth().height(if (focused) 56.dp else 42.dp)) {
+            Image(ingredientIcon(food), null, Modifier.fillMaxSize())
+            if (food.s("basis") == "assumed") SparkleMark(Modifier.align(Alignment.TopEnd).size(10.dp))
+            if (unknown) UnknownAmountMark(Modifier.align(Alignment.TopStart))
+        }
+        Text(kitchenShortName(food), style = GardenType.Small, color = Ink, maxLines = 3, overflow = TextOverflow.Ellipsis)
+        if (!unknown) Text(amountLabel, fontSize = 11.sp, color = Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Box(Modifier.fillMaxWidth(.65f).height(3.dp).background(freshness, RoundedCornerShape(4.dp)))
+    }
+}
+
+
+/** A display label never changes the canonical product name or lot identity. */
+fun kitchenShortName(food: JSONObject): String {
+    val name = food.s("name")
+    food.s("short_name").ifBlank { food.s("display_name") }.takeIf { it.isNotBlank() }?.let { return it }
+    val brand = food.s("brand").trim()
+    if (brand.isNotBlank() && name.startsWith(brand, ignoreCase = true)) {
+        val remainder = name.drop(brand.length)
+        if (remainder.firstOrNull()?.let { it.isWhitespace() || it in ":-–" } == true)
+            return remainder.trimStart(' ', ':', '-', '–').ifBlank { name }
+    }
+    if (name.length > 28 && food.s("kind") != "homemade" && food.s("batch_id").isBlank() &&
+        (food.s("kind") == "packaged" || food.s("purchase_id").isNotBlank()))
+        foodShortLabel(name)?.let { return it }
+    return name
+}
+
+
+fun kitchenDisplayAmount(amount: Double, unit: String): String = when {
+    unit == "g" && amount >= 1000 -> "${kitchenNumber(amount / 1000)} kg"
+    unit == "ml" && amount >= 1000 -> "${kitchenNumber(amount / 1000)} L"
+    else -> "${kitchenNumber(amount)} $unit"
+}

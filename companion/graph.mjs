@@ -214,12 +214,43 @@ export class FoodGraph {
    return {assumptions,reversals};
   });
  }
- openAssumptions() {return this.store.all("SELECT * FROM assumptions WHERE household_id=? AND status='open' ORDER BY created_at,rowid",this.household).map(decode).map(a=>{
-  const preference=(a.evidence||[]).some(e=>typeof e==='string'&&this.store.get('SELECT 1 FROM preferences WHERE id=?',e));
-  const component=(a.evidence||[]).map(e=>typeof e==='string'?this.store.get('SELECT c.* FROM intake_components c JOIN intake i ON i.id=c.intake_id WHERE c.id=? AND i.superseded_by_id IS NULL',e):null).find(Boolean);
-  const movement=this.store.get('SELECT * FROM pantry_movements WHERE assumption_id=? LIMIT 1',a.id);
-  return {...a,kind:preference?'preferences':component?'pantry':(movement?.batch_ingredient_id||/inferred from recipe/i.test(a.statement))?'cooking':'pantry',componentId:component&&!component.pantry_item_id?component.id:null,productId:component?.product_id||null};
- });}
+ openAssumptions() {
+  const eventResults=new Map();
+  return this.store.all("SELECT * FROM assumptions WHERE household_id=? AND status='open' ORDER BY created_at,rowid",this.household).map(decode).map(a=>{
+   const evidence=(a.evidence||[]).filter(e=>typeof e==='string');
+   const preference=evidence.map(e=>this.store.get('SELECT * FROM preferences WHERE id=? AND person_id=?',e,this.person)).find(Boolean);
+   const component=evidence.map(e=>this.store.get('SELECT c.*,i.title AS intake_title,i.capture_id FROM intake_components c JOIN intake i ON i.id=c.intake_id WHERE c.id=? AND i.person_id=? AND i.superseded_by_id IS NULL',e,this.person)).find(Boolean);
+   const movement=this.store.get("SELECT m.*,i.product_id FROM pantry_movements m JOIN pantry_items i ON i.id=m.pantry_item_id WHERE m.assumption_id=? AND i.household_id=? AND m.reason!='reversal' ORDER BY m.rowid LIMIT 1",a.id,this.household);
+   let ingredient=movement?.batch_ingredient_id?this.store.get('SELECT * FROM batch_ingredients WHERE id=?',movement.batch_ingredient_id):null;
+   let batch=ingredient?this.store.get('SELECT * FROM batches WHERE id=? AND household_id=?',ingredient.batch_id,this.household):null;
+   // The saved operation result retains matching ordered inferred ingredients and assumptions,
+   // including ingredients with no pantry lot. Never derive links from statement text.
+   for(const eventId of evidence) {
+    if(!eventResults.has(eventId)) {
+     const event=this.store.get('SELECT type,payload FROM events WHERE id=?',eventId);
+     const payload=event?JSON.parse(event.payload):null;
+     const saved=event?.type==='graph.recordBatch'&&payload?.idempotencyKey?this.store.get("SELECT result FROM idempotency_keys WHERE key=? AND operation='recordBatch'",payload.idempotencyKey):null;
+     eventResults.set(eventId,saved?JSON.parse(saved.result):null);
+    }
+    const result=eventResults.get(eventId);
+    if(result?.batch?.household_id!==this.household)continue;
+    const index=(result.assumptions||[]).findIndex(row=>row.id===a.id);
+    const inferred=(result.ingredients||[]).filter(row=>row.confidence==='assumed');
+    if(index>=0 && inferred.length===result.assumptions.length) {
+     ingredient ||= inferred[index];batch ||= result.batch;
+    }
+   }
+   const linkedItem=evidence.map(e=>this.store.get('SELECT i.*,p.name FROM pantry_items i JOIN products p ON p.id=i.product_id WHERE i.id=? AND i.household_id=?',e,this.household)).find(Boolean);
+   const receipt=evidence.map(e=>this.store.get('SELECT * FROM receipts WHERE id=? AND household_id=?',e,this.household)).find(Boolean);
+   const productId=component?.product_id||ingredient?.product_id||movement?.product_id||linkedItem?.product_id||null;
+   const product=productId?this.store.get('SELECT name FROM products WHERE id=?',productId):null;
+   const captureEvent=component?this.store.get("SELECT payload FROM events WHERE type='captured' AND subject=? ORDER BY rowid LIMIT 1",`capture:${component.capture_id}`):null;
+   const capture=captureEvent?JSON.parse(captureEvent.payload):null;
+   const source=batch?{kind:'recipe',id:batch.id,title:batch.title,recipeId:batch.recipe_id}:component?{kind:capture?.media||(capture?.mediaList||[]).length?'photo':'intake',id:component.intake_id,title:component.intake_title||'Food log',captureId:component.capture_id}:preference?{kind:'preference',id:preference.id,title:preference.subject}:receipt?{kind:'receipt',id:receipt.id,title:receipt.store||'Receipt'}:null;
+   return {...a,kind:preference?'preferences':component?'pantry':(ingredient||/inferred from recipe/i.test(a.statement))?'cooking':'pantry',componentId:component&&!component.pantry_item_id?component.id:null,productId,
+    foodName:component?.name||ingredient?.name||product?.name||null,source};
+  });
+ }
  reviewPantryGaps() {
   const added=[];
   const components=this.store.all('SELECT c.*,p.name AS product_name FROM intake_components c JOIN intake i ON i.id=c.intake_id JOIN products p ON p.id=c.product_id WHERE i.superseded_by_id IS NULL AND c.pantry_item_id IS NULL AND i.person_id=?',this.person);
@@ -383,12 +414,22 @@ export class FoodGraph {
    return {...p,assumption};
   });
  }
- currentPreferences(person=this.person) {this._require('persons',person);return this.store.all('SELECT * FROM preferences WHERE person_id=? AND superseded_by_id IS NULL ORDER BY kind,subject',person).map(decode);}
+ currentPreferences(person=this.person) {
+  this._require('persons',person);
+  const rows=this.store.all('SELECT * FROM preferences WHERE person_id=? ORDER BY created_at,rowid',person).map(decode);
+  const priorByNext=new Map();
+  for(const row of rows)if(row.superseded_by_id){const prior=priorByNext.get(row.superseded_by_id)||[];prior.push(row);priorByNext.set(row.superseded_by_id,prior);}
+  function history(id,seen=new Set()) {
+   if(seen.has(id))return [];seen.add(id);
+   return (priorByNext.get(id)||[]).flatMap(prior=>[prior,...history(prior.id,seen)]);
+  }
+  return rows.filter(row=>row.superseded_by_id===null).sort((a,b)=>a.kind.localeCompare(b.kind)||a.subject.localeCompare(b.subject)).map(row=>({...row,history:history(row.id)}));
+ }
  violations(person,ingredientNames) {return this.currentPreferences(person).filter(p=>p.is_hard&&['never','avoid'].includes(p.stance)&&ingredientNames.some(name=>matches(p.subject,name)));}
  pantryView(today=localDate(this.store.household)) {
   // Reuse kitchenReset's existing shelf-life classification for file-backed receipt products.
   const shelf=this.root?new Map(kitchenReset(this.root,today,36500).items.map(i=>[itemKey(i.fullName),i.typicalDays])):new Map();
-  return this.store.all('SELECT i.*,p.name AS product_name,p.base_unit,p.kind,p.shelf_life_days,p.batch_id,r.purchased_on FROM pantry_items i JOIN products p ON p.id=i.product_id LEFT JOIN purchases pu ON pu.id=i.purchase_id LEFT JOIN receipts r ON r.id=pu.receipt_id WHERE i.household_id=? ORDER BY i.created_at,i.rowid',this.household).map(row=>{
+  return this.store.all('SELECT i.*,p.name AS product_name,p.brand,p.base_unit,p.kind,p.shelf_life_days,p.batch_id,r.purchased_on FROM pantry_items i JOIN products p ON p.id=i.product_id LEFT JOIN purchases pu ON pu.id=i.purchase_id LEFT JOIN receipts r ON r.id=pu.receipt_id WHERE i.household_id=? ORDER BY i.created_at,i.rowid',this.household).map(row=>{
    const balance=this.balance(row.id),date=row.purchased_on||row.created_at?.slice(0,10);
    const age=date?Math.max(0,Math.floor((Date.parse(today)-Date.parse(date.slice(0,10)))/86400000)):null;
    const days=row.location==='freezer'?null:row.shelf_life_days??(shelf.has(itemKey(row.product_name))?shelf.get(itemKey(row.product_name)):null);

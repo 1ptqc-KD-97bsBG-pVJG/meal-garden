@@ -21,6 +21,8 @@ fun MarketScreen(vm: GardenModel, showTitle: Boolean = true) {
     val demand = vm.snapshot.o("shopping")
     val trip = vm.snapshot.o("shoppingTrip")
     val plan = vm.snapshot.o("activePlan")
+    val nextMeal = nextPlannedMeal(vm.snapshot)
+    val nextRecipe = nextMeal?.let { meal -> vm.snapshot.a("recipes").objects().firstOrNull { it.s("id") == meal.s("recipe_id") && recipeReady(it) } }
     val buyRows = trip.a("buy").objects()
     var decisions by remember(trip.s("reviewKey")) { mutableStateOf(buyRows.map {
         it.s("purchase_decision").ifBlank { if (it.s("purchase_condition").isBlank()) "buy" else "" }
@@ -46,10 +48,30 @@ fun MarketScreen(vm: GardenModel, showTitle: Boolean = true) {
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             GardenChip("Local quantities")
                             if (!vm.shoppingEnabled) GardenChip("Shopping not connected", tint = AmberLight)
-                            if (past) GardenChip("Saved plan · start a new plan before buying", tint = AmberLight)
+                            if (past) GardenChip("Past plan", tint = AmberLight)
                         }
-                        GardenPrimaryButton("Sync ${vm.shoppingListName}", { vm.send("shopping") }, icon = Icons.Outlined.Sync,
-                            enabled = vm.shoppingEnabled && !past && trip.s("plan_id") == plan.s("id") && !unresolved && !reviewPending)
+                        GardenPrimaryButton(if (past) "Plan next meals" else "Choose meals", {
+                            vm.ask("Create a current meal plan from my kitchen and ready recipes. Show the missing ingredients for the next meal.")
+                        }, modifier = Modifier.fillMaxWidth(), icon = Icons.Outlined.RestaurantMenu)
+                        if (vm.shoppingEnabled) GardenQuietButton("Sync ${vm.shoppingListName}", { vm.send("shopping") }, icon = Icons.Outlined.Sync,
+                            enabled = !past && trip.s("plan_id") == plan.s("id") && !unresolved && !reviewPending)
+                    }
+                }
+                if (nextMeal != null && nextRecipe != null) item {
+                    GardenCard {
+                        SectionLabel("Next planned meal")
+                        Text(nextRecipe.s("title"), style = GardenType.Section)
+                        Text(humanDate(nextMeal.s("date")), style = GardenType.Small)
+                        nextRecipe.a("ingredients").objects().forEach { ingredient ->
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Image(ingredientIcon(ingredient), null, Modifier.size(30.dp))
+                                Text(ingredient.s("name"), style = GardenType.Body, modifier = Modifier.weight(1f))
+                                val amount = ingredient.optDouble("amount", Double.NaN) * nextMeal.optDouble("batches", 1.0)
+                                if (amount.isFinite()) Text("${kitchenNumber(amount)} ${ingredient.s("unit")}", style = GardenType.Small)
+                            }
+                        }
+                        GardenChip("Check kitchen before buying", tint = AmberLight)
+                        GardenQuietButton("Open recipe", onClick = { vm.selectedRecipe = nextRecipe.s("id"); vm.openShopping = false; vm.tab = 1 })
                     }
                 }
                 if (trip.s("plan_id") == plan.s("id")) item {
@@ -83,7 +105,7 @@ fun MarketScreen(vm: GardenModel, showTitle: Boolean = true) {
                     }
                 }
                 item {
-                    SectionLabel("Ingredients", "Plan meals") {
+                    SectionLabel(if (past) "Saved plan ingredients" else "Plan ingredients", "Plan meals") {
                         vm.ask("Create a current meal plan and rebuild grocery demand from the recipes we choose.")
                     }
                     if (plan.s("title").isNotBlank()) Text(plan.s("title"), style = GardenType.Small)
@@ -120,7 +142,7 @@ fun MarketScreen(vm: GardenModel, showTitle: Boolean = true) {
                             Icon(Icons.Outlined.ReceiptLong, null, tint = Forest, modifier = Modifier.size(24.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(receipt.s("store"), style = GardenType.Section)
-                                Text("${receipt.s("date")} · ${receipt.a("items").length()} items", style = GardenType.Small)
+                                Text("${humanDate(receipt.s("date"))} · ${receipt.a("items").length()} items", style = GardenType.Small)
                             }
                             if (!receipt.isNull("total")) Text("$${"%.2f".format(java.util.Locale.US, receipt.optDouble("total"))}", style = GardenType.Body)
                             Icon(if (expanded == receipt.s("id")) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, null, tint = Muted)
@@ -165,4 +187,12 @@ fun MarketScreen(vm: GardenModel, showTitle: Boolean = true) {
             }
         }
     }
+}
+
+
+/** A plan is intent. Upcoming meals do not imply cooking, eating or pantry deductions. */
+fun nextPlannedMeal(snapshot: org.json.JSONObject): org.json.JSONObject? {
+    val today = snapshot.s("today").ifBlank { java.time.LocalDate.now(householdZone).toString() }
+    return snapshot.o("activePlan").a("meals").objects().filter { it.s("date") >= today }
+        .sortedBy { it.s("date") }.firstOrNull()
 }
