@@ -55,11 +55,11 @@ fun TodayScreen(vm: GardenModel) {
             GardenCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Eyebrow("Tonight?"); Spacer(Modifier.weight(1f))
-                    suggestion?.optInt("total_minutes")?.takeIf { it > 0 }?.let { GardenChip("$it min", icon = Icons.Outlined.Timer) }
+                    suggestion?.let(::recipeDuration)?.takeIf { it.isNotBlank() }?.let { GardenChip(it, icon = Icons.Outlined.Timer) }
                 }
                 if (suggestion != null) {
                     Row(Modifier.fillMaxWidth().clickable { vm.selectedRecipe = suggestion.s("id") }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        GardenBowl(Modifier.size(72.dp), suggestion.s("id").hashCode())
+                        GardenRecipePlate(suggestion, Modifier.size(72.dp))
                         Column(Modifier.weight(1f)) {
                             Text(suggestion.s("title"), style = GardenType.Section)
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -84,10 +84,10 @@ fun TodayScreen(vm: GardenModel) {
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     foods.forEach { name ->
-                        Column(Modifier.width(90.dp).clickable { basketFood = name }.padding(4.dp),
+                        Column(Modifier.width(100.dp).clickable { basketFood = name }.padding(4.dp),
                             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Icon(ingredientIcon(j("name" to name), Icons.Outlined.Spa), null, Modifier.size(38.dp), tint = Color.Unspecified)
-                            Text(name, style = GardenType.Small, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(name, style = GardenType.Small, textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }

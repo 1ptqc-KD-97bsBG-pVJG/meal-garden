@@ -1,0 +1,5 @@
+<!-- Generated from design-lab/icons/food-icons.svg by scripts/generate-food-drawables.py. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M3 13A9 9 0 1 0 21 13A9 9 0 1 0 3 13Z" android:fillColor="#C24E3A" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M12 2L13 6L17 5L14 9L10 8L7 5L11 6Z" android:fillColor="#2F5A3F" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>

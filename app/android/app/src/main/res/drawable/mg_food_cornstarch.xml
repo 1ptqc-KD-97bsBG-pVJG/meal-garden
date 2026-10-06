@@ -1,6 +1,6 @@
-<!-- Converted from design-lab/icons/food-icons.svg (lane 03). -->
+<!-- Generated from design-lab/icons/food-icons.svg by scripts/generate-food-drawables.py. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
     <path android:pathData="M5 3H19L18 8L20 21H4L6 8Z" android:fillColor="#F7F1E6" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M8.0,9.0H16.0Q17.0,9.0 17.0,10.0V16.0Q17.0,17.0 16.0,17.0H8.0Q7.0,17.0 7.0,16.0V10.0Q7.0,9.0 8.0,9.0Z" android:fillColor="#E0A034" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M8 9H16A1 1 0 0 1 17 10V16A1 1 0 0 1 16 17H8A1 1 0 0 1 7 16V10A1 1 0 0 1 8 9Z" android:fillColor="#E0A034" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
     <path android:pathData="M9 12H15M9 15H13" android:fillColor="#00000000" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

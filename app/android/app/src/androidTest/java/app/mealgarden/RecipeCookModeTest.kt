@@ -29,7 +29,7 @@ class RecipeCookModeTest {
     private fun click(text: String) {
         if (compose.onAllNodesWithText(text).fetchSemanticsNodes().isEmpty()) compose.onNodeWithTag("recipe-scroll").performScrollToNode(hasText(text))
         val node = compose.onNodeWithText(text)
-        if (!node.isDisplayed() || compose.onAllNodes(hasText(text) and hasAnyAncestor(hasScrollAction())).fetchSemanticsNodes().isNotEmpty()) node.performScrollTo()
+        if (!node.isDisplayed()) node.performScrollTo()
         node.performClick()
     }
     private fun shot(name: String) {
@@ -63,21 +63,23 @@ class RecipeCookModeTest {
         compose.runOnIdle { assertEquals("Exact", vm.prefs.getString("ingredientAmounts", "")) }
         click("Start cooking")
         click("I substituted"); compose.onNode(hasText("Carrots") and SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.Role, androidx.compose.ui.semantics.Role.Button)).performClick()
-        compose.onNodeWithText("e.g. frozen jasmine rice").performTextInput("Parsnips")
+        compose.onNodeWithText("Replacement ingredient").performTextInput("Parsnips")
         compose.onNodeWithText("Why? (optional)").performTextInput("Used what I had")
         click("Save")
         compose.onNode(hasText("→ Parsnips") and hasClickAction()).assertExists()
-        click("Start step"); click("Finish step")
+        click("Next")
         compose.onNodeWithContentDescription("Leave cooking").performClick()
         click("Start cooking")
         compose.onNodeWithText("STEP 2 OF 5").assertIsDisplayed()
-        click("Start step"); click("Finish step")
+        click("Next")
         click("Start 18 min timer")
         shot("cook-running-timer")
         compose.runOnIdle { assertTrue(vm.timers.keys.any { it.startsWith("lentil-tomato-pot:") }) }
-        click("Done early")
-        click("Start step"); click("Finish step")
-        click("Start step"); click("Finish step")
+        compose.onNodeWithText("Waiting").assertIsDisplayed()
+        click("Skip the wait")
+        compose.runOnIdle { assertFalse(vm.timers.keys.any { it.startsWith("lentil-tomato-pot:") }) }
+        click("Next")
+        click("Next")
         compose.onNode(hasText("4 portions") and hasAnyAncestor(isDialog())).assertIsDisplayed()
         repeat(2) { compose.onNodeWithContentDescription("Add one to Fridge").performClick() }
         compose.onNodeWithContentDescription("Add one to Freezer").performClick()
@@ -90,9 +92,10 @@ class RecipeCookModeTest {
         compose.onNodeWithText("Later").performClick()
         open("apple-seed-oats")
         click("Start cooking")
-        repeat(3) { click("Start step"); click("Finish step") }
+        repeat(3) { click("Next") }
         shot("cook-long-directions")
-        click("Start 360 min timer"); click("Done early")
+        click("Start 6 h timer"); compose.onNodeWithText("Waiting").assertIsDisplayed()
+        click("Skip the wait")
         compose.onNode(hasText("4 portions") and hasAnyAncestor(isDialog())).assertIsDisplayed()
         repeat(4) { compose.onNodeWithContentDescription("Add one to Fridge").performClick() }
         click("Cooking report")
@@ -113,12 +116,12 @@ class RecipeCookModeTest {
             compose.activity.setContent { GardenTheme { GardenApp(vm) } }
         }
         click("Start cooking")
-        compose.onNodeWithText("I substituted").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithText("I substituted").assertIsDisplayed().assertIsNotEnabled()
         click("Start 4 min timer")
         compose.onNodeWithText("STEP 2 OF 2").assertIsDisplayed()
-        compose.onNodeWithText("I substituted").performScrollTo().assertIsEnabled()
+        compose.onNodeWithText("I substituted").assertIsDisplayed().assertIsEnabled()
         shot("passive-timer-next-step")
-        click("Start step"); click("Finish step")
+        click("Next")
         compose.onNodeWithText("Waiting").assertIsDisplayed()
         click("Skip the wait")
         compose.onNode(hasText("4 portions") and hasAnyAncestor(isDialog())).assertIsDisplayed()

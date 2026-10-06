@@ -76,7 +76,7 @@ test('sample recipe ingredients resolve to a specific food or an explicit catego
     ready++;
     for (const ingredient of recipe.ingredients) {
       ingredients++;
-      const fallback = {Water: "food-drink", Apple: "food-unknown", "Lemon juice": "food-drink"};
+      const fallback = {Water: "food-drink", Apple: "food-fruit", "Lemon juice": "food-drink"};
       if (Object.hasOwn(fallback, ingredient.name)) assert.equal(iconFor(ingredient.name), fallback[ingredient.name], ingredient.name);
       else assert.ok(specificIds.has(iconFor(ingredient.name)), `${folder.name}: ${ingredient.name}`);
     }
@@ -86,8 +86,14 @@ test('sample recipe ingredients resolve to a specific food or an explicit catego
 
 test('sample pantry and food-log names resolve to specific foods or their declared catalog fallback', async () => {
   const data = JSON.parse(await readFile(new URL('design-lab/concepts/12-unified-v2/data.json', root), 'utf8'));
-  // These fictional foods extend beyond the unchanged icon catalog. Verify its existing fallbacks.
-  const fallback = Object.fromEntries(['Hummus','Seitan','Pea soup','Baked squash','Grapes','Pears','Fennel','Leeks','Lemons','Radishes','Frozen sweetcorn','Rye rolls','Cornmeal','Tahini','Apples','Apple'].map(name => [name, 'food-unknown']));
+  // Fictional foods without their own drawing use an appropriate category.
+  const fallback = {
+    Hummus: 'food-legume', Seitan: 'food-protein', 'Pea soup': 'food-legume',
+    'Baked squash': 'food-vegetable', Grapes: 'food-fruit', Pears: 'food-fruit',
+    Fennel: 'food-vegetable', Leeks: 'food-vegetable', Lemons: 'food-fruit', Radishes: 'food-vegetable',
+    'Frozen sweetcorn': 'food-corn', 'Rye rolls': 'food-grain', Cornmeal: 'food-grain',
+    Tahini: 'food-nut-seed', Apples: 'food-fruit', Apple: 'food-fruit',
+  };
   fallback['Sunflower seeds'] = 'food-nut-seed';
   fallback['Mint tea'] = 'food-drink';
   const check = name => Object.hasOwn(fallback, name) ? assert.equal(iconFor(name), fallback[name], name) : assert.ok(specificIds.has(iconFor(name)), name);
@@ -98,4 +104,28 @@ test('sample pantry and food-log names resolve to specific foods or their declar
     check(row.title);
     for (const item of row.items) check(item.name);
   }
+});
+
+
+test('invented dishes choose a meaningful food/category without substring collisions', () => {
+  for (const [name, expected] of [
+    ['Cloud pear snack', 'food-fruit'], ['Sunrise toast triangles', 'food-grain'],
+    ['Silver quinoa bake', 'food-quinoa'], ['Blue banana pudding', 'food-banana'],
+    ['Acorn snack pouch', 'food-nut-seed'], ['Golden smoothie', 'food-drink'],
+    ['Fennel moon soup', 'food-vegetable'], ['Amber seitan strips', 'food-protein'],
+    ['Cloud kefir pot', 'food-dairy'], ['Twilight cookie', 'food-sweet'],
+    ['Pearlescent milkweed', 'food-unknown'], ['Orbital mystery', 'food-unknown'],
+    ['Unknown pear', 'food-fruit'], ['Unknown tea', 'food-drink'], ['Unknown snack', 'food-nut-seed'],
+  ]) assert.equal(iconFor(name), expected, name);
+});
+
+test('Android catalog is generated from the exact shared matcher metadata', async () => {
+  const { execFileSync } = await import('node:child_process');
+  execFileSync(process.execPath, ['scripts/generate-food-icons.mjs', '--check'], { cwd: new URL('../', import.meta.url) });
+});
+
+
+test('native food and activity drawings stay faithful to the shared SVG source', async () => {
+  const { execFileSync } = await import('node:child_process');
+  execFileSync('python3', ['scripts/generate-food-drawables.py', '--check'], { cwd: new URL('../', import.meta.url) });
 });

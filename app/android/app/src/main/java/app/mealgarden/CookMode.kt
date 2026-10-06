@@ -59,7 +59,7 @@ fun scaledCookStep(r: JSONObject, step: JSONObject, portions: Int): JSONObject {
         }
     val original = basePortions(r)
     val word = listOf("", "one", "two", "three", "four", "five", "six", "seven", "eight").getOrNull(original)
-    val scaled = Regex("\\b(?:$original${word?.let { "|$it" }.orEmpty()}) (?=(?:portions|bowls|meals|containers)\\b)", RegexOption.IGNORE_CASE).replace(text, "$portions ")
+    val scaled = portionDivisionText(Regex("\\b(?:$original${word?.let { "|$it" }.orEmpty()}) (?=(?:portions|bowls|meals|containers|jars)\\b)", RegexOption.IGNORE_CASE).replace(text, "$portions "), portions, original)
     return JSONObject(step.toString()).put("text", scaled)
 }
 fun stepSentence(s: JSONObject): String = s.s("text").trim().split(Regex("(?<=[.!?])\\s+(?=[A-Z])")).firstOrNull()
@@ -85,177 +85,6 @@ fun stepActivity(s: JSONObject): Pair<String, ImageVector> {
         "pack" in text || "divide" in text -> "Pack" to ImageVector.vectorResource(R.drawable.mg_act_assemble)
         else -> "Prepare" to ImageVector.vectorResource(R.drawable.mg_act_wash)
     }
-}
-@Composable
-fun ingredientIcon(a: JSONObject, fallback: ImageVector? = null): ImageVector {
-    val name = a.s("name").lowercase()
-    val matches = listOf(
-        "almondmilk" to R.drawable.mg_food_milk,
-        "almond milk" to R.drawable.mg_food_milk,
-        "oatmilk" to R.drawable.mg_food_milk,
-        "oat milk" to R.drawable.mg_food_milk,
-        "soymilk" to R.drawable.mg_food_soy_milk,
-        "prego tomato sauce with olive oil and garlic" to R.drawable.mg_food_tomato_sauce,
-        "prego pasta sauce garlic and black pepper" to R.drawable.mg_food_tomato_sauce,
-        "roasted garlic ginger soy stir fry sauce" to R.drawable.mg_food_stir_fry_sauce,
-        "preferred sesame or bowl dipping sauce" to R.drawable.mg_food_dressing,
-        "coarse ground black pepper" to R.drawable.mg_food_pepper,
-        "halves and pieces walnuts" to R.drawable.mg_food_walnut,
-        "ginger soy stir fry sauce" to R.drawable.mg_food_stir_fry_sauce,
-        "traditional italian sauce" to R.drawable.mg_food_tomato_sauce,
-        "herb marinade or dressing" to R.drawable.mg_food_dressing,
-        "raw and unfiltered honey" to R.drawable.mg_food_honey,
-        "japanese barbecue sauce" to R.drawable.mg_food_teriyaki,
-        "extra virgin olive oil" to R.drawable.mg_food_olive_oil,
-        "long grain brown rice" to R.drawable.mg_food_rice,
-        "whole wheat spaghetti" to R.drawable.mg_food_spaghetti,
-        "whole grain spaghetti" to R.drawable.mg_food_spaghetti,
-        "whole roasted chicken" to R.drawable.mg_food_chicken,
-        "roasted sesame seeds" to R.drawable.mg_food_sesame,
-        "unsweetened soy milk" to R.drawable.mg_food_soy_milk,
-        "low sodium soy sauce" to R.drawable.mg_food_soy_sauce,
-        "cauliflower florets" to R.drawable.mg_food_cauliflower,
-        "triple berry medley" to R.drawable.mg_food_berries,
-        "herb marinated tofu" to R.drawable.mg_food_tofu,
-        "neutral cooking oil" to R.drawable.mg_food_cooking_oil,
-        "apple cider vinegar" to R.drawable.mg_food_vinegar,
-        "rotisserie chicken" to R.drawable.mg_food_chicken,
-        "beans and lentils" to R.drawable.mg_food_lentil,
-        "whole grain penne" to R.drawable.mg_food_pasta,
-        "low sodium tamari" to R.drawable.mg_food_soy_sauce,
-        "broccoli florets" to R.drawable.mg_food_broccoli,
-        "english cucumber" to R.drawable.mg_food_cucumber,
-        "cannellini beans" to R.drawable.mg_food_cannellini,
-        "hemp seed hearts" to R.drawable.mg_food_hemp,
-        "milk alternative" to R.drawable.mg_food_milk,
-        "regular cinnamon" to R.drawable.mg_food_cinnamon,
-        "ground flaxseed" to R.drawable.mg_food_flax,
-        "extra firm tofu" to R.drawable.mg_food_tofu,
-        "super firm tofu" to R.drawable.mg_food_tofu,
-        "broccoli crown" to R.drawable.mg_food_broccoli,
-        "teriyaki sauce" to R.drawable.mg_food_teriyaki,
-        "barbecue sauce" to R.drawable.mg_food_teriyaki,
-        "stir fry sauce" to R.drawable.mg_food_stir_fry_sauce,
-        "green cabbage" to R.drawable.mg_food_cabbage,
-        "garlic cloves" to R.drawable.mg_food_garlic,
-        "black lentils" to R.drawable.mg_food_lentil,
-        "mixed berries" to R.drawable.mg_food_berries,
-        "walnut halves" to R.drawable.mg_food_walnut,
-        "whole almonds" to R.drawable.mg_food_almond,
-        "flaxseed meal" to R.drawable.mg_food_flax,
-        "nonfat yogurt" to R.drawable.mg_food_yogurt,
-        "vegetable oil" to R.drawable.mg_food_cooking_oil,
-        "dipping sauce" to R.drawable.mg_food_dressing,
-        "dried oregano" to R.drawable.mg_food_oregano,
-        "baby spinach" to R.drawable.mg_food_spinach,
-        "coleslaw mix" to R.drawable.mg_food_cabbage,
-        "green onions" to R.drawable.mg_food_green_onion,
-        "fresh ginger" to R.drawable.mg_food_ginger,
-        "string beans" to R.drawable.mg_food_green_bean,
-        "lentil beans" to R.drawable.mg_food_lentil,
-        "jasmine rice" to R.drawable.mg_food_rice,
-        "sesame seeds" to R.drawable.mg_food_sesame,
-        "plain yogurt" to R.drawable.mg_food_yogurt,
-        "greek yogurt" to R.drawable.mg_food_yogurt,
-        "tomato sauce" to R.drawable.mg_food_tomato_sauce,
-        "rice vinegar" to R.drawable.mg_food_vinegar,
-        "ground cumin" to R.drawable.mg_food_cumin,
-        "black pepper" to R.drawable.mg_food_pepper,
-        "cauliflower" to R.drawable.mg_food_cauliflower,
-        "green onion" to R.drawable.mg_food_green_onion,
-        "ginger root" to R.drawable.mg_food_ginger,
-        "green beans" to R.drawable.mg_food_green_bean,
-        "string bean" to R.drawable.mg_food_green_bean,
-        "white beans" to R.drawable.mg_food_cannellini,
-        "black beans" to R.drawable.mg_food_black_bean,
-        "rolled oats" to R.drawable.mg_food_oats,
-        "short pasta" to R.drawable.mg_food_pasta,
-        "corn starch" to R.drawable.mg_food_cornstarch,
-        "hemp hearts" to R.drawable.mg_food_hemp,
-        "cooking oil" to R.drawable.mg_food_cooking_oil,
-        "pasta sauce" to R.drawable.mg_food_tomato_sauce,
-        "fresh basil" to R.drawable.mg_food_basil,
-        "green bean" to R.drawable.mg_food_green_bean,
-        "cannellini" to R.drawable.mg_food_cannellini,
-        "black bean" to R.drawable.mg_food_black_bean,
-        "brown rice" to R.drawable.mg_food_rice,
-        "quick oats" to R.drawable.mg_food_oats,
-        "cornstarch" to R.drawable.mg_food_cornstarch,
-        "chia seeds" to R.drawable.mg_food_chia,
-        "canola oil" to R.drawable.mg_food_cooking_oil,
-        "white miso" to R.drawable.mg_food_miso,
-        "scallions" to R.drawable.mg_food_green_onion,
-        "mushrooms" to R.drawable.mg_food_mushroom,
-        "courgette" to R.drawable.mg_food_zucchini,
-        "chickpeas" to R.drawable.mg_food_chickpea,
-        "garbanzos" to R.drawable.mg_food_chickpea,
-        "spaghetti" to R.drawable.mg_food_spaghetti,
-        "olive oil" to R.drawable.mg_food_olive_oil,
-        "soy sauce" to R.drawable.mg_food_soy_sauce,
-        "raw honey" to R.drawable.mg_food_honey,
-        "broccoli" to R.drawable.mg_food_broccoli,
-        "coleslaw" to R.drawable.mg_food_cabbage,
-        "scallion" to R.drawable.mg_food_green_onion,
-        "mushroom" to R.drawable.mg_food_mushroom,
-        "shiitake" to R.drawable.mg_food_mushroom,
-        "zucchini" to R.drawable.mg_food_zucchini,
-        "cucumber" to R.drawable.mg_food_cucumber,
-        "chickpea" to R.drawable.mg_food_chickpea,
-        "garbanzo" to R.drawable.mg_food_chickpea,
-        "mukimame" to R.drawable.mg_food_edamame,
-        "flaxseed" to R.drawable.mg_food_flax,
-        "soy milk" to R.drawable.mg_food_soy_milk,
-        "teriyaki" to R.drawable.mg_food_teriyaki,
-        "dressing" to R.drawable.mg_food_dressing,
-        "marinade" to R.drawable.mg_food_dressing,
-        "cinnamon" to R.drawable.mg_food_cinnamon,
-        "spinach" to R.drawable.mg_food_spinach,
-        "cabbage" to R.drawable.mg_food_cabbage,
-        "carrots" to R.drawable.mg_food_carrot,
-        "crimini" to R.drawable.mg_food_mushroom,
-        "lentils" to R.drawable.mg_food_lentil,
-        "edamame" to R.drawable.mg_food_edamame,
-        "berries" to R.drawable.mg_food_berries,
-        "walnuts" to R.drawable.mg_food_walnut,
-        "almonds" to R.drawable.mg_food_almond,
-        "chicken" to R.drawable.mg_food_chicken,
-        "yoghurt" to R.drawable.mg_food_yogurt,
-        "vinegar" to R.drawable.mg_food_vinegar,
-        "oregano" to R.drawable.mg_food_oregano,
-        "unknown" to R.drawable.mg_food_unknown,
-        "greens" to R.drawable.mg_food_spinach,
-        "carrot" to R.drawable.mg_food_carrot,
-        "garlic" to R.drawable.mg_food_garlic,
-        "ginger" to R.drawable.mg_food_ginger,
-        "lentil" to R.drawable.mg_food_lentil,
-        "walnut" to R.drawable.mg_food_walnut,
-        "almond" to R.drawable.mg_food_almond,
-        "sesame" to R.drawable.mg_food_sesame,
-        "yogurt" to R.drawable.mg_food_yogurt,
-        "tamari" to R.drawable.mg_food_soy_sauce,
-        "ceylon" to R.drawable.mg_food_cinnamon,
-        "pepper" to R.drawable.mg_food_pepper,
-        "pasta" to R.drawable.mg_food_pasta,
-        "penne" to R.drawable.mg_food_pasta,
-        "berry" to R.drawable.mg_food_berries,
-        "limes" to R.drawable.mg_food_lime,
-        "prego" to R.drawable.mg_food_tomato_sauce,
-        "honey" to R.drawable.mg_food_honey,
-        "cumin" to R.drawable.mg_food_cumin,
-        "basil" to R.drawable.mg_food_basil,
-        "rice" to R.drawable.mg_food_rice,
-        "oats" to R.drawable.mg_food_oats,
-        "lime" to R.drawable.mg_food_lime,
-        "chia" to R.drawable.mg_food_chia,
-        "flax" to R.drawable.mg_food_flax,
-        "hemp" to R.drawable.mg_food_hemp,
-        "tofu" to R.drawable.mg_food_tofu,
-        "milk" to R.drawable.mg_food_milk,
-        "miso" to R.drawable.mg_food_miso,
-        "oat" to R.drawable.mg_food_oats
-    )
-    val drawing = matches.firstOrNull { Regex("\\b${Regex.escape(it.first)}\\b").containsMatchIn(name) }?.second
-    return drawing?.let { ImageVector.vectorResource(it) } ?: fallback ?: ImageVector.vectorResource(R.drawable.mg_food_unknown)
 }
 /** Prefer explicit references. Legacy text matching is display-only; it never asserts pantry use. */
 fun stepIngredients(r: JSONObject, s: JSONObject): List<Int> {
@@ -328,22 +157,24 @@ fun PortionDestinationRows(total: Int, counts: JSONObject, onChange: (String, In
         else Icon(Icons.Outlined.CheckCircle, "All portions placed", Modifier.size(48.dp), tint = Forest)
     }
     Text("$remaining to place", style = GardenType.Small, color = Forest)
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf("fridge" to "Fridge", "freezer" to "Freezer", "eatenNow" to "Eaten now").forEach { (key, label) ->
             val count = counts.optInt(key)
-            Column(Modifier.weight(1f).clip(GardenShape.Card).background(CardSurface)
+            Row(Modifier.fillMaxWidth().clip(GardenShape.Card).background(CardSurface)
                 .border(1.dp, if (count > 0) Forest else Line, GardenShape.Card)
-                .clickable(enabled = assigned < total, role = androidx.compose.ui.semantics.Role.Button) { onChange(key, count + 1) }
-                .semantics { contentDescription = "Add one to $label" }
-                .padding(horizontal = 5.dp, vertical = 10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(when (key) { "fridge" -> Icons.Outlined.Kitchen; "freezer" -> Icons.Outlined.AcUnit; else -> Icons.Outlined.Restaurant },
                     null, Modifier.size(28.dp), tint = Forest)
-                Text(label, style = GardenType.Small)
-                Text(count.toString(), style = GardenType.Title)
+                Text(label, style = GardenType.Body, modifier = Modifier.weight(1f))
+                Text(count.toString(), style = GardenType.Section)
                 IconButton(onClick = { onChange(key, count - 1) }, enabled = count > 0,
-                    modifier = Modifier.size(48.dp).clip(GardenShape.Button).background(Paper2)) {
-                    Icon(Icons.Outlined.Remove, "Remove one from $label", Modifier.size(18.dp), tint = if (count > 0) Forest else Faint)
+                    modifier = Modifier.size(56.dp).clip(GardenShape.Button).background(Paper2)) {
+                    Icon(Icons.Outlined.Remove, "Remove one from $label", Modifier.size(20.dp), tint = if (count > 0) Forest else Faint)
+                }
+                IconButton(onClick = { onChange(key, count + 1) }, enabled = assigned < total,
+                    modifier = Modifier.size(56.dp).clip(GardenShape.Button).background(Mist)) {
+                    Icon(Icons.Outlined.Add, "Add one to $label", Modifier.size(22.dp), tint = if (assigned < total) Forest else Faint)
                 }
             }
         }
@@ -366,6 +197,8 @@ fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: St
     var pickSub by remember { mutableStateOf(false) }
     var question by remember { mutableStateOf(false) }
     var questionText by remember { mutableStateOf("") }
+    var customTimer by remember { mutableStateOf(false) }
+    var customMinutes by remember { mutableStateOf("2") }
     fun progress(): List<CookProgress> = steps.indices.map { i -> data.optJSONObject("$i")?.let { o ->
         CookProgress(if (o.has("startedAt")) o.optLong("startedAt") else null, if (o.has("doneAt")) o.optLong("doneAt") else null)
     } ?: CookProgress() }
@@ -407,8 +240,8 @@ fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: St
     val complete = steps.indices.all { progress[it].doneAt != null || (CookSequencer.passiveMillis(recipeSteps[it]) > 0 && CookSequencer.end(recipeSteps[it], progress[it])?.let { end -> end <= tick } == true) }
     val timerSteps = steps.indices.filter { vm.timers["$sk:$it"]?.optLong("deadline")?.let { end -> end > tick } == true }
     val current = review ?: sequence.now
-    val step = current?.let { scaledCookStep(r, steps[it], portions) }
-    val used = step?.let { stepIngredients(r, it) }.orEmpty()
+    val step = current?.let { presentedCookStep(r, steps[it], portions, subs) }
+    val used = current?.let { stepIngredients(r, steps[it]) }.orEmpty()
     fun askStep(prompt: String) {
         vm.askInBackground("Cooking ${r.s("title")} (${r.s("id")}), step ${current?.plus(1) ?: "waiting"}: ${step?.s("text").orEmpty()}. Setting: ${step?.let(::stepSetting).orEmpty()}. Substitutions: $subs. Question: $prompt", "cook_question")
     }
@@ -449,36 +282,15 @@ fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: St
                             }
                             stepSetting(step).takeIf { it.isNotBlank() }?.let { Text(it, fontWeight = FontWeight.SemiBold, color = Forest) }
                             stepDoneness(step).takeIf { it.isNotBlank() }?.let { Text("Done when: $it", color = Forest) }
-                            val started = progress[current].startedAt != null
-                            val finished = progress[current].doneAt != null
-                            val passive = CookSequencer.passiveMillis(recipeSteps[current]) > 0
-                            Button(onClick = {
-                                if (review != null) { review = null }
-                                else if (!started) {
-                                    record(current, "step_start")
-                                    val minutes = if (passive) ceilMinutes(CookSequencer.passiveMillis(recipeSteps[current])) else step.optInt("timer_minutes")
-                                    if (minutes > 0) {
-                                        askNotification()
-                                        val key = "$sk:$current"
-                                        var deadline = vm.startTimer(key, step.s("title"), minutes, stepSetting(step))
-                                        if (passive) {
-                                            deadline = CookSequencer.end(recipeSteps[current], progress()[current])!!
-                                            val timer = JSONObject(vm.timers[key]!!.toString()).put("deadline", deadline)
-                                            val timers = JSONObject(vm.prefs.getString("timers", "{}")!!).put(key, timer)
-                                            vm.prefs.edit().putString("timers", timers.toString()).apply(); vm.reloadTimers()
-                                        }
-                                        scheduleTimer(context, key, step.s("title"), deadline, stepSetting(step))
-                                    }
-                                } else { record(current, "step_finish", true); stop(current) }
-                            }, Modifier.fillMaxWidth().height(58.dp), shape = GardenShape.Button) {
-                                Icon(if (!started && passive) Icons.Outlined.Timer else Icons.Outlined.Check, null, Modifier.size(20.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(if (review != null) "Return to cooking" else if (finished) "Continue" else if (started) "Finish step" else if (passive) "Start ${ceilMinutes(CookSequencer.passiveMillis(recipeSteps[current]))} min timer" else "Start step", color = LocalContentColor.current)
+                            if (stepHasSubstitution(r, steps[current], subs)) {
+                                GardenChip("Review timing", tint = AmberLight, icon = Icons.Outlined.Timer, onClick = {
+                                    askStep("Review timing, heat, liquid and amounts for my substituted ingredients; use a meal-specific variant if instructions need to change.")
+                                })
+                                Text("Saved recipe timing", style = GardenType.Small, color = Muted)
                             }
                         } else {
                             Heading("Waiting")
                             sequence.waitingOn?.let { Text(steps[it.step].s("title"), fontSize = 20.sp) }
-                            Button(onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Timer running", color = LocalContentColor.current) }
                         }
                         // Keep a running station visible while a hands-on step has no appliance.
                         val stationStep = listOfNotNull(current, sequence.waitingOn?.step)
@@ -495,19 +307,8 @@ fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: St
                             GardenChip(stationEquipment.takeIf { it.isNotBlank() }?.let { "$it · " }.orEmpty() + if (seconds > 0) "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}" else "Check", tint = if (seconds > 0) Mist else AmberLight, icon = Icons.Outlined.Timer)
                         }
                         if (showLanes) CookApplianceLanes(steps, recipeSteps, progress, sequence, tick)
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            val prior = (current ?: steps.size) - 1
-                            TextButton(onClick = { review = prior; vm.track("step_back", "recipeId" to r.s("id"), "step" to prior) }, enabled = prior >= 0) { Text("Back") }
-                            TextButton(onClick = {
-                                if (review != null) review = null else current?.let { record(it, "step_finish", true); stop(it) }
-                            }, enabled = current != null) { Text("Next") }
-                            if (sequence.waitingOn != null) TextButton(onClick = { sequence.waitingOn?.let { record(it.step, "step_skip", true); stop(it.step) } }) { Text("Skip the wait") }
-                            TextButton(onClick = { pickSub = true }, enabled = used.isNotEmpty()) { Text("I substituted") }
-                            if (timerSteps.isNotEmpty() || sequence.running.isNotEmpty() || sequence.waitingOn != null) TextButton(onClick = { (current?.takeIf { it in timerSteps } ?: sequence.waitingOn?.step ?: sequence.running.firstOrNull()?.step)?.let { record(it, "step_done_early", true); stop(it) } }) { Text("Done early") }
-                            IconButton(onClick = { question = true }) { Icon(Icons.Outlined.HelpOutline, "Ask a question") }
-                        }
                         Spacer(Modifier.height(4.dp))
-                        sequence.next?.let { i -> Text("Next · ${stepSentence(scaledCookStep(r, steps[i], portions))}", color = Muted, fontSize = 13.sp) }
+                        sequence.next?.let { i -> Text("Next · ${stepSentence(presentedCookStep(r, steps[i], portions, subs))}", color = Muted, fontSize = 13.sp) }
                         if (showCookQuestions && step != null) FlowRow(Modifier.testTag("cook-question-suggestions"),
                             horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                             val heatStep = Regex("heat|oven|stove|microwave|boil|simmer|roast|bake|induction", RegexOption.IGNORE_CASE)
@@ -521,9 +322,72 @@ fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: St
                         }
                     }
                 }
+                Column(Modifier.fillMaxWidth().background(Cream).padding(horizontal = GardenSpace.Page, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (!(complete && review == null)) {
+                        if (step != null && current != null) {
+                            val started = progress[current].startedAt != null
+                            val passive = CookSequencer.passiveMillis(recipeSteps[current]) > 0
+                            val timerMinutes = if (passive) ceilMinutes(CookSequencer.passiveMillis(recipeSteps[current])) else step.optInt("timer_minutes")
+                            GardenPrimaryButton(
+                                if (review != null) "Return to cooking" else if (!started && timerMinutes > 0) "Start ${naturalDuration(timerMinutes.toDouble())} timer" else "Next",
+                                onClick = {
+                                    if (review != null) review = null
+                                    else if (!started && timerMinutes > 0) {
+                                        record(current, "step_start")
+                                        askNotification()
+                                        val timerKey = "$sk:$current"
+                                        var deadline = vm.startTimer(timerKey, step.s("title"), timerMinutes, stepSetting(step))
+                                        if (passive) {
+                                            deadline = CookSequencer.end(recipeSteps[current], progress()[current])!!
+                                            val timer = JSONObject(vm.timers[timerKey]!!.toString()).put("deadline", deadline)
+                                            val timers = JSONObject(vm.prefs.getString("timers", "{}")!!).put(timerKey, timer)
+                                            vm.prefs.edit().putString("timers", timers.toString()).apply(); vm.reloadTimers()
+                                        }
+                                        scheduleTimer(context, timerKey, step.s("title"), deadline, stepSetting(step))
+                                    } else { record(current, "step_finish", true); stop(current) }
+                                }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).testTag("cook-primary"),
+                                icon = if (!started && timerMinutes > 0) Icons.Outlined.Timer else Icons.Outlined.Check)
+                        }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val prior = (current ?: steps.size) - 1
+                            OutlinedButton(onClick = { review = prior; vm.track("step_back", "recipeId" to r.s("id"), "step" to prior) }, enabled = prior >= 0,
+                                modifier = Modifier.weight(1f).heightIn(min = 56.dp)) { Text("Back") }
+                            OutlinedButton(onClick = { pickSub = true }, enabled = used.isNotEmpty(),
+                                modifier = Modifier.weight(2f).heightIn(min = 56.dp)) { Text("I substituted") }
+                        }
+                        if (timerSteps.isNotEmpty() || sequence.running.isNotEmpty() || sequence.waitingOn != null) {
+                            GardenQuietButton(if (sequence.waitingOn != null) "Skip the wait" else "Done early", {
+                                val waiting = sequence.waitingOn
+                                val target = waiting?.step ?: current?.takeIf { it in timerSteps } ?: sequence.running.firstOrNull()?.step
+                                target?.let { record(it, if (waiting != null) "step_skip" else "step_done_early", true); stop(it) }
+                            }, Modifier.fillMaxWidth().heightIn(min = 56.dp))
+                        }
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { customTimer = true }, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) {
+                            Icon(Icons.Outlined.Timer, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Kitchen timer")
+                        }
+                        OutlinedButton(onClick = { question = true }, modifier = Modifier.heightIn(min = 56.dp)) { Icon(Icons.Outlined.HelpOutline, "Ask a question") }
+                    }
+                }
             }
         }
     }
+    if (customTimer) AlertDialog(onDismissRequest = { customTimer = false }, title = { Text("Kitchen timer") }, text = {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { listOf(1, 2, 5).forEach { minutes ->
+                FilterChip(selected = customMinutes == "$minutes", onClick = { customMinutes = "$minutes" }, label = { Text("$minutes min") })
+            } }
+            OutlinedTextField(customMinutes, { customMinutes = it.filter(Char::isDigit).take(4) }, label = { Text("Minutes") }, singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number))
+        }
+    }, confirmButton = { TextButton(enabled = customMinutes.toIntOrNull()?.let { it in 1..1440 } == true, onClick = {
+        askNotification()
+        val timerKey = "kitchen:${java.util.UUID.randomUUID()}"
+        val deadline = vm.startTimer(timerKey, "Kitchen timer", customMinutes.toInt(), "")
+        scheduleTimer(context, timerKey, "Kitchen timer", deadline, "")
+        customTimer = false
+    }) { Text("Start timer") } }, dismissButton = { TextButton(onClick = { customTimer = false }) { Text("Cancel") } })
     if (pickSub) AlertDialog(onDismissRequest = { pickSub = false }, title = { Text("I substituted") }, text = {
         Column { used.forEach { i -> TextButton(onClick = { pickSub = false; onSubstitute(i) }) { Text(r.a("ingredients").getJSONObject(i).s("name")) } } }
     }, confirmButton = { TextButton(onClick = { pickSub = false }) { Text("Cancel") } })

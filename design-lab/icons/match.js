@@ -6,13 +6,14 @@ function createIconMatcher(catalog) {
       .replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ')
     : '';
   const entries = fallback => catalog.icons
-    .filter(icon => Boolean(icon.fallback) === fallback)
-    .flatMap(icon => icon.matchWords.map(word => ({ id: icon.id, word: normalize(word) })))
-    .sort((a, b) => b.word.length - a.word.length);
+    .filter(icon => icon.id !== catalog.categoryFallbacks.unknown && Boolean(icon.fallback) === fallback)
+    .flatMap(icon => icon.matchWords.map(word => ({ id: icon.id, word: normalize(word), weak: (icon.weakMatchWords ?? []).includes(word) })))
+    .sort((a, b) => Number(a.weak) - Number(b.weak) || b.word.length - a.word.length);
   const specific = entries(false), categories = entries(true);
   const unknown = catalog.categoryFallbacks.unknown;
 
   /** Longest whole-word/phrase alias wins: specific, category, unknown.
+   * Weak snack aliases follow other categories; generic unknown is last.
    * Equal-length ties follow the stable catalog order. */
   return function iconFor(name) {
     const words = ` ${normalize(name)} `;

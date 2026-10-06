@@ -1,6 +1,6 @@
-<!-- Converted from design-lab/icons/food-icons.svg (lane 03). -->
+<!-- Generated from design-lab/icons/food-icons.svg by scripts/generate-food-drawables.py. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M4.0,4.0H20.0Q22.0,4.0 22.0,6.0V20.0Q22.0,22.0 20.0,22.0H4.0Q2.0,22.0 2.0,20.0V6.0Q2.0,4.0 4.0,4.0Z" android:fillColor="#F7F1E6" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M5.0,9.0H19.0Q20.0,9.0 20.0,10.0V18.0Q20.0,19.0 19.0,19.0H5.0Q4.0,19.0 4.0,18.0V10.0Q4.0,9.0 5.0,9.0Z" android:fillColor="#D9772F" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M4 4H20A2 2 0 0 1 22 6V20A2 2 0 0 1 20 22H4A2 2 0 0 1 2 20V6A2 2 0 0 1 4 4Z" android:fillColor="#F7F1E6" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M5 9H19A1 1 0 0 1 20 10V18A1 1 0 0 1 19 19H5A1 1 0 0 1 4 18V10A1 1 0 0 1 5 9Z" android:fillColor="#D9772F" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
     <path android:pathData="M6 6H7M11 6H12M16 6H18M6 16H18M8 12V14M12 11V14M16 12V14" android:fillColor="#00000000" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

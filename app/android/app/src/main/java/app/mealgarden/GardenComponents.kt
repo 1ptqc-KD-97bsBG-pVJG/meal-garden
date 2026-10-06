@@ -289,7 +289,7 @@ fun FourLevelAmount(value: Int, onChange: (Int) -> Unit, modifier: Modifier = Mo
 fun GardenPlate(label: String, modifier: Modifier = Modifier, seed: Int = 0, count: Int = 1,
     empty: Boolean = false, drink: Boolean = false, mark: PlateMark? = null,
     food: @Composable (() -> Unit)? = null, onClick: (() -> Unit)? = null) {
-    Column(modifier.width(70.dp)
+    Column(modifier.width(86.dp)
         .then(if (onClick != null) Modifier.clip(GardenShape.Button)
             .clickable(role = Role.Button, onClick = onClick) else Modifier),
         horizontalAlignment = Alignment.CenterHorizontally) {
@@ -326,7 +326,7 @@ fun GardenPlate(label: String, modifier: Modifier = Modifier, seed: Int = 0, cou
             }
         }
         Text(label, color = Muted, fontSize = 11.sp, lineHeight = 13.sp,
-            maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+            maxLines = 3, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
     }
 }
 
@@ -383,5 +383,26 @@ fun PlateKey(modifier: Modifier = Modifier) {
             Text("Drink", style = GardenType.Small)
         }
         Text("×2  Repeated", style = GardenType.Small)
+    }
+}
+
+/** Ingredient icons share one plate, keeping the recipe distinguishable at a glance. */
+@Composable
+fun GardenRecipePlate(recipe: org.json.JSONObject, modifier: Modifier = Modifier) {
+    val icons = recipePlateIconIds(recipe)
+    BoxWithConstraints(modifier.semantics { contentDescription = "Ingredients for ${recipe.s("title")}" }) {
+        Canvas(Modifier.fillMaxSize()) {
+            drawCircle(CardSurface, size.minDimension * .43f)
+            drawCircle(Line, size.minDimension * .43f, style = Stroke(1.dp.toPx()))
+            drawCircle(Paper2, size.minDimension * .36f)
+        }
+        val side = minOf(maxWidth, maxHeight)
+        icons.forEachIndexed { index, id ->
+            val angle = index * 2.0 * Math.PI / icons.size - Math.PI / 2
+            val radius = if (icons.size == 1) 0.dp else side * .21f
+            FoodIcon(id, Modifier.align(Alignment.Center)
+                .offset(x = radius * cos(angle).toFloat(), y = radius * sin(angle).toFloat())
+                .size(side * if (icons.size == 1) .53f else .35f))
+        }
     }
 }

@@ -36,12 +36,28 @@ import org.json.JSONObject
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 
-/** Display grouping uses declared meal types first, then a legacy title fallback. */
-private fun recipeMealGroup(recipe: JSONObject): Int {
-    val declared = (recipe.s("meal_type") + " " + recipe.a("meal_types").strings().joinToString(" ") + " " + recipe.a("tags").strings().joinToString(" ")).lowercase()
-    if (Regex("breakfast|brunch").containsMatchIn(declared)) return 0
-    if (Regex("soup|side").containsMatchIn(declared)) return 2
-    if (declared.isNotBlank()) return 1
+private val recipeMealLabels = listOf("Breakfast", "Lunch & dinner", "Soups", "Sides", "Snacks", "Desserts", "Drinks", "Other recipes")
+
+/** Declared meal types are authoritative; tags and titles support legacy records only. */
+internal fun recipeMealGroup(recipe: JSONObject): Int {
+    fun group(value: String): Int? {
+        val text = value.lowercase()
+        return when {
+            Regex("\\b(?:breakfast|brunch)\\b").containsMatchIn(text) -> 0
+            Regex("\\b(?:lunch|dinner|main|supper)\\b").containsMatchIn(text) -> 1
+            Regex("\\bsoups?\\b").containsMatchIn(text) -> 2
+            Regex("\\bsides?\\b").containsMatchIn(text) -> 3
+            Regex("\\bsnacks?\\b").containsMatchIn(text) -> 4
+            Regex("\\b(?:desserts?|sweets?|treats?)\\b").containsMatchIn(text) -> 5
+            Regex("\\b(?:drinks?|beverages?)\\b").containsMatchIn(text) -> 6
+            else -> null
+        }
+    }
+    val primary = recipe.s("meal_type").trim()
+    if (primary.isNotEmpty()) return group(primary) ?: 7
+    val declared = recipe.a("meal_types").strings().filter { it.isNotBlank() }
+    if (declared.isNotEmpty()) return declared.firstNotNullOfOrNull(::group) ?: 7
+    recipe.a("tags").strings().firstNotNullOfOrNull(::group)?.let { return it }
     val title = recipe.s("title").lowercase()
     return when {
         Regex("oats|yogurt|muffin|pancake|breakfast|granola").containsMatchIn(title) -> 0
@@ -62,7 +78,7 @@ fun RecipesScreen(vm: GardenModel) {
             (!savedOnly || vm.prefs.getBoolean("favorite:${r.s("id")}", false)) &&
             (query.isBlank() || r.toString().contains(query, ignoreCase = true))
     }
-    val groups = visible.groupBy(::recipeMealGroup).toSortedMap().values
+    val groups = visible.groupBy(::recipeMealGroup).toSortedMap()
     LazyColumn(
         Modifier.fillMaxSize().testTag("recipes-scroll"),
         contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 24.dp),
@@ -86,8 +102,8 @@ fun RecipesScreen(vm: GardenModel) {
                 FilterChip(selected = savedOnly, onClick = { savedOnly = !savedOnly }, label = { Text("Saved") })
             }
         }
-        groups.forEachIndexed { index, group ->
-            if (index > 0) item { HorizontalDivider(color = Line, thickness = 2.dp, modifier = Modifier.padding(vertical = 4.dp)) }
+        groups.forEach { (kind, group) ->
+            item { SectionLabel(recipeMealLabels[kind]) }
             item {
                 GardenCard {
                     group.sortedWith(compareBy<JSONObject> { !recipeReady(it) }.thenBy { it.s("title") }).forEachIndexed { row, recipe ->
@@ -112,13 +128,13 @@ fun RecipesScreen(vm: GardenModel) {
 private fun RecipeShelfRow(recipe: JSONObject, variants: Int, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        GardenBowl(Modifier.size(52.dp), seed = recipe.s("id").hashCode())
+        GardenRecipePlate(recipe, Modifier.size(60.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(recipe.s("title"), fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium)
             if (!recipeReady(recipe)) GardenChip("Not ready", tint = AmberLight)
             else if (variants > 0) GardenChip("$variants variant${if (variants == 1) "" else "s"}")
         }
-        if (recipe.optInt("total_minutes") > 0) Text("${recipe.optInt("total_minutes")} min", color = Muted, fontSize = 12.sp)
+        recipeDuration(recipe).takeIf { it.isNotBlank() }?.let { Text(it, color = Muted, fontSize = 12.sp, modifier = Modifier.widthIn(max = 96.dp)) }
         Icon(Icons.Outlined.ChevronRight, null, Modifier.size(16.dp), tint = Muted)
     }
 }
@@ -228,7 +244,7 @@ fun RecipeScreen(vm: GardenModel, r: JSONObject) {
             onDismissRequest = { subFor = -1 },
             title = { Text("Instead of ${ingredient.s("name")}", fontFamily = FontFamily.Serif) },
             text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(text, { text = it.take(300) }, placeholder = { Text("e.g. frozen jasmine rice") }, singleLine = true)
+                OutlinedTextField(text, { text = it.take(300) }, placeholder = { Text("Replacement ingredient") }, singleLine = true)
                 OutlinedTextField(reason, { reason = it.take(300) }, label = { Text("Why? (optional)") })
             } },
             confirmButton = {
@@ -315,16 +331,16 @@ Keep the saved recipe unchanged. First decide whether any adjustment is actually
                     if (linked) vm.capturePhotos(capture).firstOrNull()?.let { vm.capturePhotoFile(capture, it) }?.takeIf { it.exists() } else null
                 }
                 if (photo != null) LocalPhoto(photo, Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(22.dp)))
-                else GardenBowl(Modifier.fillMaxWidth().height(144.dp), seed = rid.hashCode())
+                else GardenRecipePlate(r, Modifier.fillMaxWidth().height(100.dp))
                 Heading(r.s("title"))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { portions--; vm.prefs.edit().putInt("cook-yield:$sk", portions).remove("cook-portions:$sk").apply(); portionCounts = JSONObject() }, enabled = portions > 1) { Icon(Icons.Outlined.Remove, "Fewer portions") }
                     Text("$portions portions", fontWeight = FontWeight.SemiBold)
                     IconButton(onClick = { portions++; vm.prefs.edit().putInt("cook-yield:$sk", portions).remove("cook-portions:$sk").apply(); portionCounts = JSONObject() }, enabled = portions < maxCookPortions(r)) { Icon(Icons.Outlined.Add, "More portions") }
                     Spacer(Modifier.weight(1f))
-                    if (r.optInt("total_minutes") > 0) {
+                    if (recipeDuration(r).isNotBlank()) {
                         Icon(Icons.Outlined.Schedule, null, Modifier.size(18.dp))
-                        Text(" ${r.optInt("total_minutes")} min", fontSize = 13.sp)
+                        Text(" ${recipeDuration(r)}", fontSize = 13.sp, modifier = Modifier.weight(1f))
                     }
                 }
             }
@@ -334,6 +350,9 @@ Keep the saved recipe unchanged. First decide whether any adjustment is actually
                 ActionButton("Develop this recipe", Icons.Outlined.AutoAwesome) { vm.ask("Please review and normalize the candidate recipe ${r.s("title")} ($rid). Use its original source as evidence, adapt it for my current kitchen and preferences, and make a complete ready recipe.") }
             }
             else {
+                item {
+                    GardenPrimaryButton("Start cooking", onClick = { focus = true; vm.track("cook_open", "recipeId" to rid, "session" to sk) }, modifier = Modifier.fillMaxWidth().height(60.dp), icon = Icons.Outlined.RestaurantMenu)
+                }
                 val parent = vm.recipe(r.s("parent_recipe_id"))
                 val children = vm.snapshot.a("recipes").objects().filter { it.s("parent_recipe_id") == rid && recipeReady(it) }
                 val variantCanChange = !focus && runCatching {
@@ -386,11 +405,8 @@ Keep the saved recipe unchanged. First decide whether any adjustment is actually
                         }
                     }
                 }
-                item {
-                    GardenPrimaryButton("Start cooking", onClick = { focus = true; vm.track("cook_open", "recipeId" to rid, "session" to sk) }, modifier = Modifier.fillMaxWidth().height(60.dp), icon = Icons.Outlined.RestaurantMenu)
-                }
                 items(steps.withIndex().toList(), key = { "step${it.index}" }) { (i, originalStep) ->
-                    val step = scaledCookStep(r, originalStep, portions)
+                    val step = presentedCookStep(r, originalStep, portions, appliedSubs)
                     Column(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         val activity = stepActivity(step)
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {

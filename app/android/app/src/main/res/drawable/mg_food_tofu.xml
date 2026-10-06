@@ -1,9 +1,9 @@
-<!-- Converted from design-lab/icons/food-icons.svg (lane 03). -->
+<!-- Generated from design-lab/icons/food-icons.svg by scripts/generate-food-drawables.py. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
     <path android:pathData="M3 8L13 3L21 8L11 13Z" android:fillColor="#F7F1E6" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
     <path android:pathData="M3 8V18L11 22V13Z" android:fillColor="#F7F1E6" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
     <path android:pathData="M11 13L21 8V18L11 22Z" android:fillColor="#7FA36B" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M6.35,11.0a0.65,0.65 0 1,0 1.3,0a0.65,0.65 0 1,0 -1.3,0" android:fillColor="#2C2721" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M6.35,16.0a0.65,0.65 0 1,0 1.3,0a0.65,0.65 0 1,0 -1.3,0" android:fillColor="#2C2721" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M15.35,16.0a0.65,0.65 0 1,0 1.3,0a0.65,0.65 0 1,0 -1.3,0" android:fillColor="#2C2721" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M6.35 11A0.65 0.65 0 1 0 7.65 11A0.65 0.65 0 1 0 6.35 11Z" android:fillColor="#2C2721" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M6.35 16A0.65 0.65 0 1 0 7.65 16A0.65 0.65 0 1 0 6.35 16Z" android:fillColor="#2C2721" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M15.35 16A0.65 0.65 0 1 0 16.65 16A0.65 0.65 0 1 0 15.35 16Z" android:fillColor="#2C2721" android:strokeColor="#2C2721" android:strokeWidth="1.15" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

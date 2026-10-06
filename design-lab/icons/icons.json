@@ -144,7 +144,9 @@
       "category": "vegetable",
       "matchWords": [
         "corn",
-        "baby corn"
+        "baby corn",
+        "sweetcorn",
+        "sweet corn"
       ]
     },
     {
@@ -481,7 +483,9 @@
       "category": "dairy",
       "matchWords": [
         "milk",
-        "milk alternative"
+        "milk alternative",
+        "oat milk",
+        "oatmilk"
       ]
     },
     {
@@ -500,7 +504,8 @@
       "category": "drink",
       "matchWords": [
         "soy milk",
-        "unsweetened soy milk"
+        "unsweetened soy milk",
+        "soymilk"
       ]
     },
     {
@@ -799,7 +804,21 @@
       "matchWords": [
         "vegetable",
         "vegetables",
-        "produce"
+        "produce",
+        "squash",
+        "fennel",
+        "leek",
+        "leeks",
+        "radish",
+        "radishes",
+        "potato",
+        "potatoes",
+        "beet",
+        "beets",
+        "aubergine",
+        "eggplant",
+        "pumpkin",
+        "vegetable soup"
       ]
     },
     {
@@ -809,7 +828,22 @@
       "fallback": true,
       "matchWords": [
         "fruit",
-        "fruits"
+        "fruits",
+        "apple",
+        "apples",
+        "pear",
+        "pears",
+        "grape",
+        "grapes",
+        "orange",
+        "oranges",
+        "peach",
+        "peaches",
+        "melon",
+        "kiwi",
+        "pineapple",
+        "lemon",
+        "lemons"
       ]
     },
     {
@@ -821,7 +855,22 @@
         "grain",
         "grains",
         "bread",
-        "flour"
+        "flour",
+        "toast",
+        "roll",
+        "rolls",
+        "bagel",
+        "bagels",
+        "cornmeal",
+        "couscous",
+        "bulgur",
+        "barley",
+        "noodles",
+        "cracker",
+        "crackers",
+        "sandwich",
+        "wrap",
+        "tortilla"
       ]
     },
     {
@@ -833,7 +882,11 @@
         "legume",
         "legumes",
         "bean",
-        "beans"
+        "beans",
+        "hummus",
+        "pea",
+        "peas",
+        "pea soup"
       ]
     },
     {
@@ -845,7 +898,15 @@
         "protein",
         "meat",
         "fish",
-        "seafood"
+        "seafood",
+        "seitan",
+        "tempeh",
+        "salmon",
+        "tuna",
+        "beef",
+        "pork",
+        "turkey",
+        "shrimp"
       ]
     },
     {
@@ -856,7 +917,10 @@
       "matchWords": [
         "dairy",
         "cheese",
-        "cream"
+        "cream",
+        "kefir",
+        "ricotta",
+        "cottage cheese"
       ]
     },
     {
@@ -880,7 +944,14 @@
         "nut",
         "nuts",
         "seed",
-        "seeds"
+        "seeds",
+        "tahini",
+        "snack",
+        "snacks"
+      ],
+      "weakMatchWords": [
+        "snack",
+        "snacks"
       ]
     },
     {
@@ -895,7 +966,17 @@
         "tea",
         "coffee",
         "water",
-        "beverage"
+        "beverage",
+        "smoothie",
+        "smoothies",
+        "soda",
+        "seltzer",
+        "lemon juice",
+        "orange juice",
+        "apple juice",
+        "grape juice",
+        "pear juice",
+        "fruit juice"
       ]
     },
     {
@@ -909,7 +990,16 @@
         "candy",
         "dessert",
         "syrup",
-        "pastry"
+        "pastry",
+        "cookie",
+        "cookies",
+        "biscuit",
+        "biscuits",
+        "cake",
+        "muffin",
+        "muffins",
+        "ice cream",
+        "pudding"
       ]
     },
     {
