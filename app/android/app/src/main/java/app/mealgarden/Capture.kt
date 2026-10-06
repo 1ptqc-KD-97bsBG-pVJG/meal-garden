@@ -504,7 +504,7 @@ private fun FoodLogRow(vm: GardenModel, entry: JSONObject, showNutrition: Boolea
     fun openPantry(lot: JSONObject?) {
         vm.selectedPantryItem = lot?.s("id").orEmpty()
         vm.openCapture = false; vm.openFoodLog = false; vm.openHealth = false; vm.openFridgeCheck = false
-        vm.openActivity = false; vm.openPreferences = false; vm.openSettings = false; vm.openHistory = false
+        vm.openActivity = false; vm.openPreferences = false; vm.openSettings = false; vm.openHistory = false; vm.openShopping = false
         vm.selectedRecipe = null
         vm.tab = 3
     }

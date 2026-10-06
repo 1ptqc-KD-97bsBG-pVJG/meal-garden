@@ -1,420 +1,222 @@
-@file:OptIn(
-    androidx.compose.material3.ExperimentalMaterial3Api::class,
-    androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
-)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package app.mealgarden
 
-import android.app.*
-import android.content.*
-import android.graphics.Bitmap
+import android.content.Intent
 import android.graphics.ImageDecoder
-import androidx.activity.compose.*
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.shape.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.*
-import androidx.compose.ui.platform.*
-import androidx.compose.ui.text.font.*
-import androidx.compose.ui.text.style.*
-import androidx.compose.ui.unit.*
-import java.io.ByteArrayOutputStream
-import kotlin.math.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.json.JSONObject
+import kotlinx.coroutines.flow.collect
+
+private val askPrompts = listOf("What should I use first?", "What can I make without shopping?", "How is protein this week?")
 
 @Composable
 fun ChatScreen(vm: GardenModel) {
-    val list = rememberLazyListState()
-    val context = LocalContext.current
-    val photo =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-            if (uri != null) {
-                try {
-                    val source = ImageDecoder.createSource(context.contentResolver, uri)
-                    val bitmap =
-                        ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-                            val scale = max(info.size.width, info.size.height) / 1800f
-                            if (scale > 1)
-                                decoder.setTargetSize(
-                                    (info.size.width / scale).toInt(),
-                                    (info.size.height / scale).toInt(),
-                                )
-                            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
-                        }
-                    val out = ByteArrayOutputStream()
-                    bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
-                    vm.upload(out.toByteArray())
-                } catch (e: Exception) {
-                    vm.error = "Could not read that photo"
-                }
-            }
-        }
-    val snap = rememberCamera { file ->
-        try {
-            vm.upload(compressPhoto(ImageDecoder.createSource(file)).first)
-        } catch (e: Exception) {
-            vm.error = "Could not read that photo"
-        } finally {
-            file.delete()
-        }
-    }
-    val voice =
-        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result
-            ->
-            result.data
-                ?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)
-                ?.firstOrNull()
-                ?.let { vm.editDraft((vm.draft + " " + it).trim(), "voice_recognition") }
-        }
-    val active =
-        vm.activity.a("jobs").objects().firstOrNull {
-            it.s("conversation_id") == vm.conversation &&
-                it.s("status") in listOf("running", "queued", "waiting")
-        }
-    val latestTask =
-        vm.activity.a("jobs").objects().firstOrNull { it.s("conversation_id") == vm.conversation }
-    val requests =
-        vm.activity.a("requests").objects().filter { request ->
-            vm.activity.a("jobs").objects().any {
-                it.s("id") == request.s("jobId") && it.s("conversation_id") == vm.conversation
-            }
-        }
-    LaunchedEffect(vm.messages.size, vm.messages.lastOrNull()?.s("text")?.length) {
-        if (
-            vm.messages.isNotEmpty() &&
-                (!list.canScrollForward ||
-                    list.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 >=
-                        vm.messages.size - 3)
-        )
-            list.animateScrollToItem((vm.messages.size).coerceAtLeast(0))
-    }
     Column(Modifier.fillMaxSize()) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text("At the kitchen table", fontFamily = FontFamily.Serif, fontSize = 26.sp)
-                Text(
-                    if (vm.modelLabel().contains("·")) vm.modelLabel() else "Your meal-planning assistant · Sol",
-                    fontSize = 11.sp,
-                    color = Muted,
-                )
+        GardenTopBar("Ask") {
+            IconButton(onClick = { vm.openHistory = true }) { Icon(Icons.Outlined.History, "Conversation history", tint = Forest) }
+            IconButton(onClick = { vm.newConversation() }) { Icon(Icons.Outlined.Add, "New conversation", tint = Forest) }
+        }
+        ChatAnswers(vm, Modifier.weight(1f))
+        ChatComposer(vm)
+    }
+}
+
+/** The same conversation and pending requests continue in the small Ask surface. */
+@Composable
+fun AskSheet(vm: GardenModel, onDismiss: () -> Unit) {
+    val sheet = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheet, containerColor = Paper, contentColor = Ink) {
+        Column(Modifier.fillMaxWidth().heightIn(max = 560.dp)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Ask", style = GardenType.Section, modifier = Modifier.weight(1f))
+                TextButton(onClick = { onDismiss(); vm.openHistory = true }) { Text("History") }
+                TextButton(onClick = { onDismiss(); vm.tab = 2 }) { Text("Full chat") }
             }
-            IconButton(onClick = { vm.openHistory = true }) {
-                Icon(Icons.Outlined.History, "Conversation history")
-            }
-            IconButton(onClick = { vm.newConversation() }) {
-                Icon(Icons.Outlined.Add, "New conversation")
+            ChatAnswers(vm, Modifier.weight(1f, fill = false).heightIn(min = 96.dp, max = 320.dp), compact = true)
+            ChatComposer(vm, compact = true)
+        }
+    }
+}
+
+@Composable
+private fun ChatAnswers(vm: GardenModel, modifier: Modifier = Modifier, compact: Boolean = false) {
+    val list = rememberLazyListState()
+    val jobs = vm.activity.a("jobs").objects()
+    val active = jobs.firstOrNull { it.s("conversation_id") == vm.conversation && it.s("status") in listOf("running", "queued", "waiting") }
+    val latest = jobs.firstOrNull { it.s("conversation_id") == vm.conversation }
+    val requests = vm.activity.a("requests").objects().filter { request -> jobs.any { it.s("id") == request.s("jobId") && it.s("conversation_id") == vm.conversation } }
+    val messages = if (compact) vm.messages.takeLast(3) else vm.messages
+    var followLatest by remember { mutableStateOf(true) }
+    LaunchedEffect(list) {
+        snapshotFlow { list.isScrollInProgress }.collect { scrolling ->
+            if (!scrolling) followLatest = !list.canScrollForward
+        }
+    }
+    LaunchedEffect(messages.lastOrNull()?.s("id"), messages.lastOrNull()?.s("text")) {
+        if (messages.isNotEmpty() && followLatest && !list.isScrollInProgress)
+            list.animateScrollToItem((list.layoutInfo.totalItemsCount - 1).coerceAtLeast(0))
+    }
+    LazyColumn(modifier.fillMaxWidth().testTag(if (compact) "ask-answers" else "chat-history"), state = list, contentPadding = PaddingValues(14.dp, 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (messages.isEmpty()) {
+            item { FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                askPrompts.forEach { prompt -> GardenChip(prompt, onClick = { vm.editDraft(prompt, "chat_suggestion") }) }
+            } }
+            if (!vm.paired) item { GardenQuietButton("Connect your laptop", onClick = { vm.openSettings = true }, icon = Icons.Outlined.Link) }
+        }
+        items(messages, key = { it.s("id") }) { message -> ChatMessage(vm, message) }
+        if (active != null) item {
+            GardenCard(color = Paper2) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Outlined.Schedule, null, Modifier.size(18.dp), tint = Forest)
+                    Text(active.s("progress", "Working"), style = GardenType.Small, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { vm.stop(active.s("id")) }) { Text("Stop") }
+                }
             }
         }
-        LazyColumn(
-            Modifier.weight(1f),
-            state = list,
-            contentPadding = PaddingValues(20.dp, 16.dp, 20.dp, 16.dp),
-            verticalArrangement = Arrangement.spacedBy(15.dp),
-        ) {
-            if (vm.messages.isEmpty())
-                item {
-                    Column(
-                        Modifier.padding(vertical = 22.dp),
-                        verticalArrangement = Arrangement.spacedBy(18.dp),
-                    ) {
-                        Box(
-                            Modifier.size(58.dp).background(Lime, RoundedCornerShape(20.dp)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                Icons.Outlined.AutoAwesome,
-                                null,
-                                tint = Forest,
-                                modifier = Modifier.size(28.dp),
-                            )
-                        }
-                        Text("What sounds good?", fontFamily = FontFamily.Serif, fontSize = 32.sp)
-                        Text(
-                            "Plan a week, improvise dinner, or tell me how the last batch went. We can pick up wherever you are.",
-                            color = Muted,
-                            fontSize = 15.sp,
-                        )
-                        listOf(
-                                "I have 20 minutes. What's for dinner?",
-                                "Help me plan a few health-first meals",
-                                "Let's take stock of my fridge",
-                            )
-                            .forEach { q ->
-                                OutlinedCard(
-                                    onClick = { vm.editDraft(q, "chat_suggestion") },
-                                    shape = RoundedCornerShape(18.dp),
-                                    colors =
-                                        CardDefaults.outlinedCardColors(
-                                            containerColor = Color.White
-                                        ),
-                                    border = BorderStroke(1.dp, Line),
-                                ) {
-                                    Row(
-                                        Modifier.fillMaxWidth().padding(16.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Text(q, fontSize = 14.sp, modifier = Modifier.weight(1f))
-                                        Icon(
-                                            Icons.AutoMirrored.Outlined.ArrowForward,
-                                            null,
-                                            Modifier.size(17.dp),
-                                        )
-                                    }
-                                }
-                            }
-                        if (!vm.paired)
-                            ActionButton("Connect your laptop", Icons.Outlined.Link) {
-                                vm.openSettings = true
-                            }
-                    }
-                }
-            items(vm.messages, key = { it.s("id") }) { m ->
-                when (m.s("role")) {
-                    "user" ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                            Text(
-                                m.s("text"),
-                                Modifier.widthIn(max = 330.dp)
-                                    .clip(RoundedCornerShape(22.dp, 22.dp, 4.dp, 22.dp))
-                                    .background(Mist)
-                                    .padding(17.dp),
-                                fontSize = 15.sp,
-                                lineHeight = 23.sp,
-                            )
-                        }
-                    "card" -> m.a("panels").objects().forEach { NativePanel(vm, it) }
-                    else ->
-                        Column(
-                            Modifier.fillMaxWidth().padding(end = 12.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Eyebrow("MEAL GARDEN", Forest)
-                            RichText(m.s("text"))
-                            m.a("panels").objects().forEach { NativePanel(vm, it) }
-                        }
-                }
+        if (active == null && latest != null && latest.s("status") in listOf("failed", "interrupted", "partial", "needs_sign_in", "blocked", "unverified")) item {
+            GardenCard(color = AmberLight) {
+                Text(latest.s("status").replace('_', ' ').replaceFirstChar { it.uppercase() }, style = GardenType.Body)
+                latest.s("error", latest.s("progress")).takeIf { it.isNotBlank() }?.let { Text(it, style = GardenType.Small) }
             }
-            if (active != null)
-                item {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(9.dp),
-                    ) {
-                        CircularProgressIndicator(Modifier.size(15.dp), strokeWidth = 2.dp)
-                        Text(
-                            active.s("progress", "Working on the laptop"),
-                            fontSize = 12.sp,
-                            color = Muted,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(onClick = { vm.stop(active.s("id")) }) {
-                            Text("Stop", fontSize = 12.sp)
-                        }
-                    }
-                }
-            if (
-                active == null &&
-                    latestTask != null &&
-                    latestTask.s("status") in
-                        listOf(
-                            "failed",
-                            "interrupted",
-                            "partial",
-                            "needs_sign_in",
-                            "blocked",
-                            "unverified",
-                        )
-            ) {
-                item {
-                    Note(
-                        latestTask.s("status").replace('_', ' ') +
-                            " · " +
-                            latestTask.s("error", latestTask.s("progress"))
-                    )
-                }
-            }
-            items(requests, key = { it.s("id") }) { r -> RequestCard(vm, r) }
-            item { Spacer(Modifier.height(1.dp)) }
         }
-        if (!vm.online && vm.paired)
-            Text(
-                "Laptop offline · reconnect to send",
-                modifier = Modifier.fillMaxWidth().background(Mist).padding(8.dp),
-                fontSize = 11.sp,
-                textAlign = TextAlign.Center,
-                color = Muted,
-            )
-        Column(
-            Modifier.fillMaxWidth()
-                .imePadding()
-                .background(Cream)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            if (vm.attachment.isNotEmpty())
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.Image, null, Modifier.size(16.dp))
-                    Text(vm.attachmentName, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                    TextButton(
-                        onClick = {
-                            vm.attachment = ""
-                            vm.attachmentName = ""
-                        }
-                    ) {
-                        Text("Remove")
-                    }
-                }
-            Row(
-                Modifier.fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color.White)
-                    .border(1.dp, Line, RoundedCornerShape(24.dp))
-                    .padding(5.dp),
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                IconButton(
-                    onClick = { if (vm.paired) snap() else vm.openSettings = true }
-                ) {
-                    Icon(Icons.Outlined.PhotoCamera, "Take a photo", tint = Muted)
-                }
-                IconButton(
-                    onClick = { if (vm.paired) photo.launch("image/*") else vm.openSettings = true }
-                ) {
-                    Icon(Icons.Outlined.AddPhotoAlternate, "Attach from gallery", tint = Muted)
-                }
-                TextField(
-                    value = vm.draft,
-                    onValueChange = { vm.editDraft(it) },
-                    placeholder = { Text("What's on your mind?", fontSize = 14.sp) },
-                    modifier = Modifier.weight(1f),
-                    minLines = 1,
-                    maxLines = 5,
-                    colors =
-                        TextFieldDefaults.colors(
-                            focusedContainerColor = Color.White,
-                            unfocusedContainerColor = Color.White,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                        ),
-                )
-                IconButton(
-                    onClick = { vm.send() },
-                    enabled = !vm.busy && vm.draft.isNotBlank(),
-                    modifier =
-                        Modifier.padding(3.dp)
-                            .background(if (vm.draft.isBlank()) Mist else Forest, CircleShape),
-                ) {
-                    Icon(
-                        Icons.Outlined.ArrowUpward,
-                        "Send",
-                        tint = if (vm.draft.isBlank()) Muted else Color.White,
-                    )
-                }
+        items(requests, key = { "request:${it.s("id")}" }) { request -> RequestCard(vm, request) }
+    }
+}
+
+/** Generated task prompts keep their original evidence behind an explicit details control. */
+internal fun taskMessageTitle(vm: GardenModel, message: JSONObject): String? {
+    if (message.s("role") != "user") return null
+    val job = vm.activity.a("jobs").objects().firstOrNull { it.s("id") == message.s("job_id") }
+    val source = message.o("metadata").s("source")
+    return when {
+        source == "food_log" || job?.s("kind") == "log_food" -> {
+            val title = job?.let { activityJobTitle(vm, it) }.orEmpty()
+            "Food log" + if (title.isNotBlank() && title != "Food log") " · $title" else ""
+        }
+        source == "reflection" || job?.s("kind") == "reflect" -> {
+            val title = job?.o("input")?.s("recipeId")?.let { vm.recipe(it)?.s("title") }.orEmpty()
+            "Cook feedback" + if (title.isNotBlank()) " · $title" else ""
+        }
+        source == "product_lookup" || job?.s("kind") == "product_lookup" -> "Food details"
+        else -> null
+    }
+}
+
+@Composable
+private fun ChatMessage(vm: GardenModel, message: JSONObject) {
+    val taskTitle = taskMessageTitle(vm, message)
+    if (taskTitle != null) {
+        var expanded by rememberSaveable(message.s("id")) { mutableStateOf(false) }
+        GardenCard(color = Paper2, modifier = Modifier.testTag("chat-task:${message.s("id")}")) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Outlined.ReceiptLong, null, Modifier.size(18.dp), tint = Forest)
+                Text(taskTitle, style = GardenType.Body, modifier = Modifier.weight(1f))
+                TextButton(onClick = { expanded = !expanded }, modifier = Modifier.testTag("chat-task-details:${message.s("id")}")) { Text(if (expanded) "Less" else "Details") }
             }
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(
-                    onClick = { vm.toggleQuick() },
-                    contentPadding = PaddingValues(8.dp, 0.dp),
-                ) {
-                    Icon(
-                        if (vm.quick) Icons.Outlined.Bolt else Icons.Outlined.AutoAwesome,
-                        null,
-                        Modifier.size(14.dp),
-                    )
-                    Spacer(Modifier.width(5.dp))
-                    Text(vm.modelLabel(), fontSize = 10.sp)
-                }
-                Spacer(Modifier.weight(1f))
-                Text("Runs on your laptop", fontSize = 10.sp, color = Muted)
-                IconButton(
-                    onClick = {
-                        try {
-                            voice.launch(
-                                Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-                                    .putExtra(
-                                        android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                        android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
-                                    )
-                            )
-                        } catch (e: Exception) {
-                            vm.error =
-                                "Use your keyboard's microphone for dictation on this device."
-                        }
-                    },
-                    modifier = Modifier.size(36.dp),
-                ) {
-                    Icon(
-                        Icons.Outlined.Mic,
-                        "Dictate",
-                        tint = Muted,
-                        modifier = Modifier.size(17.dp),
-                    )
-                }
+            val date = localDay(message.s("created"))
+            if (date != java.time.LocalDate.MIN) Text(date.toString(), style = GardenType.Small)
+            if (expanded) RichText(message.s("text"))
+        }
+    } else if (message.s("role") == "user") Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        Text(message.s("text"), style = GardenType.Body, modifier = Modifier.widthIn(max = 330.dp).clip(GardenShape.Card).background(Mist).padding(12.dp))
+    } else {
+        val panels = message.a("panels").objects()
+        if (message.s("text").isNotBlank()) GardenCard { RichText(message.s("text")) }
+        panels.forEach { NativePanel(vm, it) }
+    }
+}
+
+@Composable
+private fun ChatComposer(vm: GardenModel, compact: Boolean = false) {
+    val context = LocalContext.current
+    val photo = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) try { vm.upload(compressPhoto(ImageDecoder.createSource(context.contentResolver, uri)).first) }
+        catch (_: Exception) { vm.error = "Could not read that photo" }
+    }
+    val camera = rememberCamera { file ->
+        try { vm.upload(compressPhoto(ImageDecoder.createSource(file)).first) }
+        catch (_: Exception) { vm.error = "Could not read that photo" }
+        finally { file.delete() }
+    }
+    val voice = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        result.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.let { vm.editDraft((vm.draft + " " + it).trim(), "voice_recognition") }
+    }
+    Column(Modifier.fillMaxWidth().imePadding().background(Paper).padding(horizontal = 14.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (!vm.online && vm.paired) Text("Laptop offline · reconnect to send", style = GardenType.Small, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        if (vm.attachment.isNotBlank()) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Icon(Icons.Outlined.Image, null, Modifier.size(18.dp), tint = Forest)
+            Text(vm.attachmentName.ifBlank { "Photo attached" }, style = GardenType.Small, modifier = Modifier.weight(1f))
+            TextButton(onClick = { vm.attachment = ""; vm.attachmentName = "" }) { Text("Remove") }
+        }
+        Row(Modifier.fillMaxWidth().clip(GardenShape.Card).background(CardSurface).border(1.dp, Line, GardenShape.Card).padding(4.dp), verticalAlignment = Alignment.Bottom) {
+            TextField(vm.draft, onValueChange = { vm.editDraft(it) }, modifier = Modifier.weight(1f).testTag("chat-input"), minLines = 1, maxLines = if (compact) 3 else 5,
+                placeholder = { Text(if (compact) "Anything about your food" else "What's on your mind?", fontSize = 14.sp) },
+                colors = TextFieldDefaults.colors(focusedContainerColor = CardSurface, unfocusedContainerColor = CardSurface, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent))
+            IconButton(onClick = { vm.send() }, enabled = !vm.busy && vm.draft.isNotBlank(), modifier = Modifier.background(if (vm.draft.isBlank()) Paper2 else Forest, CircleShape)) {
+                Icon(Icons.Outlined.ArrowUpward, "Send", tint = if (vm.draft.isBlank()) Muted else Paper)
             }
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { if (vm.paired) camera() else vm.openSettings = true }) { Icon(Icons.Outlined.PhotoCamera, "Take a photo", tint = Muted) }
+            IconButton(onClick = { if (vm.paired) photo.launch("image/*") else vm.openSettings = true }) { Icon(Icons.Outlined.AddPhotoAlternate, "Attach from gallery", tint = Muted) }
+            IconButton(onClick = {
+                try { voice.launch(Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)) }
+                catch (_: Exception) { vm.error = "Use your keyboard's microphone for dictation on this device." }
+            }) { Icon(Icons.Outlined.Mic, "Dictate", tint = Muted) }
+            Spacer(Modifier.weight(1f))
+            GardenChip(vm.modelLabel(), selected = vm.quick, icon = if (vm.quick) Icons.Outlined.Bolt else Icons.Outlined.AutoAwesome, onClick = { vm.toggleQuick() })
         }
     }
 }
 
 @Composable
 fun RequestCard(vm: GardenModel, r: JSONObject) {
-    val p = r.o("params")
-    var answers by remember(r.s("id")) { mutableStateOf(mapOf<String, String>()) }
-    val questions = p.a("questions").objects()
-    CardBox(color = Color(0xFFF3E9D5)) {
-        Eyebrow("YOUR INPUT")
+    val params = r.o("params")
+    var answers by rememberSaveable(r.s("id")) { mutableStateOf(mapOf<String, String>()) }
+    val questions = params.a("questions").objects()
+    GardenCard(color = AmberLight) {
         if (r.s("method").contains("requestUserInput")) {
-            questions.forEach { q ->
-                Text(q.s("question"), fontSize = 15.sp)
-                q.a("options").objects().forEach { o ->
-                    FilterChip(
-                        selected = answers[q.s("id")] == o.s("label"),
-                        onClick = { answers = answers + (q.s("id") to o.s("label")) },
-                        label = {
-                            Column {
-                                Text(o.s("label"))
-                                if (o.s("description").isNotBlank())
-                                    Text(o.s("description"), fontSize = 11.sp)
-                            }
-                        },
-                    )
+            questions.forEach { question ->
+                Text(question.s("question"), style = GardenType.Section)
+                question.a("options").objects().forEach { option ->
+                    GardenCard(color = if (answers[question.s("id")] == option.s("label")) Mist else CardSurface, onClick = { answers = answers + (question.s("id") to option.s("label")) }) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = answers[question.s("id")] == option.s("label"), onClick = { answers = answers + (question.s("id") to option.s("label")) })
+                            Text(option.s("label"), style = GardenType.Body, modifier = Modifier.weight(1f))
+                        }
+                        if (option.s("description").isNotBlank()) Text(option.s("description"), style = GardenType.Small)
+                    }
                 }
-                OutlinedTextField(
-                    value = answers[q.s("id")] ?: "",
-                    onValueChange = { answers = answers + (q.s("id") to it) },
-                    label = { Text("Your answer") },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                OutlinedTextField(answers[question.s("id")] ?: "", onValueChange = { answers = answers + (question.s("id") to it) }, label = { Text("Your answer") }, modifier = Modifier.fillMaxWidth())
             }
-            Button(
-                enabled = questions.all { !answers[it.s("id")].isNullOrBlank() },
-                onClick = { vm.answer(r.s("id"), JSONObject(answers)) },
-            ) {
-                Text("Continue")
-            }
+            GardenPrimaryButton("Continue", enabled = questions.isNotEmpty() && questions.all { !answers[it.s("id")].isNullOrBlank() }, onClick = { vm.answer(r.s("id"), JSONObject(answers)) })
         } else {
-            Text(p.s("reason", "Codex is asking to perform an action on your laptop."))
-            val command = p.s("command")
-            if (command.isNotEmpty())
-                Text(command, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+            Text(params.s("reason", "Allow this action?"), style = GardenType.Body)
+            params.s("command").takeIf { it.isNotBlank() }?.let { Text(it, fontFamily = FontFamily.Monospace, fontSize = 11.sp) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { vm.answer(r.s("id"), decision = "accept") }) {
-                    Text("Allow once")
-                }
-                OutlinedButton(onClick = { vm.answer(r.s("id"), decision = "decline") }) {
-                    Text("Decline")
-                }
+                GardenPrimaryButton("Allow once", onClick = { vm.answer(r.s("id"), decision = "accept") })
+                GardenQuietButton("Decline", onClick = { vm.answer(r.s("id"), decision = "decline") })
             }
         }
     }

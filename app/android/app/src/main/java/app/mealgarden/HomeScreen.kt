@@ -117,7 +117,7 @@ fun TodayScreen(vm: GardenModel) {
             }
         }
         if (showShopping) item {
-            GardenCard(onClick = { vm.tab = 4 }) { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { Icon(Icons.Outlined.ShoppingBasket,null,tint=Forest);Text(vm.shoppingListName,style=GardenType.Section);GardenChip("${vm.snapshot.o("shopping").a("items").length()} items") } }
+            GardenCard(onClick = { vm.openShopping = true }) { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) { Icon(Icons.Outlined.ShoppingBasket,null,tint=Forest);Text(vm.shoppingListName,style=GardenType.Section);GardenChip("${vm.snapshot.o("shopping").a("items").length()} items") } }
         }
     }
 }

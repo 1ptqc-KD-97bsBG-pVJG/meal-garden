@@ -362,12 +362,125 @@ class CompanionPreviewTest {
         if (hasTextNode("Discard")) click("Discard") else compose.runOnUiThread { vm.discardCapture() }
     }
 
+    private fun previewMoreNode(listTag: String, matcher: SemanticsMatcher) {
+        compose.onNodeWithTag(listTag).performScrollToNode(matcher)
+        val matches = compose.onAllNodes(matcher)
+        check(matches.fetchSemanticsNodes().isNotEmpty()) { "Copied preview target not found in $listTag" }
+        matches[0].performClick()
+        compose.waitForIdle()
+    }
+
+    private fun previewReceiptMatcher(receipt: JSONObject) =
+        hasText(receipt.s("store")) and hasText(receipt.s("date").take(10)) and hasClickAction() and
+            hasAnyAncestor(hasTestTag("garden-receipts"))
+
     private fun more() {
-        listOf("Your app", "Activity", "Receipts", "Preferences", "Connection").forEach { label -> resetTo(4); click(label); shot(label.lowercase().replace(' ', '-')) }
-        resetTo(4); click("Ask"); shot("ask")
-        val historyLink = listOf("Chat history", "Full chat", "Conversations", "History").firstOrNull(::hasTextNode)
-        if (historyLink != null) { click(historyLink); shot("chat-history-entry") }
-        resetTo(4); compose.runOnUiThread { vm.openHistory = true }; shot("history")
+        val modulePreferences = vm.prefs.all.filterKeys { it.startsWith("module:") }
+        resetTo(4); click("Your app"); shot("your-app")
+        listOf("cookQuestions", "weight").forEach { id ->
+            compose.onNodeWithTag("your-app").performScrollToNode(hasTestTag("module:$id"))
+            compose.onNodeWithTag("module:$id").assertIsDisplayed()
+            shot("your-app-$id")
+        }
+        listOf("lanes", "shoppingTimeline").forEach { id ->
+            compose.onNodeWithTag("your-app").performScrollToNode(hasTestTag("module-preview:$id"))
+            compose.onNodeWithTag("module-preview:$id").assertIsDisplayed()
+            shot("your-app-preview-$id")
+        }
+        compose.runOnIdle { assertEquals("A copied walk must preserve module settings", modulePreferences,
+            vm.prefs.all.filterKeys { it.startsWith("module:") }) }
+
+        resetTo(4); click("Activity"); shot("activity")
+        vm.graphAssumptions().firstOrNull()?.let { assumption ->
+            val tag = "activity-assumption:${assumption.s("id")}"
+            compose.onNodeWithTag("garden-activity").performScrollToNode(hasTestTag(tag))
+            compose.onNodeWithTag(tag).performClick()
+            shot("activity-assumption-expanded")
+            compose.onNodeWithTag(tag).performClick()
+        }
+        val jobs = vm.activity.a("jobs").objects()
+        (jobs.firstOrNull { it.s("kind") == "log_food" } ?: jobs.firstOrNull())?.let { job ->
+            val tag = "activity-job:${job.s("id")}"
+            compose.onNodeWithTag("garden-activity").performScrollToNode(hasTestTag(tag))
+            compose.onNodeWithTag(tag).performClick()
+            shot("activity-job-expanded")
+            // Opening a conversation reads existing messages; it does not start or stop a job.
+            val conversation = compose.onAllNodes(hasText("Open conversation") and hasClickAction())
+            if (job.s("conversation_id").isNotBlank() && conversation.fetchSemanticsNodes().isNotEmpty()) {
+                conversation[0].performScrollTo().performClick()
+                compose.waitUntil(10_000) { vm.messages.isNotEmpty() }
+                shot("activity-conversation")
+            }
+        }
+        compose.runOnIdle { assertTrue("Activity inspection must not queue corrections", vm.outbox.isEmpty()) }
+
+        val receipts = vm.snapshot.a("receipts").objects().sortedByDescending { it.s("date") }
+        resetTo(4); click("Receipts"); shot("receipts-list")
+        compose.onNodeWithContentDescription("Import receipt photo").assertIsDisplayed()
+        shot("receipts-import-control")
+        receipts.firstOrNull()?.let { receipt ->
+            previewMoreNode("garden-receipts", previewReceiptMatcher(receipt))
+            shot("receipt-detail")
+            receipt.a("items").objects().lastOrNull { it.s("name").isNotBlank() }?.let { line ->
+                compose.onNodeWithTag("garden-receipts").performScrollToNode(hasText(line.s("name")))
+                shot("receipt-items")
+            }
+            back()
+        }
+        // Receipts owns this Shopping view; use its actual button, rather than a test-only route.
+        compose.onNodeWithTag("garden-receipts").performScrollToNode(hasText("Shopping") and hasClickAction())
+        click("Shopping"); shot("shopping")
+        val ingredients = vm.snapshot.o("shopping").a("items").objects()
+        if (ingredients.isNotEmpty()) {
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText(ingredients.first().s("name")))
+            shot("shopping-ingredients")
+        }
+        // The local Purchases/Activity chips only change this view; no refresh/import/sync is requested.
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Purchases") and hasClickAction())
+        click("Purchases"); shot("shopping-purchases")
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Activity") and hasClickAction())
+        click("Activity"); shot("shopping-activity")
+
+        resetTo(4); click("Preferences"); shot("preferences")
+        if (vm.graphPreferences().any { !(it.s("stance") == "neutral" && it.s("statement").startsWith("No current preference about ")) }) {
+            compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasContentDescription("Change preference"))
+            compose.onAllNodesWithContentDescription("Change preference")[0].performClick()
+            shot("preferences-edit")
+            back()
+            compose.runOnIdle { assertTrue("Cancel must leave preferences unchanged", vm.outbox.isEmpty()) }
+        }
+
+        resetTo(4); click("Ask")
+        compose.onNodeWithTag("ask-answers").assertExists()
+        shot("ask-small")
+        vm.messages.takeLast(3).firstOrNull { taskMessageTitle(vm, it) != null }?.let { message ->
+            val tag = "chat-task-details:${message.s("id")}"
+            compose.onNodeWithTag("ask-answers").performScrollToNode(hasTestTag(tag))
+            compose.onNodeWithTag(tag).performClick(); shot("ask-source-details")
+            compose.onNodeWithTag(tag).performClick()
+        }
+        compose.onNode(hasText("Full chat") and hasClickAction()).performClick()
+        compose.onNodeWithTag("chat-history").assertExists()
+        shot("ask-full-chat")
+        compose.onNodeWithContentDescription("Conversation history").performClick()
+        compose.onNodeWithTag("conversation-history").assertExists()
+        shot("conversation-history")
+        vm.activity.a("conversations").objects().firstOrNull()?.let { conversation ->
+            val title = conversation.s("title").ifBlank { "Conversation" }
+            val matcher = hasText(title) and hasClickAction() and hasAnyAncestor(hasTestTag("conversation-history"))
+            previewMoreNode("conversation-history", matcher)
+            shot("conversation-open")
+        }
+
+        resetTo(4); click("Connection"); shot("connection")
+        if (vm.shoppingEnabled && vm.paired) {
+            compose.onNodeWithTag("garden-connection").performScrollToNode(hasText("Check browser sign-ins"))
+            shot("connection-check-controls")
+        }
+        compose.runOnIdle {
+            assertEquals(modulePreferences, vm.prefs.all.filterKeys { it.startsWith("module:") })
+            assertTrue("More inspection must leave no domain writes", vm.outbox.isEmpty())
+        }
         resetTo(4); gallery()
     }
 
