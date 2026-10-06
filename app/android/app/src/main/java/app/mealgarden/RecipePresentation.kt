@@ -18,11 +18,10 @@ fun presentedCookStep(recipe: JSONObject, step: JSONObject, portions: Int, subst
 fun stepHasSubstitution(recipe: JSONObject, originalStep: JSONObject, substitutions: JSONObject): Boolean =
     stepIngredients(recipe, originalStep).any { substitutions.optString("$it").isNotBlank() }
 
-/** Rewrite only batch divisions that explicitly describe a per-container share. */
+/** Scale reciprocal batch shares in distribution clauses; reserved quantities retain their role. */
 fun portionDivisionText(value: String, portions: Int, originalPortions: Int = 4): String {
-    val container = "(?:containers?|bowls?|portions?|meals?|jars?)"
-    if (!Regex("\\b$container\\b", RegexOption.IGNORE_CASE).containsMatchIn(value) ||
-        !Regex("\\b(?:each|in each)\\b", RegexOption.IGNORE_CASE).containsMatchIn(value)) return value
+    val container = "(?:containers?|bowls?|portions?|servings?|meals?|jars?|plates?|boxes?)"
+    if (!Regex("\\b$container\\b", RegexOption.IGNORE_CASE).containsMatchIn(value)) return value
     val reciprocal = when (portions) { 1 -> "all"; 2 -> "half"; 3 -> "one third"; 4 -> "one quarter"; else -> "1/$portions" }
     val originalShare = when (originalPortions) {
         2 -> "(?:one[- ]half|a half|half|1/2|½)"
@@ -39,6 +38,21 @@ fun portionDivisionText(value: String, portions: Int, originalPortions: Int = 4)
             val sentenceStart = value.substring(0, match.range.first).indexOfLast { it in ".!?\n" } + 1
             val sentenceEnd = value.indexOfAny(charArrayOf('.', '!', '?', '\n'), match.range.last + 1).takeIf { it >= 0 } ?: value.length
             val sentence = value.substring(sentenceStart, sentenceEnd)
-            if (Regex("\\beach\\b", RegexOption.IGNORE_CASE).containsMatchIn(sentence)) "$reciprocal of " else match.value
+            val relative = match.range.first - sentenceStart
+            // Role boundaries apply locally: an earlier "each" cannot turn a later reserve into a serving.
+            val boundaries = Regex("[,:;]|\\b(?:and|but|then)\\b", RegexOption.IGNORE_CASE).findAll(sentence).toList()
+            val clauseStart = boundaries.lastOrNull { it.range.last < relative }?.range?.last?.plus(1) ?: 0
+            val clauseEnd = boundaries.firstOrNull { it.range.first > relative }?.range?.first ?: sentence.length
+            val clause = sentence.substring(clauseStart, clauseEnd)
+            val beforeShare = sentence.substring(clauseStart, relative)
+            val reserved = Regex("\\b(?:reserv(?:e[ds]?|ing)|sav(?:e[ds]?|ing)|retain(?:s|ed|ing)?|keep(?:s|ing)?|kept|set(?:ting)? aside|hold(?:ing)? back|leave|leaving)\\b|\\b(?:aside|for later|for another)\\b", RegexOption.IGNORE_CASE)
+                .containsMatchIn(beforeShare) || Regex("\\b(?:aside|for later|for another)\\b", RegexOption.IGNORE_CASE).containsMatchIn(clause)
+            val perContainer = Regex("\\b(?:each|every|per)\\b", RegexOption.IGNORE_CASE).containsMatchIn(clause)
+            val prior = sentence.substring(0, relative)
+            val distribution = Regex("\\b(?:divide|split|distribute|portion|allocate|share|fill|pack|assemble)\\b", RegexOption.IGNORE_CASE).containsMatchIn(prior) &&
+                Regex("\\b$portions\\s+$container\\b", RegexOption.IGNORE_CASE).containsMatchIn(prior)
+            val appliesToContainer = beforeShare.isBlank() ||
+                Regex("\\b(?:top|cover|fill|put|putting|place|spoon|scoop|ladle|pack|pour|add|layer|give|serve|portion|divide|split|distribute|allocate|share)\\b|^\\s*(?:with|using|containing)\\b", RegexOption.IGNORE_CASE).containsMatchIn(beforeShare)
+            if (!reserved && (perContainer || distribution && appliesToContainer)) "$reciprocal of " else match.value
         }
 }

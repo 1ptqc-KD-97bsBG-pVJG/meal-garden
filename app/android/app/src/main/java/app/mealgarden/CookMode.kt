@@ -149,11 +149,14 @@ fun CookIngredientRow(vm: GardenModel, r: JSONObject, index: Int, portions: Int,
 }
 
 @Composable
-fun PortionDestinationRows(total: Int, counts: JSONObject, onChange: (String, Int) -> Unit) {
+fun PortionDestinationRows(total: Int, counts: JSONObject, recipe: JSONObject? = null, onChange: (String, Int) -> Unit) {
     val assigned = listOf("fridge", "freezer", "eatenNow").sumOf { counts.optInt(it) }
     val remaining = (total - assigned).coerceAtLeast(0)
     Box(Modifier.fillMaxWidth().height(106.dp), contentAlignment = Alignment.Center) {
-        if (remaining > 0) GardenStack(remaining)
+        if (remaining > 0) {
+            if (recipe != null) GardenRecipePlate(recipe, Modifier.size(100.dp))
+            else GardenStack(remaining)
+        }
         else Icon(Icons.Outlined.CheckCircle, "All portions placed", Modifier.size(48.dp), tint = Forest)
     }
     Text("$remaining to place", style = GardenType.Small, color = Forest)
@@ -261,7 +264,7 @@ fun CookMode(vm: GardenModel, r: JSONObject, sk: String, portions: Int, mode: St
                 Column(Modifier.weight(1f).verticalScroll(stepScroll).padding(horizontal = GardenSpace.Page, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (complete && review == null) {
                         Text("$portions portions", style = GardenType.Title)
-                        PortionDestinationRows(portions, counts, onCount)
+                        PortionDestinationRows(portions, counts, r, onCount)
                         Button(onClick = onReport, enabled = listOf("fridge", "freezer", "eatenNow").sumOf { counts.optInt(it) } == portions,
                             modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Cooking report", color = LocalContentColor.current) }
                         TextButton(onClick = { review = steps.lastIndex }) { Text("Back to the last step") }

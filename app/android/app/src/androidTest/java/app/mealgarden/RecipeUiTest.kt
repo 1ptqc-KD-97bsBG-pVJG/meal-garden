@@ -229,12 +229,18 @@ class RecipeUiTest {
 
     @Test fun visibleDestinationPlusPlacesPortionsAndEnforcesTotal() {
         val counts = androidx.compose.runtime.mutableStateOf(JSONObject())
+        val recipe = j("title" to "Clover rice", "ingredients" to JSONArray()
+            .put(j("name" to "Rice")).put(j("name" to "Black beans")))
         compose.runOnUiThread {
             compose.activity.setContent { GardenTheme { androidx.compose.foundation.layout.Column {
-                PortionDestinationRows(2, counts.value) { key, count ->
+                PortionDestinationRows(2, counts.value, recipe) { key, count ->
                     counts.value = JSONObject(counts.value.toString()).put(key, count)
                 }
             } } }
+        }
+        compose.onNodeWithContentDescription("Ingredients for Clover rice").assertIsDisplayed()
+        compose.runOnIdle {
+            assertEquals(listOf("food-rice", "food-black-bean"), recipePlateIconIds(recipe))
         }
         compose.onNodeWithContentDescription("Add one to Fridge").assertIsDisplayed().assertWidthIsAtLeast(56.dp).assertHeightIsAtLeast(56.dp).performClick()
         compose.runOnIdle { assertEquals(1, counts.value.optInt("fridge")) }
@@ -267,6 +273,27 @@ class RecipeUiTest {
             compose.onNodeWithText(title).assertIsDisplayed()
         }
         compose.onNodeWithText("Breakfast").assertDoesNotExist()
+    }
+
+    @Test fun selectedPortionsReachImplicitDivisionDirectionsWithoutChangingCanonicalTiming() {
+        val instruction = "Split the filling between four bowls and spoon one quarter of the sauce over it."
+        val recipe = j("id" to "ribbon-cook", "revision" to 1, "title" to "Ribbon cook", "readiness" to "ready", "portions" to 4,
+            "ingredients" to JSONArray().put(j("name" to "Filling", "amount" to 1, "unit" to "cup")),
+            "steps" to JSONArray().put(j("text" to "Mix the filling.", "minutes" to 2))
+                .put(j("text" to instruction, "minutes" to 3, "equipment" to "Counter")))
+        val original = recipe.toString()
+        compose.runOnUiThread {
+            compose.activity.setContent { GardenTheme { RecipeScreen(vm, recipe) } }
+        }
+        repeat(2) { compose.onNodeWithContentDescription("Fewer portions").performClick() }
+        compose.onNodeWithText("2 portions").assertIsDisplayed()
+        compose.onNodeWithText("Start cooking").performClick()
+        compose.onNodeWithTag("cook-primary").performClick()
+        compose.onNode(hasText("Split the filling between 2 bowls and spoon half of the sauce over it.") and hasAnyAncestor(isDialog())).assertIsDisplayed()
+        compose.runOnIdle {
+            assertEquals(original, recipe.toString())
+            assertEquals(3, recipe.a("steps").getJSONObject(1).optInt("minutes"))
+        }
     }
 
 }

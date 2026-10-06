@@ -202,7 +202,7 @@ fun RecipeScreen(vm: GardenModel, r: JSONObject) {
             title = { Text("How did it go?", fontFamily = FontFamily.Serif) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PortionDestinationRows(portions, portionCounts) { destination, count ->
+                    PortionDestinationRows(portions, portionCounts, r) { destination, count ->
                         portionCounts = JSONObject(portionCounts.toString()).put(destination, count)
                         vm.prefs.edit().putString("cook-portions:$sk", portionCounts.toString()).apply()
                     }

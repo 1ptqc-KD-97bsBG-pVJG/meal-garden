@@ -54,6 +54,27 @@ class RecipePresentationTest {
         assertEquals("Fill 3 jars, with one third of the mixture in each.", portionDivisionText("Fill 3 jars, with one quarter of the mixture in each.", 3))
     }
 
+    @Test fun implicitContainerDistributionScalesOnlyTheServingClause() {
+        val base = recipe()
+        val step = JSONObject().put("text", "Split the prepared filling between four bowls and spoon one quarter of the sauce over the filling. Heat at 190°C for 11 minutes.")
+            .put("minutes", 11).put("timer_minutes", 11).put("equipment", "Oven")
+        val original = step.toString()
+        val scaled = scaledCookStep(base, step, 2)
+        assertEquals("Split the prepared filling between 2 bowls and spoon half of the sauce over the filling. Heat at 190°C for 11 minutes.", scaled.s("text"))
+        assertEquals(11, scaled.optInt("minutes"))
+        assertEquals(11, scaled.optInt("timer_minutes"))
+        assertEquals("Oven", scaled.s("equipment"))
+        assertEquals(original, step.toString())
+        assertEquals("Fill 2 containers, putting half of the batch in each, and reserve one quarter of the topping.",
+            portionDivisionText("Fill 2 containers, putting one quarter of the batch in each, and reserve one quarter of the topping.", 2, 4))
+        assertEquals("Fill 2 containers, putting half of the batch in each, but put one quarter of the topping aside.",
+            portionDivisionText("Fill 2 containers, putting one quarter of the batch in each, but put one quarter of the topping aside.", 2, 4))
+        assertEquals("Set 2 bowls beside the oven and save one quarter of the batch for later.",
+            portionDivisionText("Set 2 bowls beside the oven and save one quarter of the batch for later.", 2, 4))
+        assertEquals("Split the filling between 2 bowls and add one third of the sauce.",
+            portionDivisionText("Split the filling between 2 bowls and add one third of the sauce.", 2, 4))
+    }
+
     @Test fun substitutionPresentationChangesOnlyWholeIngredientNamesAndNeverTimingOrCanonicalRecords() {
         val base = recipe().put("ingredients", JSONArray().put(JSONObject().put("name", "Pear")))
         val step = JSONObject().put("title", "Warm pear").put("text", "Warm the pear. Keep the pearl barley aside.")
